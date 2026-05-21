@@ -1,0 +1,112 @@
+
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Akun operator sistem dengan akses berbasis peran.",
+      "properties": {
+        "id": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "staff"] },
+        "displayName": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "email", "role"]
+    },
+    "Station": {
+      "title": "Station",
+      "type": "object",
+      "description": "Representasi unit hardware (TV/Console) yang dikontrol via ADB.",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["PS3", "PS4", "PS5"] },
+        "ipAddress": { "type": "string" },
+        "stationIndex": { "type": "number" },
+        "status": { "type": "string", "enum": ["connected", "disconnected"] },
+        "is_active": { "type": "boolean" },
+        "is_paused": { "type": "boolean" },
+        "start_time": { "type": "number" },
+        "end_time": { "type": "number" },
+        "remaining_seconds": { "type": "number" },
+        "current_transaction_id": { "type": "string" },
+        "last_action": { "type": "string" },
+        "last_action_timestamp": { "type": "number" }
+      }
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "type": "object",
+      "description": "Log keuangan untuk setiap sesi bermain atau penjualan kantin.",
+      "properties": {
+        "id": { "type": "string" },
+        "stationId": { "type": "string" },
+        "stationName": { "type": "string" },
+        "durationMinutes": { "type": "number" },
+        "amount": { "type": "number" },
+        "discount": { "type": "number" },
+        "paidAmount": { "type": "number" },
+        "timestamp": { "type": "number" },
+        "status": { "type": "string", "enum": ["paid", "unpaid"] },
+        "memberId": { "type": "string" },
+        "memberName": { "type": "string" },
+        "shiftId": { "type": "string" },
+        "claimCode": { "type": "string" }
+      }
+    },
+    "CreditVoucher": {
+      "title": "CreditVoucher",
+      "type": "object",
+      "description": "Voucher sisa waktu yang dihasilkan dari penghentian sesi dini.",
+      "properties": {
+        "id": { "type": "string" },
+        "code": { "type": "string" },
+        "durationMinutes": { "type": "number" },
+        "stationType": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "number" }
+      }
+    },
+    "PointRedemption": {
+      "title": "PointRedemption",
+      "type": "object",
+      "description": "Log penukaran poin member untuk hadiah.",
+      "properties": {
+        "id": { "type": "string" },
+        "memberId": { "type": "string" },
+        "rewardLabel": { "type": "string" },
+        "pointsRedeemed": { "type": "number" },
+        "timestamp": { "type": "number" }
+      }
+    },
+    "Member": {
+        "title": "Member",
+        "type": "object",
+        "properties": {
+            "id": { "type": "string" },
+            "name": { "type": "string" },
+            "phone": { "type": "string" },
+            "points": { "type": "number" },
+            "stamps": { "type": "number" },
+            "joinDate": { "type": "number" },
+            "lastActivity": { "type": "number", "description": "Timestamp aktivitas terakhir untuk hitung kadaluarsa poin" }
+        }
+    }
+  },
+  "auth": {
+    "providers": ["password", "anonymous"]
+  },
+  "firestore": {
+    "structure": [
+      { "path": "/users/{userId}", "definition": { "entityName": "UserProfile" } },
+      { "path": "/stations/{stationId}", "definition": { "entityName": "Station" } },
+      { "path": "/transactions/{transactionId}", "definition": { "entityName": "Transaction" } },
+      { "path": "/vouchers/{voucherId}", "definition": { "entityName": "CreditVoucher" } },
+      { "path": "/shifts/{shiftId}", "definition": { "entityName": "Shift" } },
+      { "path": "/members/{memberId}", "definition": { "entityName": "Member" } },
+      { "path": "/redemptions/{redemptionId}", "definition": { "entityName": "PointRedemption" } },
+      { "path": "/reservations/{resId}", "definition": { "entityName": "Reservation" } }
+    ]
+  }
+}

@@ -1,0 +1,100 @@
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ======================================================
+    // HELPER FUNCTIONS
+    // ======================================================
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().role == 'admin';
+    }
+
+    // ======================================================
+    // 1. PUBLIC READ-ONLY COLLECTIONS
+    // Digunakan oleh Landing Page, Public Display, dan Member Portal
+    // ======================================================
+    
+    match /members/{id} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    match /transactions/{id} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    match /redemptions/{id} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    match /stations/{id} {
+      allow read: if true;
+      allow create, delete: if isAdmin();
+      allow update: if isSignedIn();
+    }
+
+    match /pricingRules/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /vouchers/{id} {
+      allow read: if true;
+      allow write: if true; // Diperlukan untuk konversi sesi ke kredit
+    }
+
+    match /settings/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /reservations/{id} {
+      allow read: if true;
+      allow write: if true; // Pelanggan buat reservasi dari landing
+    }
+
+    match /rewards/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /fnbItems/{id} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    // ======================================================
+    // 2. SECURE COLLECTIONS (AUTH REQUIRED)
+    // ======================================================
+
+    match /users/{userId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
+      allow delete: if isAdmin();
+    }
+
+    match /shifts/{shiftId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /expenses/{expenseId} {
+      allow read, write: if isAdmin();
+    }
+    
+    match /auditLogs/{logId} {
+      allow read, write: if isSignedIn();
+    }
+  }
+}

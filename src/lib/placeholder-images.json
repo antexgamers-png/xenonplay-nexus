@@ -1,0 +1,22 @@
+{
+  "placeholderImages": [
+    {
+      "id": "slide-ps5",
+      "description": "Next Gen Gaming Experience",
+      "imageUrl": "https://images.unsplash.com/photo-1607853202273-797f1c22a38e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxnYW1pbmclMjBjb25zb2xlfGVufDB8fHx8MTc3MDc3NTgwMHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "gaming console"
+    },
+    {
+      "id": "slide-membership",
+      "description": "Join the Elite Society",
+      "imageUrl": "https://images.unsplash.com/photo-1729160731582-edcf5995cc3c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxnYW1pbmclMjBsb3VuZ2V8ZW58MHx8fHwxNzcwNzM2MjUxfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "gaming lounge"
+    },
+    {
+      "id": "slide-fnb",
+      "description": "Fresh Snacks and Drinks",
+      "imageUrl": "https://images.unsplash.com/photo-1691406999182-078835bef974?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxzb2RhJTIwc25hY2t8ZW58MHx8fHwxNzcwNzgwNDA2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "soda snack"
+    }
+  ]
+}

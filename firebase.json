@@ -1,0 +1,35 @@
+{
+  "hosting": {
+    "site": "xenonplay",
+    "public": "out",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "cleanUrls": true,
+    "trailingSlash": false,
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  },
+  "emulators": {
+    "auth": {
+      "port": 9099,
+      "host": "localhost"
+    },
+    "firestore": {
+      "port": 8080,
+      "host": "localhost"
+    },
+    "ui": {
+      "enabled": true,
+      "port": 4000,
+      "host": "localhost"
+    },
+    "singleProjectMode": true
+  }
+}

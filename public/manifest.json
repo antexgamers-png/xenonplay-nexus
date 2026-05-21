@@ -1,0 +1,22 @@
+{
+  "name": "XenonPlay Nexus",
+  "short_name": "XenonPlay",
+  "description": "Sistem Manajemen Rental PlayStation Real-Time.",
+  "start_url": "/login",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "icons": [
+    {
+      "src": "/xenonplay-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/xenonplay-logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+
+name: Build Android TV APK (DEPRECATED)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: This workflow is no longer used
+    runs-on: ubuntu-latest
+    steps:
+      - name: Info
+        run: echo "Android TV Native App is deprecated. Please use Laptop Bridge instead."
