@@ -36,7 +36,9 @@ import {
     Github,
     ArrowDownToLine,
     FileText,
-    FileSearch
+    FileSearch,
+    Code,
+    Layers
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -72,11 +74,11 @@ export default function MasterPanduanPage() {
       <header className="space-y-2">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary mb-2">
             <ShieldCheck className="size-3.5" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Master Deployment Guide v1.3</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Master Deployment Guide v1.3.2</span>
         </div>
         <h1 className="text-4xl font-black tracking-tighter uppercase leading-none">XenonPlay <span className="text-primary">Nexus Guide</span></h1>
         <p className="text-muted-foreground text-sm max-w-2xl font-medium">
-          Instruksi lengkap instalasi hardware otomatis dan konfigurasi Server Offline.
+          Instruksi lengkap instalasi hardware otomatis dan pembangunan aplikasi Bridge Pro.
         </p>
       </header>
 
@@ -86,7 +88,7 @@ export default function MasterPanduanPage() {
             <TabsTrigger value="laptop" className="rounded-xl font-black uppercase text-[10px] tracking-widest px-6 flex-1 gap-2"><Laptop className="size-3"/> 2. Setup Laptop</TabsTrigger>
             <TabsTrigger value="offline" className="rounded-xl font-black uppercase text-[10px] tracking-widest px-6 flex-1 gap-2 text-primary"><Server className="size-3"/> 3. Mode Offline</TabsTrigger>
             <TabsTrigger value="install" className="rounded-xl font-black uppercase text-[10px] tracking-widest px-6 flex-1 gap-2"><Package className="size-3"/> 4. Instalasi Bridge</TabsTrigger>
-            <TabsTrigger value="trouble" className="rounded-xl font-black uppercase text-[10px] tracking-widest px-6 flex-1 gap-2 text-red-500"><AlertTriangle className="size-3"/> Troubleshooting</TabsTrigger>
+            <TabsTrigger value="build-pro" className="rounded-xl font-black uppercase text-[10px] tracking-widest px-6 flex-1 gap-2 text-emerald-500"><Layers className="size-3"/> Build Pro EXE</TabsTrigger>
         </TabsList>
 
         {/* STEP 1: TV SETUP */}
@@ -179,7 +181,7 @@ export default function MasterPanduanPage() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="text-xs text-muted-foreground space-y-3">
-                            <p>Matikan <b>Public Network Firewall</b> di laptop kasir untuk memastikan koneksi ADB tidak terblokir (Error 10060).</p>
+                            <p>Matikan <b>Public Network Firewall</b> di laptop kasir untuk memastikan koneksi ADB tidak terblokir.</p>
                             <div className="p-2 rounded-lg bg-slate-900 text-slate-300 font-mono text-[9px]">
                                 Windows Security &gt; Firewall & Network Protection &gt; Matikan Firewall.
                             </div>
@@ -232,36 +234,12 @@ export default function MasterPanduanPage() {
                             <CodeBlock code="npm run dev" />
                         </CardContent>
                     </Card>
-
-                    <Card className="border-primary/20 bg-primary/[0.02]">
-                        <CardHeader>
-                            <CardTitle className="text-sm font-black uppercase tracking-tight flex items-center gap-2 text-primary">
-                                <Zap className="size-4" /> Shortcut Offline (Tanpa Terminal)
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            <p className="text-xs text-muted-foreground leading-relaxed">
-                                Agar Bridge otomatis masuk mode offline tanpa perlu membuka terminal, lakukan ini di folder <b>XenonSource</b>:
-                            </p>
-                            <div className="p-4 rounded-xl bg-white border border-dashed border-primary/30 flex items-start gap-3">
-                                <FileSearch className="size-5 text-primary shrink-0 mt-0.5" />
-                                <div className="space-y-1">
-                                    <p className="text-[11px] font-black uppercase">Buat File Flag:</p>
-                                    <p className="text-[10px] text-muted-foreground">
-                                        Klik kanan &gt; New &gt; Text Document. <br/>Beri nama: <b>OFFLINE_MODE</b> (hapus akhiran .txt).
-                                    </p>
-                                </div>
-                            </div>
-                            <p className="text-[9px] text-muted-foreground italic">*Fitur ini tersedia pada Master Bridge V1.3.0+</p>
-                        </CardContent>
-                    </Card>
                 </div>
             </section>
         </TabsContent>
 
         {/* STEP 4: INSTALL BRIDGE */}
         <TabsContent value="install" className="space-y-12 animate-in fade-in zoom-in-95 duration-500">
-            {/* DOWNLOAD SECTION */}
             <section className="space-y-6">
                 <Card className="bg-primary/5 border-primary/20 p-8 rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between gap-8 shadow-xl">
                     <div className="space-y-3 text-center md:text-left">
@@ -276,27 +254,11 @@ export default function MasterPanduanPage() {
                         </Button>
                     </Link>
                 </Card>
-            </section>
-
-            {/* SUB-SECTION 4.1: USER INSTALLATION */}
-            <section className="space-y-6">
-                <div className="flex items-center gap-4">
-                    <div className="size-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center font-black shadow-xl shadow-emerald-500/20 text-lg">4.1</div>
-                    <h3 className="text-2xl font-black uppercase tracking-tight">Langkah Instalasi & Aktivasi</h3>
-                </div>
 
                 <div className="grid gap-6 md:grid-cols-3">
                     <Card className="border-border">
                         <CardHeader className="pb-2">
-                            <CardTitle className="text-xs font-black uppercase text-primary">01. Download & Ekstrak</CardTitle>
-                        </CardHeader>
-                        <CardContent className="text-xs text-muted-foreground leading-relaxed">
-                            Klik tombol download di atas. Simpan file <code>XenonBridge_Setup.exe</code> ke folder Desktop Anda agar mudah ditemukan.
-                        </CardContent>
-                    </Card>
-                    <Card className="border-border">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-xs font-black uppercase text-primary">02. Jalankan Setup</CardTitle>
+                            <CardTitle className="text-xs font-black uppercase text-primary">01. Jalankan Setup</CardTitle>
                         </CardHeader>
                         <CardContent className="text-xs text-muted-foreground leading-relaxed">
                             Klik kanan file setup &gt; <b>Run as Administrator</b>. Ikuti petunjuk di layar sampai selesai. Shortcut akan muncul di Desktop.
@@ -304,149 +266,107 @@ export default function MasterPanduanPage() {
                     </Card>
                     <Card className="border-border">
                         <CardHeader className="pb-2">
-                            <CardTitle className="text-xs font-black uppercase text-primary">03. Jalankan Aplikasi</CardTitle>
+                            <CardTitle className="text-xs font-black uppercase text-primary">02. Pilih Mode</CardTitle>
                         </CardHeader>
                         <CardContent className="text-xs text-muted-foreground leading-relaxed">
-                            Klik 2x pada shortcut <b>XenonPlay Bridge</b>. Aplikasi berjalan di latar belakang (tanpa jendela) untuk keamanan sistem.
+                            Saat dibuka, pilih <b>Online</b> jika ada internet, atau <b>Offline</b> jika memakai server lokal.
                         </CardContent>
                     </Card>
-                </div>
-
-                <Alert className="bg-primary/5 border-primary/20 mt-4">
-                    <ShieldCheck className="size-4 text-primary" />
-                    <AlertTitle className="text-xs font-black uppercase">Verifikasi Akhir (Wajib)</AlertTitle>
-                    <AlertDescription className="text-[10px] text-muted-foreground">
-                        Setelah aplikasi berjalan, buka menu <b>Integrasi &gt; Simulator Control</b> di dashboard ini. Klik tombol <b>"Verifikasi Link"</b>. Lihat layar TV Anda, jika muncul pesan perizinan ADB, centang <b>"Always allow"</b> dan klik <b>OK</b>.
-                    </AlertDescription>
-                </Alert>
-            </section>
-
-            <Separator />
-
-            {/* SUB-SECTION 4.2: DEVELOPER TOOLS */}
-            <section className="space-y-6">
-                <div className="flex items-center gap-4">
-                    <div className="size-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-black shadow-xl shadow-slate-500/20 text-lg">4.2</div>
-                    <h3 className="text-2xl font-black uppercase tracking-tight text-primary">Update &amp; Rebuild (Developer)</h3>
-                </div>
-
-                <div className="grid gap-6 md:grid-cols-2">
-                    <Card className="border-primary/20 bg-primary/[0.02]">
-                        <CardHeader>
-                            <CardTitle className="text-sm font-black uppercase flex items-center gap-2">
-                                <RefreshCw className="size-4 text-primary" /> A. Update Script (.js &gt; .exe)
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <p className="text-xs text-muted-foreground leading-relaxed">
-                                Jika Anda mengubah kode di <code>bridge.js</code>, Anda harus mengompilasinya ulang agar perubahan aktif di Windows.
-                            </p>
-                            <div className="space-y-2">
-                                <p className="text-[10px] font-black uppercase text-muted-foreground">Langkah Rebuild:</p>
-                                <ol className="text-[10px] space-y-1 list-decimal list-inside text-muted-foreground">
-                                    <li>Buka <b>Task Manager</b>, matikan <code>xenon-bridge.exe</code>.</li>
-                                    <li>Buka CMD di folder <b>XenonSource</b>.</li>
-                                    <li>Jalankan perintah persiapan & kompilasi di bawah.</li>
-                                </ol>
-                            </div>
-                            <CodeBlock code="npm install -g pkg\nnpm init -y\nnpm install firebase-admin\npkg . --targets node18-win-x64 --output xenon-bridge.exe" />
-                        </CardContent>
-                    </Card>
-
                     <Card className="border-border">
-                        <CardHeader>
-                            <CardTitle className="text-sm font-black uppercase flex items-center gap-2">
-                                <FileText className="size-4 text-primary" /> B. Buat Installer (Setup.exe)
-                            </CardTitle>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-xs font-black uppercase text-primary">03. Kontrol Ikon</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-4">
-                            <p className="text-xs text-muted-foreground leading-relaxed">
-                                Gunakan <b>Inno Setup Compiler</b> untuk membungkus file <code>.exe</code>, folder <code>bin</code>, dan kunci akses menjadi satu installer.
-                            </p>
-                            <div className="p-4 rounded-xl bg-muted/50 border border-dashed border-border space-y-3">
-                                <div className="flex items-center gap-2">
-                                    <div className="size-5 rounded bg-primary flex items-center justify-center text-[10px] text-white font-bold">1</div>
-                                    <p className="text-[10px] font-bold">Buka Inno Setup</p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <div className="size-5 rounded bg-primary flex items-center justify-center text-[10px] text-white font-bold">2</div>
-                                    <p className="text-[10px] font-bold">Muat file <code>installer.iss</code></p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <div className="size-5 rounded bg-primary flex items-center justify-center text-[10px] text-white font-bold">3</div>
-                                    <p className="text-[10px] font-bold">Klik tombol <b>Build &gt; Compile</b></p>
-                                </div>
-                            </div>
-                            <Alert className="bg-amber-500/10 border-amber-500/20">
-                                <AlertDescription className="text-[9px] text-amber-700 italic">
-                                    Pastikan file <code>serviceAccountKey.json</code> sudah ada di folder XenonSource sebelum melakukan compile.
-                                </AlertDescription>
-                            </Alert>
+                        <CardContent className="text-xs text-muted-foreground leading-relaxed">
+                            Aplikasi berjalan di latar belakang. Klik kanan ikon Xenon di samping jam (System Tray) untuk ganti mode atau keluar.
                         </CardContent>
                     </Card>
                 </div>
             </section>
         </TabsContent>
 
-        {/* STEP 5: TROUBLESHOOTING */}
-        <TabsContent value="trouble" className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
+        {/* STEP 5: BUILD PRO GUIDES (THE IMPORTANT SCRIPTS) */}
+        <TabsContent value="build-pro" className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
+            <div className="flex items-center gap-4">
+                <div className="size-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center font-black shadow-xl shadow-emerald-500/20 text-lg">
+                    <Cpu className="size-6" />
+                </div>
+                <h3 className="text-2xl font-black uppercase tracking-tight">Membangun XenonBridge Pro V1.3.2</h3>
+            </div>
+
             <section className="space-y-6">
-                <div className="flex items-center gap-4">
-                    <div className="size-12 rounded-2xl bg-red-500 text-white flex items-center justify-center font-black shadow-xl shadow-red-500/20 text-lg">
-                        <AlertTriangle className="size-6" />
-                    </div>
-                    <h3 className="text-2xl font-black uppercase tracking-tight">Pusat Bantuan (Error Fixing)</h3>
-                </div>
+                <Card className="border-border bg-muted/20">
+                    <CardHeader>
+                        <CardTitle className="text-sm font-black uppercase text-primary flex items-center gap-2">
+                            <Code className="size-4" /> 1. Persiapan File Metadata (package.json)
+                        </CardTitle>
+                        <CardDescription>Simpan konten di bawah sebagai <code>package.json</code> di folder <b>XenonSource</b>.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <CodeBlock language="json" code={`{
+  "name": "xenon-bridge-pro",
+  "version": "1.3.2",
+  "main": "bridge.js",
+  "dependencies": {
+    "firebase-admin": "^12.0.0",
+    "systray2": "^2.3.0"
+  },
+  "pkg": {
+    "assets": [
+      "assets/**/*",
+      "bin/**/*"
+    ]
+  }
+}`} />
+                    </CardContent>
+                </Card>
 
-                <div className="grid gap-6 md:grid-cols-2">
-                    <Card className="border-red-500/20 bg-red-500/[0.02]">
-                        <CardHeader className="pb-3 border-b border-red-500/10">
-                            <CardTitle className="text-xs font-black uppercase tracking-widest text-red-600 flex items-center gap-2">
-                                <AlertTriangle className="size-4" /> Error 10060 (Timeout)
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-6 space-y-3 text-xs text-muted-foreground">
-                            <p className="font-bold text-foreground">Artinya: Laptop tidak bisa "melihat" TV.</p>
-                            <p><b>Solusi:</b></p>
-                            <ul className="list-disc list-inside space-y-1">
-                                <li>Pastikan Laptop dan TV di WiFi yang <b>sama</b>.</li>
-                                <li>Matikan <b>AP Isolation</b> di Router.</li>
-                            </ul>
-                        </CardContent>
-                    </Card>
+                <Card className="border-border">
+                    <CardHeader>
+                        <CardTitle className="text-sm font-black uppercase text-primary flex items-center gap-2">
+                            <Box className="size-4" /> 2. Skrip Kompilasi (.exe)
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <p className="text-xs text-muted-foreground">Buka CMD di folder <b>XenonSource</b> dan jalankan:</p>
+                        <CodeBlock code="npm install\npkg . --targets node18-win-x64 --output xenon-bridge.exe" />
+                    </CardContent>
+                </Card>
 
-                    <Card className="border-blue-500/20 bg-blue-500/[0.02]">
-                        <CardHeader className="pb-3 border-b border-blue-500/10">
-                            <CardTitle className="text-xs font-black uppercase tracking-widest text-blue-600 flex items-center gap-2">
-                                <Activity className="size-4" /> Cara Melihat Log (Debug Mode)
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-6 space-y-3 text-xs text-muted-foreground">
-                            <ol className="list-decimal list-inside space-y-2">
-                                <li>Matikan bridge di Task Manager.</li>
-                                <li>Jalankan <code>xenon-bridge.exe</code> langsung (bukan via shortcut vbs).</li>
-                                <li>Jendela CMD akan terbuka dan menampilkan status koneksi per detik.</li>
-                            </ol>
-                        </CardContent>
-                    </Card>
-                </div>
+                <Card className="border-emerald-500/20 bg-emerald-500/[0.01]">
+                    <CardHeader>
+                        <CardTitle className="text-sm font-black uppercase text-emerald-600 flex items-center gap-2">
+                            <FileText className="size-4" /> 3. Skrip Inno Setup Pro (installer.iss)
+                        </CardTitle>
+                        <CardDescription>Bungkus aplikasi Pro dengan dukungan System Tray.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <CodeBlock language="iss" code={`[Setup]
+AppName=XenonPlay Bridge Pro
+AppVersion=1.3.2
+DefaultDirName={autopf}\\XenonPlayBridge
+OutputDir=.
+OutputBaseFilename=XenonBridge_Pro_Setup
+Compression=lzma
+SolidCompression=yes
+SetupIconFile=assets\\app-icon.ico
+
+[Files]
+Source: "xenon-bridge.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\\*"; DestDir: "{app}\\bin"; Flags: ignoreversion recursesubdirs
+Source: "assets\\*"; DestDir: "{app}\\assets"; Flags: ignoreversion
+Source: "serviceAccountKey.json"; DestDir: "{app}"; Flags: ignoreversion
+
+[Icons]
+Name: "{commondesktop}\\XenonPlay Bridge"; Filename: "{app}\\xenon-bridge.exe"; IconFilename: "{app}\\assets\\app-icon.ico"
+Name: "{userstartup}\\XenonPlay Bridge"; Filename: "{app}\\xenon-bridge.exe"
+
+[Run]
+Filename: "{app}\\xenon-bridge.exe"; Description: "Jalankan XenonPlay Bridge Pro"; Flags: nowait postinstall skipifsilent`} />
+                    </CardContent>
+                </Card>
             </section>
         </TabsContent>
       </Tabs>
-
-      <div className="mt-12 p-8 rounded-[2.5rem] bg-muted/30 border border-border flex flex-col md:flex-row items-center gap-8 shadow-xl">
-          <div className="size-20 rounded-3xl bg-primary flex items-center justify-center text-white shrink-0 rotate-3 shadow-lg shadow-primary/20">
-              <Zap className="size-10 fill-current" />
-          </div>
-          <div className="space-y-2 text-center md:text-left">
-              <h4 className="font-black uppercase tracking-tight text-xl text-primary">Sistem Siap Operasi</h4>
-              <p className="text-xs text-muted-foreground leading-relaxed max-w-xl">
-                  Semua perintah mulai dari Power ON hingga Power OFF akan dilakukan secara otomatis oleh sistem melalui <b>Xenon Bridge</b> yang berjalan tenang di latar belakang.
-              </p>
-          </div>
-      </div>
     </div>
   );
 }
-
-    

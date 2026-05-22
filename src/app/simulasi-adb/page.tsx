@@ -30,7 +30,8 @@ import {
     BookText,
     WifiOff,
     Cpu,
-    Shield
+    Shield,
+    Settings2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -76,249 +77,207 @@ export default function SimulasiAdbPage() {
 
   const BRIDGE_CODE = `
 /**
- * XENONPLAY NEXUS - XPBridge V1.3.0 FINAL (Enterprise Stability)
- * Build: 2026.02.13 (Stable Release)
- * Hybrid Cloud + Local Watchdog + Auto Healing Engine
- * 
- * Fitur Baru: Zero-Terminal Offline Mode
+ * XENONPLAY NEXUS - XPBridge V1.3.2 PRO (Enterprise Grade)
+ * Build: 2026.02.14
+ * Features: Startup Mode Selector, System Tray Controller, Hot-Swap Engine
+ * No Terminal Required.
  */
 
 const admin = require('firebase-admin');
-const util = require('util');
-const exec = util.promisify(require('child_process').exec);
+const { exec, execSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const SysTray = require('systray2').default;
 
-// --- ⚙️ CONFIGURATION ---
-const HEARTBEAT_INTERVAL = 30000; 
-const WATCHDOG_INTERVAL = 5000;  
-const MAX_RETRIES = 2;           
+// --- ⚙️ GLOBAL STATE ---
+let currentMode = null; // 'online' | 'offline'
+let isInitialized = false;
+let tray = null;
+let watchdogTimer = null;
+let heartbeatTimer = null;
+const localSessions = new Map();
+const commandQueue = [];
+let isProcessingQueue = false;
 
-// --- 🏠 FILE PATHS ---
 const isPkg = !!process.pkg;
 const baseDir = isPkg ? path.dirname(process.execPath) : __dirname;
-const logFile = path.join(baseDir, "bridge.log");
+const adbPath = path.join(baseDir, 'bin', 'adb.exe');
+const adbCmd = fs.existsSync(adbPath) ? \`"\${adbPath}"\` : 'adb';
 
 function log(msg) {
-    const timestamp = new Date().toLocaleString('id-ID');
-    const fullMsg = \`[\${timestamp}] \${msg}\`;
-    console.log(fullMsg);
-    try { 
-        if (fs.existsSync(logFile) && fs.statSync(logFile).size > 2000000) {
-            fs.renameSync(logFile, logFile + ".old");
-        }
-        fs.appendFileSync(logFile, fullMsg + "\\n"); 
-    } catch (e) {}
+    const t = new Date().toLocaleString('id-ID');
+    const m = \`[\${t}] [\${currentMode?.toUpperCase() || 'SYS'}] \${msg}\`;
+    console.log(m);
+    try { fs.appendFileSync(path.join(baseDir, "bridge.log"), m + "\\n"); } catch(e) {}
 }
 
-const localAdbPath = path.join(baseDir, 'bin', 'adb.exe');
-let adbCmd = 'adb';
-if (fs.existsSync(localAdbPath)) adbCmd = \`"\${localAdbPath}"\`;
-
-// --- 🛡️ SELF-HEALING ADB ---
-async function restartAdb() {
-    log("🔄 Inisialisasi ADB Server...");
+// --- 🖥️ STARTUP MODE SELECTOR (PowerShell UI) ---
+function showStartupSelector() {
+    log("Awaiting user mode selection...");
+    const psScript = \`
+      Add-Type -AssemblyName Microsoft.VisualBasic
+      $result = [Microsoft.VisualBasic.Interaction]::MsgBox('Pilih Mode Operasional XenonBridge:\\n\\nYES = Mode Online (Cloud)\\nNO = Mode Offline (Local Server)', 'YesNoCancel,Information,DefaultButton1', 'XenonBridge Pro V1.3.2')
+      Write-Output $result
+    \`;
     try {
-        await exec(\`\${adbCmd} kill-server\`).catch(() => {});
-        await exec(\`\${adbCmd} start-server\`);
-        log("✅ ADB Server Siap.");
-    } catch (e) { log("⚠️ Error restart ADB: " + e.message); }
+        const result = execSync(\`powershell -Command "\${psScript}"\`).toString().trim();
+        if (result === 'Yes') return 'online';
+        if (result === 'No') return 'offline';
+        process.exit(0);
+    } catch (e) { return 'online'; }
 }
 
-// --- 📡 FIREBASE INITIALIZATION (WITH AUTO-OFFLINE) ---
-const serviceAccountPath = path.join(baseDir, "serviceAccountKey.json");
-const offlineFlagPath = path.join(baseDir, "OFFLINE_MODE");
+// --- 📡 FIREBASE ENGINE (With Hot-Swap Support) ---
+async function initFirebase(mode) {
+    currentMode = mode;
+    log(\`Switching to \${mode}...\`);
+    
+    // Clean up old instance if exists
+    if (admin.apps.length) {
+        log("Cleaning up previous session...");
+        await admin.app().delete();
+        clearInterval(watchdogTimer);
+        clearInterval(heartbeatTimer);
+        localSessions.clear();
+    }
 
-// Deteksi Mode Offline Otomatis
-if (fs.existsSync(offlineFlagPath) || process.env.FIRESTORE_EMULATOR_HOST) {
-    process.env.FIRESTORE_EMULATOR_HOST = "localhost:8080";
-    process.env.FIREBASE_AUTH_EMULATOR_HOST = "localhost:9099";
-    admin.initializeApp({ projectId: "studio-6812150142-ab408" });
-    log("📍 STATUS: MODE SERVER LOKAL AKTIF (OFFLINE MODE)");
-} else {
-    if (!fs.existsSync(serviceAccountPath)) {
-        log("⚠️ serviceAccountKey.json tidak ditemukan!");
-        log("📍 STATUS: MENCOBA MENYAMBUNG KE SERVER LOKAL (DEFAULT)...");
+    if (mode === 'offline') {
         process.env.FIRESTORE_EMULATOR_HOST = "localhost:8080";
         process.env.FIREBASE_AUTH_EMULATOR_HOST = "localhost:9099";
         admin.initializeApp({ projectId: "studio-6812150142-ab408" });
     } else {
-        const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
-        admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-        log("📡 STATUS: MODE CLOUD ONLINE (PRODUCTION)");
+        delete process.env.FIRESTORE_EMULATOR_HOST;
+        delete process.env.FIREBASE_AUTH_EMULATOR_HOST;
+        const saPath = path.join(baseDir, "serviceAccountKey.json");
+        if (!fs.existsSync(saPath)) throw new Error("Cloud Key Missing!");
+        admin.initializeApp({ credential: admin.credential.cert(JSON.parse(fs.readFileSync(saPath, 'utf8'))) });
     }
-}
-const db = admin.firestore();
 
-// --- 🧠 LOCAL BRAIN (RAM STORAGE) ---
-const localSessions = new Map(); 
-const commandQueue = [];
-let isProcessingQueue = false;
-
-// --- ⚡ COMMAND EXECUTION ENGINE ---
-async function runAdb(cmd, ip, retry = 0) {
-    try {
-        const fullCmd = \`\${adbCmd} -s \${ip}:5555 \${cmd}\`;
-        return await exec(fullCmd, { windowsHide: true, timeout: 12000 });
-    } catch (e) {
-        if (retry < MAX_RETRIES) {
-            log(\`🔄 Mencoba ulang... (\${retry+1}/\${MAX_RETRIES}) ke \${ip}\`);
-            await new Promise(r => setTimeout(r, 800));
-            return runAdb(cmd, ip, retry + 1);
-        }
-        throw e;
-    }
+    startCoreLoop();
+    updateTrayMenu();
 }
 
-async function connectTv(ip) {
-    try {
-        const { stdout } = await exec(\`\${adbCmd} devices\`);
-        if (stdout.includes(\`\${ip}:5555\`) && !stdout.includes("offline")) return true;
-        
-        log(\`🔗 Menyambung ke \${ip}...\`);
-        const { stdout: connOut } = await exec(\`\${adbCmd} connect \${ip}:5555\`, { timeout: 8000 });
-        return connOut.includes("connected");
-    } catch (e) {
-        log(\`❌ Koneksi Gagal \${ip}: \${e.message}\`);
-        return false;
-    }
+// --- 📦 SYSTEM TRAY CONTROLLER ---
+function initTray() {
+    const menu = {
+        icon: fs.readFileSync(path.join(baseDir, 'assets', 'app-icon.ico')).toString('base64'),
+        title: "XenonBridge",
+        tooltip: "XenonPlay Controller Pro",
+        items: [
+            { title: "Status: Menunggu...", enabled: false },
+            { title: "---", enabled: false },
+            { title: "🚀 Ganti ke Mode Online", checked: false },
+            { title: "🏠 Ganti ke Mode Offline", checked: false },
+            { title: "---", enabled: false },
+            { title: "🔄 Restart ADB Server" },
+            { title: "❌ Keluar Aplikasi" }
+        ]
+    };
+
+    tray = new SysTray({ menu, debug: false, copyDir: true });
+    tray.onClick(action => {
+        if (action.item.title.includes("Online")) initFirebase('online');
+        else if (action.item.title.includes("Offline")) initFirebase('offline');
+        else if (action.item.title.includes("Restart ADB")) restartAdb();
+        else if (action.item.title.includes("Keluar")) process.exit(0);
+    });
 }
 
-async function executeAction(data) {
-    const { stationId, ip, action, hdmiIndex, name } = data;
-    if (!ip) return;
+function updateTrayMenu() {
+    if (!tray) return;
+    const isOnline = currentMode === 'online';
+    tray.sendAction({
+        type: 'update-menu',
+        menu: {
+            items: [
+                { title: \`📍 Mode: \${currentMode.toUpperCase()}\`, enabled: false },
+                { title: "---", enabled: false },
+                { title: "🚀 Ganti ke Mode Online", checked: isOnline },
+                { title: "🏠 Ganti ke Mode Offline", checked: !isOnline },
+                { title: "---", enabled: false },
+                { title: "🔄 Restart ADB Server" },
+                { title: "❌ Keluar Aplikasi" }
+            ]
+        }
+    });
+}
 
-    const ok = await connectTv(ip);
-    if (!ok && action !== 'ping') return;
+// --- ⚡ CORE OPERATIONAL LOOP ---
+function startCoreLoop() {
+    const db = admin.firestore();
+    
+    // Local Watchdog
+    watchdogTimer = setInterval(() => {
+        const now = Date.now();
+        for (const [id, s] of localSessions.entries()) {
+            if (s.endTime && now >= s.endTime) {
+                log(\`Watchdog triggered for \${s.name}\`);
+                commandQueue.push({ ...s, action: 'stop', stationId: id });
+                localSessions.delete(id);
+                db.collection('stations').doc(id).update({ is_active: false, end_time: null, last_action: 'stop' }).catch(() => {});
+                processQueue();
+            }
+        }
+    }, 5000);
 
-    try {
-        if (action === 'start') {
-            log(\`🚀 [Burst Wakeup] Mengaktifkan \${name}\`);
-            await runAdb('shell "input keyevent 224"', ip).catch(() => {});
-            await runAdb('shell "input keyevent 224"', ip).catch(() => {});
-            
-            const hwIndex = 4 + (parseInt(hdmiIndex) || 1);
-            const intent = \`am start -n com.mediatek.wwtv.tvcenter/com.mediatek.wwtv.tvcenter.nav.TurnkeyUiMainActivity -d content://android.media.tv/passthrough/com.mediatek.tvinput/.hdmi.HDMIInputService/HW\${hwIndex}\`;
-            await runAdb(\`shell "\${intent}"\`, ip);
-        } 
-        else if (action === 'stop') {
-            log(\`⏹️ [Auto Stop] Mematikan \${name}\`);
-            await runAdb('shell "input keyevent 3"', ip).catch(() => {}); 
-            await runAdb('shell "input keyevent 223"', ip).catch(() => {}); 
-        }
-        else if (action === 'ping') {
-            await runAdb('shell "input keyevent 0"', ip).catch(() => {});
-        }
-        else if (action === 'wake') await runAdb('shell "input keyevent 224"', ip);
-        else if (action === 'sleep') await runAdb('shell "input keyevent 223"', ip);
-        else if (action === 'home') await runAdb('shell "input keyevent 3"', ip);
-        else if (action === 'hdmi') {
-            const hwIndex = 4 + (parseInt(hdmiIndex) || 1);
-            const intent = \`am start -n com.mediatek.wwtv.tvcenter/com.mediatek.wwtv.tvcenter.nav.TurnkeyUiMainActivity -d content://android.media.tv/passthrough/com.mediatek.tvinput/.hdmi.HDMIInputService/HW\${hwIndex}\`;
-            await runAdb(\`shell "\${intent}"\`, ip);
-        }
-        else if (action === 'vol_up') await runAdb('shell "input keyevent 24"', ip);
-        else if (action === 'vol_down') await runAdb('shell "input keyevent 25"', ip);
-        else if (action === 'mute') await runAdb('shell "input keyevent 164"', ip);
-        
-        log(\`✅ [\${name}] Berhasil: \${action.toUpperCase()}\`);
-    } catch (err) {
-        log(\`❌ [\${name}] Gagal \${action}: \${err.message}\`);
-    }
+    // Heartbeat & Firestore Listener
+    db.collection('stations').onSnapshot(snap => {
+        snap.docChanges().forEach(change => {
+            const data = change.doc.data();
+            const id = change.doc.id;
+            if (data.is_active && data.end_time && !data.is_paused) {
+                localSessions.set(id, { endTime: data.end_time, ip: data.ipAddress, name: data.name, hdmiIndex: data.hdmiIndex || 1 });
+            } else { localSessions.delete(id); }
+
+            if (data.last_action) {
+                commandQueue.push({ stationId: id, ip: data.ipAddress, action: data.last_action, name: data.name, hdmiIndex: data.hdmiIndex || 1 });
+                change.doc.ref.update({ last_action: null }).catch(() => {});
+                processQueue();
+            }
+        });
+    });
+}
+
+// --- 🛠️ ADB EXECUTION ---
+async function restartAdb() {
+    log("Restarting ADB...");
+    exec(\`\${adbCmd} kill-server && \${adbCmd} start-server\`);
 }
 
 async function processQueue() {
-    if (isProcessingQueue || commandQueue.length === 0) return;
+    if (isProcessingQueue || !commandQueue.length) return;
     isProcessingQueue = true;
     while (commandQueue.length > 0) {
         const cmd = commandQueue.shift();
-        await executeAction(cmd);
+        try {
+            await exec(\`\${adbCmd} connect \${cmd.ip}:5555\`);
+            if (cmd.action === 'start') {
+                exec(\`\${adbCmd} -s \${cmd.ip}:5555 shell "input keyevent 224 && input keyevent 224"\`);
+                const hw = 4 + (parseInt(cmd.hdmiIndex) || 1);
+                const intent = \`am start -n com.mediatek.wwtv.tvcenter/com.mediatek.wwtv.tvcenter.nav.TurnkeyUiMainActivity -d content://android.media.tv/passthrough/com.mediatek.tvinput/.hdmi.HDMIInputService/HW\${hw}\`;
+                exec(\`\${adbCmd} -s \${cmd.ip}:5555 shell "\${intent}"\`);
+            } else if (cmd.action === 'stop') {
+                exec(\`\${adbCmd} -s \${cmd.ip}:5555 shell "input keyevent 3 && input keyevent 223"\`);
+            }
+            log(\`Success: \${cmd.action} on \${cmd.name}\`);
+        } catch(e) { log(\`Error on \${cmd.name}: \${e.message}\`); }
     }
     isProcessingQueue = false;
 }
 
-setInterval(async () => {
-    const now = Date.now();
-    for (const [id, session] of localSessions.entries()) {
-        if (session.endTime && now >= session.endTime) {
-            log(\`⏰ [Watchdog] Sesi \${session.name} habis. Eksekusi lokal dimulai...\`);
-            commandQueue.push({ ...session, action: 'stop', stationId: id });
-            localSessions.delete(id);
-            processQueue();
-            
-            db.collection('stations').doc(id).update({
-                is_active: false,
-                is_paused: false,
-                end_time: null,
-                last_action: 'stop',
-                last_action_timestamp: now
-            }).catch(() => {});
-        }
-    }
-}, WATCHDOG_INTERVAL);
-
-setInterval(async () => {
-    try {
-        const snapshot = await db.collection('stations').get();
-        const batch = db.batch();
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            batch.update(doc.ref, { last_heartbeat: admin.firestore.FieldValue.serverTimestamp() });
-            
-            if (data.is_active && !data.is_paused) {
-                commandQueue.push({ stationId: doc.id, ip: data.ipAddress, action: 'ping', name: data.name });
-            }
-        });
-        await batch.commit();
-        processQueue();
-        log("📡 Heartbeat OK.");
-    } catch (e) { log("⚠️ Koneksi database terhambat."); }
-}, HEARTBEAT_INTERVAL);
-
-db.collection('stations').onSnapshot(snapshot => {
-    snapshot.docChanges().forEach(change => {
-        const data = change.doc.data();
-        const id = change.doc.id;
-
-        if (data.is_active && data.end_time && !data.is_paused) {
-            localSessions.set(id, { 
-                endTime: data.end_time, 
-                ip: data.ipAddress, 
-                hdmiIndex: data.hdmiIndex || 1, 
-                name: data.name 
-            });
-        } else if (data.is_paused || !data.is_active) {
-            localSessions.delete(id);
-        }
-
-        if (data.last_action) {
-            commandQueue.push({
-                stationId: id, ip: data.ipAddress,
-                action: data.last_action, hdmiIndex: data.hdmiIndex || 1, name: data.name
-            });
-            change.doc.ref.update({ last_action: null }).catch(() => {});
-            processQueue();
-        }
-    });
-}, err => {
-    log("❌ Critical Error: " + err.message);
-    process.exit(1);
-});
-
-log("==================================================");
-log("🚀 XPBRIDGE V1.3.0 STABLE - ZERO-TERMINAL READY");
-log("🛡️ Local Watchdog: AKTIF");
-log("🛡️ Burst Wakeup: AKTIF");
-log("==================================================");
-
-restartAdb();
+// --- 🚀 BOOTSTRAP ---
+(async () => {
+    initTray();
+    const mode = showStartupSelector();
+    try { await initFirebase(mode); } catch(e) { log("Boot Error: " + e.message); }
+})();
   `;
 
   const handleCopyCode = () => {
       navigator.clipboard.writeText(BRIDGE_CODE.trim());
       setHasCopied(true);
       setTimeout(() => setHasCopied(false), 2000);
-      toast({ title: "XPBridge V1.3.0 Tersalin!", variant: "success" });
+      toast({ title: "XPBridge Pro V1.3.2 Tersalin!", variant: "success" });
   };
 
   const handleAction = async (stationId: string, action: string) => {
@@ -349,7 +308,7 @@ restartAdb();
               last_action: 'start',
               last_action_timestamp: ts
           });
-          toast({ title: "Simulasi Dimulai", description: `Perintah dikirim ke Bridge.`, variant: "success" });
+          toast({ title: "Simulasi Dimulai", description: `Perintah dikirim ke Bridge Pro.`, variant: "success" });
       } catch (err: any) {
           toast({ title: "Gagal", description: err.message, variant: "destructive" });
       }
@@ -361,22 +320,22 @@ restartAdb();
         <div>
             <div className="flex items-center gap-2 mb-2">
                 <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
-                    <Shield className="size-4" />
+                    <ShieldCheck className="size-4" />
                 </div>
-                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Enterprise Stability Engine</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Bridge Pro Controller</span>
             </div>
-            <h1 className="text-4xl font-black uppercase tracking-tight">Simulator <span className="text-primary">Control</span></h1>
-            <p className="text-muted-foreground text-sm font-medium">Otomatisasi V1.3 tetap mematikan TV meskipun tanpa internet.</p>
+            <h1 className="text-4xl font-black uppercase tracking-tight">Simulator <span className="text-primary">Master</span></h1>
+            <p className="text-muted-foreground text-sm font-medium">Versi Pro: Pindah mode tanpa restart & kontrol system tray.</p>
         </div>
         <div className="flex flex-wrap gap-2 justify-end">
             <Link href="/panduan">
                 <Button variant="outline" className="font-black uppercase text-[10px] tracking-widest gap-2 h-12 px-6 rounded-xl border-primary/20 text-primary">
-                    <BookText className="size-4" /> Panduan Instalasi
+                    <BookText className="size-4" /> Panduan Build Pro
                 </Button>
             </Link>
             <Button onClick={handleCopyCode} className="font-black uppercase text-[10px] tracking-widest gap-2 h-12 px-6 rounded-xl shadow-xl shadow-primary/30">
-                {hasCopied ? <Check className="size-4" /> : <Terminal className="size-4" />}
-                {hasCopied ? 'Tersalin' : 'Ambil Master Bridge V1.3.0'}
+                {hasCopied ? <Check className="size-4" /> : <Settings2 className="size-4" />}
+                {hasCopied ? 'Tersalin' : 'Ambil Master Pro V1.3.2'}
             </Button>
         </div>
       </header>
@@ -407,7 +366,7 @@ restartAdb();
                                       "text-[9px] font-black uppercase px-2 h-5 border-none",
                                       isOnline ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" : "bg-red-500/10 text-red-500"
                                   )}>
-                                      {isOnline ? 'BRIDGE ONLINE' : 'OFFLINE'}
+                                      {isOnline ? 'PRO ONLINE' : 'OFFLINE'}
                                   </Badge>
                               </div>
                           </CardHeader>
@@ -415,7 +374,7 @@ restartAdb();
                               <div className="space-y-4">
                                   <div className="flex items-center gap-2 text-primary">
                                       <Zap className="size-3.5 fill-current" />
-                                      <p className="text-[10px] font-black uppercase tracking-widest">Kontrol Sesi Cepat</p>
+                                      <p className="text-[10px] font-black uppercase tracking-widest">Tes Cepat</p>
                                   </div>
                                   <div className="flex gap-2">
                                       <div className="relative flex-1">
@@ -433,7 +392,7 @@ restartAdb();
                                           disabled={station.is_active}
                                           onClick={() => handleSimulateStart(station.id)}
                                       >
-                                          <PlayCircle className="mr-2 h-4 w-4" /> Start
+                                          Start
                                       </Button>
                                   </div>
                               </div>
@@ -447,11 +406,6 @@ restartAdb();
                                       <Button variant="outline" size="sm" className="h-10 flex flex-col gap-1 text-red-600 border-red-500/20" onClick={() => handleAction(station.id, 'sleep')}><Moon className="size-3.5" /><span className="text-[8px] font-black">SLEEP</span></Button>
                                       <Button variant="outline" size="sm" className="h-10 flex flex-col gap-1" onClick={() => handleAction(station.id, 'home')}><Home className="size-3.5" /><span className="text-[8px] font-black">HOME</span></Button>
                                       <Button variant="outline" size="sm" className="h-10 flex flex-col gap-1" onClick={() => handleAction(station.id, 'hdmi')}><Zap className="size-3.5" /><span className="text-[8px] font-black">HDMI</span></Button>
-                                      
-                                      <Button variant="outline" size="sm" className="h-10 flex flex-col gap-1" onClick={() => handleAction(station.id, 'vol_up')}><Plus className="size-3.5" /><span className="text-[8px] font-black">VOL+</span></Button>
-                                      <Button variant="outline" size="sm" className="h-10 flex flex-col gap-1" onClick={() => handleAction(station.id, 'vol_down')}><Minus className="size-3.5" /><span className="text-[8px] font-black">VOL-</span></Button>
-                                      <Button variant="outline" size="sm" className="h-10 flex flex-col gap-1" onClick={() => handleAction(station.id, 'mute')}><VolumeX className="size-3.5" /><span className="text-[8px] font-black">MUTE</span></Button>
-                                      <Button variant="outline" size="sm" className="h-10 flex flex-col gap-1 opacity-30" disabled><Activity className="size-3.5" /><span className="text-[8px] font-black">---</span></Button>
                                   </div>
                               </div>
                           </CardContent>
@@ -464,53 +418,26 @@ restartAdb();
               <Card className="bg-primary/5 border-primary/20 shadow-xl overflow-hidden rounded-3xl relative">
                   <CardHeader className="relative z-10">
                       <div className="p-3 rounded-2xl bg-primary text-white w-fit mb-4">
-                        <Shield className="size-8" />
+                        <ShieldCheck className="size-8" />
                       </div>
-                      <CardTitle className="text-xl font-black uppercase">Stability <span className="text-primary">V1.3.0</span></CardTitle>
-                      <CardDescription className="text-muted-foreground text-xs mt-1">Sistem perlindungan operasional tingkat tinggi.</CardDescription>
+                      <CardTitle className="text-xl font-black uppercase">XPBridge <span className="text-primary">Pro</span></CardTitle>
+                      <CardDescription className="text-muted-foreground text-xs mt-1">Satu Aplikasi, Kontrol Penuh.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-5 pt-0 relative z-10">
                       <div className="space-y-3">
                           <div className="flex items-center gap-3">
                               <div className="size-6 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600"><Check className="size-3.5" /></div>
-                              <p className="text-[10px] font-bold uppercase">Local Watchdog Active</p>
+                              <p className="text-[10px] font-bold uppercase">Hot-Swap Online/Offline</p>
                           </div>
                           <div className="flex items-center gap-3">
                               <div className="size-6 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600"><Check className="size-3.5" /></div>
-                              <p className="text-[10px] font-bold uppercase">Burst Wakeup Enabled</p>
+                              <p className="text-[10px] font-bold uppercase">No Terminal Required</p>
                           </div>
                           <div className="flex items-center gap-3">
                               <div className="size-6 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600"><Check className="size-3.5" /></div>
-                              <p className="text-[10px] font-bold uppercase">Intelligent Keep-Alive</p>
+                              <p className="text-[10px] font-bold uppercase">System Tray Menu</p>
                           </div>
                       </div>
-                      
-                      <Separator />
-                      
-                      <div className="bg-amber-500/10 p-3 rounded-xl border border-amber-500/20">
-                          <AlertCircle className="size-3 text-amber-500 shrink-0 mb-1" />
-                          <p className="text-[9px] text-amber-700 leading-tight">
-                              Pastikan Anda telah menyalin dan menjalankan skrip Master Bridge terbaru di laptop kasir untuk mengaktifkan fitur perlindungan offline.
-                          </p>
-                      </div>
-                  </CardContent>
-              </Card>
-
-              <Card className="bg-slate-900 border-none shadow-2xl text-slate-300 overflow-hidden rounded-3xl relative">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2" />
-                  <CardHeader className="relative z-10">
-                      <Cpu className="size-8 text-primary mb-4" />
-                      <CardTitle className="text-xl font-black uppercase text-white">Performance <span className="text-primary">Optimized</span></CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3 relative z-10 pt-0">
-                      <p className="text-[10px] leading-relaxed text-slate-400">
-                          Mesin V1.3 menggunakan cache koneksi untuk meminimalkan beban CPU laptop kasir hingga &lt; 1% pada kondisi idle.
-                      </p>
-                      <Link href="/docs/OFFLINE_SETUP_GUIDE.md" target="_blank" className="block mt-2">
-                          <Button variant="outline" className="w-full h-10 font-bold uppercase text-[10px] tracking-widest border-white/10 hover:bg-white/5 text-white">
-                              Detail Optimasi
-                          </Button>
-                      </Link>
                   </CardContent>
               </Card>
           </div>
@@ -518,5 +445,3 @@ restartAdb();
     </div>
   );
 }
-
-    
