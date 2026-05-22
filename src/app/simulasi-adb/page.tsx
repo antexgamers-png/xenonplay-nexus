@@ -15,23 +15,12 @@ import {
     Power, 
     Moon, 
     Home, 
-    Terminal, 
-    Activity, 
     Check,
-    Laptop,
-    PlayCircle,
-    Timer,
-    VolumeX,
-    Plus,
-    Minus,
-    FileCode,
-    AlertCircle,
-    MonitorPlay,
     BookText,
-    WifiOff,
-    Cpu,
-    Shield,
-    Settings2
+    Settings2,
+    Timer,
+    Terminal,
+    Loader2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -40,7 +29,7 @@ import { Separator } from '@/components/ui/separator';
 import { useShift } from '@/components/providers/shift-provider';
 import Link from 'next/link';
 
-export default function SimulasiAdbPage() {
+export default function AdbSimulatorPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
   const { activeShift, setIsOpeningDialog } = useShift();
@@ -66,7 +55,7 @@ export default function SimulasiAdbPage() {
     if (!activeShift) {
       toast({
         title: "Shift Belum Dibuka",
-        description: "Harap buka shift kasir terlebih dahulu untuk menjalankan simulator.",
+        description: "Harap buka shift kasir terlebih dahulu.",
         variant: "destructive"
       });
       setIsOpeningDialog(true);
@@ -75,26 +64,28 @@ export default function SimulasiAdbPage() {
     return true;
   };
 
-  const BRIDGE_CODE = `
+  const BRIDGE_CODE_PRO = `
 /**
- * XENONPLAY NEXUS - XPBridge V1.3.2 PRO (Enterprise Grade)
+ * XENONPLAY NEXUS - XPBridge V1.3.2 PRO (Ultimate Stability)
+ * Integrasi: Ironclad ADB Core + System Tray UI + Hot-Swap Engine
  * Build: 2026.02.14
- * Features: Startup Mode Selector, System Tray Controller, Hot-Swap Engine
- * No Terminal Required.
  */
 
 const admin = require('firebase-admin');
 const { exec, execSync } = require('child_process');
+const util = require('util');
 const path = require('path');
 const fs = require('fs');
 const SysTray = require('systray2').default;
 
+const execAsync = util.promisify(exec);
+
 // --- ⚙️ GLOBAL STATE ---
-let currentMode = null; // 'online' | 'offline'
-let isInitialized = false;
+let currentMode = null; 
 let tray = null;
 let watchdogTimer = null;
 let heartbeatTimer = null;
+let unsubscribeFirestore = null;
 const localSessions = new Map();
 const commandQueue = [];
 let isProcessingQueue = false;
@@ -111,35 +102,32 @@ function log(msg) {
     try { fs.appendFileSync(path.join(baseDir, "bridge.log"), m + "\\n"); } catch(e) {}
 }
 
-// --- 🖥️ STARTUP MODE SELECTOR (PowerShell UI) ---
+// --- 🖥️ STARTUP MODE SELECTOR ---
 function showStartupSelector() {
-    log("Awaiting user mode selection...");
     const psScript = \`
       Add-Type -AssemblyName Microsoft.VisualBasic
-      $result = [Microsoft.VisualBasic.Interaction]::MsgBox('Pilih Mode Operasional XenonBridge:\\n\\nYES = Mode Online (Cloud)\\nNO = Mode Offline (Local Server)', 'YesNoCancel,Information,DefaultButton1', 'XenonBridge Pro V1.3.2')
+      $result = [Microsoft.VisualBasic.Interaction]::MsgBox('Gunakan Mode Online (Cloud)?\\n\\nYES = Online (Butuh Internet)\\nNO = Offline (Gunakan Server Lokal)', 'YesNo,Information,DefaultButton1', 'XenonBridge Pro V1.3.2')
       Write-Output $result
     \`;
     try {
         const result = execSync(\`powershell -Command "\${psScript}"\`).toString().trim();
-        if (result === 'Yes') return 'online';
-        if (result === 'No') return 'offline';
-        process.exit(0);
+        return result === 'Yes' ? 'online' : 'offline';
     } catch (e) { return 'online'; }
 }
 
-// --- 📡 FIREBASE ENGINE (With Hot-Swap Support) ---
+// --- 📡 FIREBASE ENGINE (Hot-Swap Enabled) ---
 async function initFirebase(mode) {
-    currentMode = mode;
-    log(\`Switching to \${mode}...\`);
+    if (currentMode === mode && admin.apps.length) return;
     
-    // Clean up old instance if exists
-    if (admin.apps.length) {
-        log("Cleaning up previous session...");
-        await admin.app().delete();
-        clearInterval(watchdogTimer);
-        clearInterval(heartbeatTimer);
-        localSessions.clear();
-    }
+    currentMode = mode;
+    log(\`Switching to \${mode} Mode...\`);
+    
+    // Clean up
+    if (unsubscribeFirestore) unsubscribeFirestore();
+    if (admin.apps.length) await admin.app().delete();
+    clearInterval(watchdogTimer);
+    clearInterval(heartbeatTimer);
+    localSessions.clear();
 
     if (mode === 'offline') {
         process.env.FIRESTORE_EMULATOR_HOST = "localhost:8080";
@@ -149,8 +137,13 @@ async function initFirebase(mode) {
         delete process.env.FIRESTORE_EMULATOR_HOST;
         delete process.env.FIREBASE_AUTH_EMULATOR_HOST;
         const saPath = path.join(baseDir, "serviceAccountKey.json");
-        if (!fs.existsSync(saPath)) throw new Error("Cloud Key Missing!");
-        admin.initializeApp({ credential: admin.credential.cert(JSON.parse(fs.readFileSync(saPath, 'utf8'))) });
+        if (!fs.existsSync(saPath)) {
+            log("Error: serviceAccountKey.json not found!");
+            return;
+        }
+        admin.initializeApp({ 
+            credential: admin.credential.cert(JSON.parse(fs.readFileSync(saPath, 'utf8'))) 
+        });
     }
 
     startCoreLoop();
@@ -159,15 +152,16 @@ async function initFirebase(mode) {
 
 // --- 📦 SYSTEM TRAY CONTROLLER ---
 function initTray() {
+    const iconPath = path.join(baseDir, 'assets', 'app-icon.ico');
     const menu = {
-        icon: fs.readFileSync(path.join(baseDir, 'assets', 'app-icon.ico')).toString('base64'),
+        icon: fs.existsSync(iconPath) ? fs.readFileSync(iconPath).toString('base64') : "",
         title: "XenonBridge",
         tooltip: "XenonPlay Controller Pro",
         items: [
-            { title: "Status: Menunggu...", enabled: false },
+            { title: "Status: Menghubungkan...", enabled: false },
             { title: "---", enabled: false },
-            { title: "🚀 Ganti ke Mode Online", checked: false },
-            { title: "🏠 Ganti ke Mode Offline", checked: false },
+            { title: "🚀 Mode Online (Cloud)", checked: false },
+            { title: "🏠 Mode Offline (Lokal)", checked: false },
             { title: "---", enabled: false },
             { title: "🔄 Restart ADB Server" },
             { title: "❌ Keluar Aplikasi" }
@@ -190,10 +184,10 @@ function updateTrayMenu() {
         type: 'update-menu',
         menu: {
             items: [
-                { title: \`📍 Mode: \${currentMode.toUpperCase()}\`, enabled: false },
+                { title: \`📍 Aktif: \${currentMode.toUpperCase()}\`, enabled: false },
                 { title: "---", enabled: false },
-                { title: "🚀 Ganti ke Mode Online", checked: isOnline },
-                { title: "🏠 Ganti ke Mode Offline", checked: !isOnline },
+                { title: "🚀 Mode Online (Cloud)", checked: isOnline },
+                { title: "🏠 Mode Offline (Lokal)", checked: !isOnline },
                 { title: "---", enabled: false },
                 { title: "🔄 Restart ADB Server" },
                 { title: "❌ Keluar Aplikasi" }
@@ -202,35 +196,60 @@ function updateTrayMenu() {
     });
 }
 
-// --- ⚡ CORE OPERATIONAL LOOP ---
+// --- ⚡ CORE LOOP (Mesin ADB Stabil V1.3.0) ---
 function startCoreLoop() {
     const db = admin.firestore();
     
-    // Local Watchdog
+    // Watchdog Lokal (Fail-safe jika internet mati)
     watchdogTimer = setInterval(() => {
         const now = Date.now();
         for (const [id, s] of localSessions.entries()) {
             if (s.endTime && now >= s.endTime) {
-                log(\`Watchdog triggered for \${s.name}\`);
+                log(\`Watchdog: Sesi \${s.name} berakhir.\`);
                 commandQueue.push({ ...s, action: 'stop', stationId: id });
                 localSessions.delete(id);
-                db.collection('stations').doc(id).update({ is_active: false, end_time: null, last_action: 'stop' }).catch(() => {});
+                db.collection('stations').doc(id).update({ 
+                    is_active: false, 
+                    end_time: null, 
+                    last_action: 'stop' 
+                }).catch(() => {});
                 processQueue();
             }
         }
     }, 5000);
 
-    // Heartbeat & Firestore Listener
-    db.collection('stations').onSnapshot(snap => {
+    // Heartbeat: Lapor status ke dashboard
+    heartbeatTimer = setInterval(() => {
+        db.collection('stations').get().then(snap => {
+            snap.forEach(doc => {
+                doc.ref.update({ last_heartbeat: Date.now() }).catch(() => {});
+            });
+        });
+    }, 30000);
+
+    // Listener Real-time
+    unsubscribeFirestore = db.collection('stations').onSnapshot(snap => {
         snap.docChanges().forEach(change => {
             const data = change.doc.data();
             const id = change.doc.id;
+
             if (data.is_active && data.end_time && !data.is_paused) {
-                localSessions.set(id, { endTime: data.end_time, ip: data.ipAddress, name: data.name, hdmiIndex: data.hdmiIndex || 1 });
+                localSessions.set(id, { 
+                    endTime: data.end_time, 
+                    ip: data.ipAddress, 
+                    name: data.name, 
+                    hdmiIndex: data.hdmiIndex || 1 
+                });
             } else { localSessions.delete(id); }
 
             if (data.last_action) {
-                commandQueue.push({ stationId: id, ip: data.ipAddress, action: data.last_action, name: data.name, hdmiIndex: data.hdmiIndex || 1 });
+                commandQueue.push({ 
+                    stationId: id, 
+                    ip: data.ipAddress, 
+                    action: data.last_action, 
+                    name: data.name, 
+                    hdmiIndex: data.hdmiIndex || 1 
+                });
                 change.doc.ref.update({ last_action: null }).catch(() => {});
                 processQueue();
             }
@@ -238,29 +257,45 @@ function startCoreLoop() {
     });
 }
 
-// --- 🛠️ ADB EXECUTION ---
+// --- 🛠️ ADB EXECUTION (Ironclad Sequential) ---
 async function restartAdb() {
     log("Restarting ADB...");
-    exec(\`\${adbCmd} kill-server && \${adbCmd} start-server\`);
+    try { await execAsync(\`\${adbCmd} kill-server && \${adbCmd} start-server\`); } catch(e) {}
 }
 
 async function processQueue() {
     if (isProcessingQueue || !commandQueue.length) return;
     isProcessingQueue = true;
+    
     while (commandQueue.length > 0) {
         const cmd = commandQueue.shift();
+        log(\`Eksekusi: \${cmd.action} pada \${cmd.name} (\${cmd.ip})\`);
+        
         try {
-            await exec(\`\${adbCmd} connect \${cmd.ip}:5555\`);
-            if (cmd.action === 'start') {
-                exec(\`\${adbCmd} -s \${cmd.ip}:5555 shell "input keyevent 224 && input keyevent 224"\`);
+            await execAsync(\`\${adbCmd} connect \${cmd.ip}:5555\`);
+            
+            if (cmd.action === 'start' || cmd.action === 'wake' || cmd.action === 'resume') {
+                await execAsync(\`\${adbCmd} -s \${cmd.ip}:5555 shell "input keyevent 224"\`);
+                await new Promise(r => setTimeout(r, 800)); // Jeda agar TV bangun
+                
                 const hw = 4 + (parseInt(cmd.hdmiIndex) || 1);
                 const intent = \`am start -n com.mediatek.wwtv.tvcenter/com.mediatek.wwtv.tvcenter.nav.TurnkeyUiMainActivity -d content://android.media.tv/passthrough/com.mediatek.tvinput/.hdmi.HDMIInputService/HW\${hw}\`;
-                exec(\`\${adbCmd} -s \${cmd.ip}:5555 shell "\${intent}"\`);
-            } else if (cmd.action === 'stop') {
-                exec(\`\${adbCmd} -s \${cmd.ip}:5555 shell "input keyevent 3 && input keyevent 223"\`);
+                await execAsync(\`\${adbCmd} -s \${cmd.ip}:5555 shell "\${intent}"\`);
+            } 
+            else if (cmd.action === 'stop' || cmd.action === 'sleep') {
+                await execAsync(\`\${adbCmd} -s \${cmd.ip}:5555 shell "input keyevent 3 && input keyevent 223"\`);
             }
-            log(\`Success: \${cmd.action} on \${cmd.name}\`);
-        } catch(e) { log(\`Error on \${cmd.name}: \${e.message}\`); }
+            else if (cmd.action === 'home') {
+                await execAsync(\`\${adbCmd} -s \${cmd.ip}:5555 shell "input keyevent 3"\`);
+            }
+            else if (cmd.action === 'pause') {
+                await execAsync(\`\${adbCmd} -s \${cmd.ip}:5555 shell "input keyevent 3 && input keyevent 223"\`);
+            }
+            
+            log(\`Sukses: \${cmd.action} @ \${cmd.name}\`);
+        } catch(e) { 
+            log(\`Gagal pada \${cmd.name}: \${e.message}\`); 
+        }
     }
     isProcessingQueue = false;
 }
@@ -268,13 +303,13 @@ async function processQueue() {
 // --- 🚀 BOOTSTRAP ---
 (async () => {
     initTray();
-    const mode = showStartupSelector();
-    try { await initFirebase(mode); } catch(e) { log("Boot Error: " + e.message); }
+    const startMode = showStartupSelector();
+    try { await initFirebase(startMode); } catch(e) { log("Boot Error: " + e.message); }
 })();
   `;
 
   const handleCopyCode = () => {
-      navigator.clipboard.writeText(BRIDGE_CODE.trim());
+      navigator.clipboard.writeText(BRIDGE_CODE_PRO.trim());
       setHasCopied(true);
       setTimeout(() => setHasCopied(false), 2000);
       toast({ title: "XPBridge Pro V1.3.2 Tersalin!", variant: "success" });
@@ -289,26 +324,6 @@ async function processQueue() {
               last_action_timestamp: Date.now()
           });
           toast({ title: `Sinyal ${action.toUpperCase()} dikirim`, variant: "success" });
-      } catch (err: any) {
-          toast({ title: "Gagal", description: err.message, variant: "destructive" });
-      }
-  };
-
-  const handleSimulateStart = async (stationId: string) => {
-      if (!firestore) return;
-      if (!checkShift()) return;
-      const duration = simDurations[stationId] || 60;
-      const ts = Date.now();
-      try {
-          await updateDoc(doc(firestore, 'stations', stationId), {
-              is_active: true,
-              is_paused: false,
-              start_time: ts,
-              end_time: ts + (duration * 60 * 1000),
-              last_action: 'start',
-              last_action_timestamp: ts
-          });
-          toast({ title: "Simulasi Dimulai", description: `Perintah dikirim ke Bridge Pro.`, variant: "success" });
       } catch (err: any) {
           toast({ title: "Gagal", description: err.message, variant: "destructive" });
       }
@@ -390,7 +405,19 @@ async function processQueue() {
                                       <Button 
                                           className="font-black uppercase text-[10px] tracking-widest h-10 px-4"
                                           disabled={station.is_active}
-                                          onClick={() => handleSimulateStart(station.id)}
+                                          onClick={() => { if(checkShift()) {
+                                              const duration = simDurations[station.id] || 60;
+                                              const ts = Date.now();
+                                              updateDoc(doc(firestore!, 'stations', station.id), {
+                                                  is_active: true,
+                                                  is_paused: false,
+                                                  start_time: ts,
+                                                  end_time: ts + (duration * 60 * 1000),
+                                                  last_action: 'start',
+                                                  last_action_timestamp: ts
+                                              });
+                                              toast({ title: "Simulasi Dimulai" });
+                                          }}}
                                       >
                                           Start
                                       </Button>
@@ -435,7 +462,7 @@ async function processQueue() {
                           </div>
                           <div className="flex items-center gap-3">
                               <div className="size-6 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600"><Check className="size-3.5" /></div>
-                              <p className="text-[10px] font-bold uppercase">System Tray Menu</p>
+                              <p className="text-[10px] font-bold uppercase">Ironclad Sequential ADB</p>
                           </div>
                       </div>
                   </CardContent>
