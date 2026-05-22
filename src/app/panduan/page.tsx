@@ -83,13 +83,13 @@ export default function MasterPanduanPage() {
 
       <Tabs defaultValue="build-pro" className="w-full">
         <TabsList className="bg-muted/50 p-1 h-12 rounded-2xl mb-8 border flex w-full overflow-x-auto overflow-y-hidden">
-            <TabsTrigger value="build-pro" className="rounded-xl font-black uppercase text-[10px] tracking-widest px-6 flex-1 gap-2 text-emerald-500"><Layers className="size-3"/> 🚀 Mulai Build Pro</TabsTrigger>
+            <TabsTrigger value="build-pro" className="rounded-xl font-black uppercase text-[10px] tracking-widest px-6 flex-1 gap-2 text-emerald-500"><Layers className="size-3"/> 🚀 Build Pro EXE</TabsTrigger>
             <TabsTrigger value="tv" className="rounded-xl font-black uppercase text-[10px] tracking-widest px-6 flex-1 gap-2"><Monitor className="size-3"/> 1. Setup TV</TabsTrigger>
             <TabsTrigger value="laptop" className="rounded-xl font-black uppercase text-[10px] tracking-widest px-6 flex-1 gap-2"><Laptop className="size-3"/> 2. Setup Laptop</TabsTrigger>
             <TabsTrigger value="offline" className="rounded-xl font-black uppercase text-[10px] tracking-widest px-6 flex-1 gap-2 text-primary"><Server className="size-3"/> 3. Mode Offline</TabsTrigger>
         </TabsList>
 
-        {/* STEP: BUILD PRO WORKFLOW (THE NEW GUIDE) */}
+        {/* TAB 0: BUILD PRO WORKFLOW */}
         <TabsContent value="build-pro" className="space-y-10 animate-in fade-in slide-in-from-bottom-4">
             <section className="space-y-6">
                 <div className="flex items-center gap-4">
@@ -101,11 +101,11 @@ export default function MasterPanduanPage() {
                         <p className="text-sm text-muted-foreground">Buat folder baru di Desktop laptop Anda bernama <b>XenonSource</b>. Di dalam folder tersebut, siapkan struktur file berikut:</p>
                         <div className="p-5 rounded-3xl bg-slate-950 text-slate-300 font-mono text-[11px] leading-relaxed shadow-2xl border border-white/5 relative overflow-hidden">
                             <p className="text-emerald-500 font-bold mb-2">📁 XenonSource/</p>
-                            <p>├── 📄 bridge.js <span className="text-slate-500">(Salin dari Dashboard &gt; Simulator Control)</span></p>
+                            <p>├── 📄 bridge.js <span className="text-slate-500">(Ambil dari Simulator &gt; Master Pro V1.3.2)</span></p>
                             <p>├── 📄 package.json <span className="text-slate-500">(Salin kode di bawah)</span></p>
                             <p>├── 📄 serviceAccountKey.json <span className="text-slate-500">(Dari Firebase Console)</span></p>
                             <p>├── 📁 <b>assets/</b></p>
-                            <p>│   └── 📄 app-icon.ico <span className="text-slate-500">(Logo aplikasi untuk ikon .exe)</span></p>
+                            <p>│   └── 📄 app-icon.ico <span className="text-slate-500">(Logo ikon aplikasi)</span></p>
                             <p>└── 📁 <b>bin/</b></p>
                             <p>    ├── 📄 adb.exe</p>
                             <p>    ├── 📄 AdbWinApi.dll</p>
@@ -147,26 +147,22 @@ export default function MasterPanduanPage() {
             <section className="space-y-6">
                 <div className="flex items-center gap-4">
                     <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center font-black shadow-xl shadow-primary/20 text-lg">2</div>
-                    <h3 className="text-2xl font-black uppercase tracking-tight">Kompilasi ke File Executable (.exe)</h3>
+                    <h3 className="text-2xl font-black uppercase tracking-tight">Kompilasi ke EXE</h3>
                 </div>
                 <div className="space-y-4">
-                    <p className="text-sm text-muted-foreground">Buka <b>CMD</b> (Administrator), arahkan ke folder <b>XenonSource</b>, lalu jalankan perintah ini secara berurutan:</p>
+                    <p className="text-sm text-muted-foreground">Buka <b>CMD</b>, arahkan ke folder <b>XenonSource</b>, lalu jalankan perintah ini:</p>
                     <CodeBlock code={`npm install\nnpm install -g pkg\npkg . --targets node18-win-x64 --output xenon-bridge.exe`} />
-                    <Alert className="bg-blue-500/5 border-blue-500/20">
-                        <Info className="size-4" />
-                        <AlertDescription className="text-xs">File <code>xenon-bridge.exe</code> akan muncul di folder Anda. File ini sudah memiliki fitur System Tray.</AlertDescription>
-                    </Alert>
                 </div>
             </section>
 
             <section className="space-y-6">
                 <div className="flex items-center gap-4">
                     <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center font-black shadow-xl shadow-primary/20 text-lg">3</div>
-                    <h3 className="text-2xl font-black uppercase tracking-tight">Membuat Installer Pro (Inno Setup)</h3>
+                    <h3 className="text-2xl font-black uppercase tracking-tight">Skrip Inno Setup Pro (.iss)</h3>
                 </div>
                 <Card className="border-border">
                     <CardHeader>
-                        <CardDescription>Buka Inno Setup, buat file baru <code>XenonInstaller.iss</code> di folder <b>XenonSource</b>, dan tempelkan kode ini:</CardDescription>
+                        <CardDescription>Gunakan skrip ini di Inno Setup Compiler untuk membuat installer profesional.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <CodeBlock language="iss" code={`[Setup]

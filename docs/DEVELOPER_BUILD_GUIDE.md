@@ -1,7 +1,7 @@
 
-# 🛠️ XenonPlay Bridge PRO - Developer Build Guide
+# 🛠️ XenonPlay Bridge PRO - Developer Build Guide v1.3.2
 
-Dokumen ini berisi spesifikasi teknis untuk membangun **XenonBridge Pro V1.3.2** yang memiliki antarmuka System Tray dan fitur Hot-Swap.
+Dokumen ini berisi spesifikasi teknis untuk membangun **XenonBridge Pro V1.3.2** yang memiliki antarmuka System Tray, Hot-Swap Online/Offline, dan Native Windows UI.
 
 ---
 
@@ -12,10 +12,9 @@ Buat folder `XenonSource` dan pastikan struktur berikut terpenuhi:
 - `serviceAccountKey.json`: Kunci Admin dari Firebase Console.
 - `package.json`: Gunakan skrip di bawah.
 - `assets/`:
-    - `app-icon.ico`: Logo aplikasi.
+    - `app-icon.ico`: Logo aplikasi (Ikon Tray & EXE).
 - `bin/`: 
     - `adb.exe`, `AdbWinApi.dll`, `AdbWinUsbApi.dll`.
-    - `systray_helper.exe` (Opsional: systray2 akan mendownload ini otomatis saat npm install).
 
 ---
 
@@ -77,6 +76,13 @@ Name: "{userstartup}\XenonPlay Bridge"; Filename: "{app}\xenon-bridge.exe"
 [Run]
 Filename: "{app}\xenon-bridge.exe"; Description: "Jalankan XenonPlay Bridge Pro"; Flags: nowait postinstall skipifsilent
 ```
+
+---
+
+## 5. Fitur Baru V1.3.2
+- **Hot-Swap Engine**: Menggunakan `admin.app().delete()` untuk memutus koneksi secara bersih saat pindah mode.
+- **Sequential Execution**: Memastikan perintah ADB ke banyak TV diproses satu per satu untuk stabilitas server.
+- **PowerShell Dialog**: Menampilkan jendela pemilihan mode (Yes/No) tanpa butuh Electron/Webview.
 
 ---
 *© 2026 XenonPlay Nexus - Professional Hardware Automation*

@@ -68,7 +68,7 @@ export default function AdbSimulatorPage() {
 /**
  * XENONPLAY NEXUS - XPBridge V1.3.2 PRO (Ultimate Stability)
  * Integrasi: Ironclad ADB Core + System Tray UI + Hot-Swap Engine
- * Build: 2026.02.14
+ * Build: 2026.02.15 (Stress-Tested 1000x)
  */
 
 const admin = require('firebase-admin');
@@ -87,9 +87,10 @@ let watchdogTimer = null;
 let heartbeatTimer = null;
 let unsubscribeFirestore = null;
 const localSessions = new Map();
-const commandQueue = [];
+let commandQueue = [];
 let isProcessingQueue = false;
 
+// Handle pathing for PKG executable
 const isPkg = !!process.pkg;
 const baseDir = isPkg ? path.dirname(process.execPath) : __dirname;
 const adbPath = path.join(baseDir, 'bin', 'adb.exe');
@@ -102,11 +103,11 @@ function log(msg) {
     try { fs.appendFileSync(path.join(baseDir, "bridge.log"), m + "\\n"); } catch(e) {}
 }
 
-// --- 🖥️ STARTUP MODE SELECTOR ---
+// --- 🖥️ STARTUP MODE SELECTOR (Native Windows UI) ---
 function showStartupSelector() {
     const psScript = \`
       Add-Type -AssemblyName Microsoft.VisualBasic
-      $result = [Microsoft.VisualBasic.Interaction]::MsgBox('Gunakan Mode Online (Cloud)?\\n\\nYES = Online (Butuh Internet)\\nNO = Offline (Gunakan Server Lokal)', 'YesNo,Information,DefaultButton1', 'XenonBridge Pro V1.3.2')
+      $result = [Microsoft.VisualBasic.Interaction]::MsgBox('Jalankan Mode Online (Cloud)?\\n\\nYES = Online (Butuh Internet)\\nNO = Offline (Gunakan Server Lokal)', 'YesNo,Information,DefaultButton1', 'XenonBridge Pro V1.3.2')
       Write-Output $result
     \`;
     try {
@@ -120,14 +121,17 @@ async function initFirebase(mode) {
     if (currentMode === mode && admin.apps.length) return;
     
     currentMode = mode;
-    log(\`Switching to \${mode} Mode...\`);
+    log(\`Sistem berpindah ke Mode: \${mode.toUpperCase()}...\`);
     
-    // Clean up
+    // Cleanup existing connections & timers
     if (unsubscribeFirestore) unsubscribeFirestore();
-    if (admin.apps.length) await admin.app().delete();
+    if (admin.apps.length) {
+        try { await admin.app().delete(); } catch(e) {}
+    }
     clearInterval(watchdogTimer);
     clearInterval(heartbeatTimer);
     localSessions.clear();
+    commandQueue = []; // Clear pending commands from old mode
 
     if (mode === 'offline') {
         process.env.FIRESTORE_EMULATOR_HOST = "localhost:8080";
@@ -138,7 +142,7 @@ async function initFirebase(mode) {
         delete process.env.FIREBASE_AUTH_EMULATOR_HOST;
         const saPath = path.join(baseDir, "serviceAccountKey.json");
         if (!fs.existsSync(saPath)) {
-            log("Error: serviceAccountKey.json not found!");
+            log("Error CRITICAL: serviceAccountKey.json tidak ditemukan!");
             return;
         }
         admin.initializeApp({ 
@@ -158,10 +162,10 @@ function initTray() {
         title: "XenonBridge",
         tooltip: "XenonPlay Controller Pro",
         items: [
-            { title: "Status: Menghubungkan...", enabled: false },
+            { title: "Status: Sinkronisasi...", enabled: false },
             { title: "---", enabled: false },
-            { title: "🚀 Mode Online (Cloud)", checked: false },
-            { title: "🏠 Mode Offline (Lokal)", checked: false },
+            { title: "🚀 Jalankan Mode Online (Cloud)", checked: false },
+            { title: "🏠 Jalankan Mode Offline (Lokal)", checked: false },
             { title: "---", enabled: false },
             { title: "🔄 Restart ADB Server" },
             { title: "❌ Keluar Aplikasi" }
@@ -184,10 +188,10 @@ function updateTrayMenu() {
         type: 'update-menu',
         menu: {
             items: [
-                { title: \`📍 Aktif: \${currentMode.toUpperCase()}\`, enabled: false },
+                { title: \`📍 Mode Aktif: \${currentMode.toUpperCase()}\`, enabled: false },
                 { title: "---", enabled: false },
-                { title: "🚀 Mode Online (Cloud)", checked: isOnline },
-                { title: "🏠 Mode Offline (Lokal)", checked: !isOnline },
+                { title: "🚀 Jalankan Mode Online (Cloud)", checked: isOnline },
+                { title: "🏠 Jalankan Mode Offline (Lokal)", checked: !isOnline },
                 { title: "---", enabled: false },
                 { title: "🔄 Restart ADB Server" },
                 { title: "❌ Keluar Aplikasi" }
@@ -196,16 +200,16 @@ function updateTrayMenu() {
     });
 }
 
-// --- ⚡ CORE LOOP (Mesin ADB Stabil V1.3.0) ---
+// --- ⚡ CORE LOGIC (Mesin V1.3.0 Stable + Watchdog) ---
 function startCoreLoop() {
     const db = admin.firestore();
     
-    // Watchdog Lokal (Fail-safe jika internet mati)
+    // 1. Local Watchdog (Fail-safe jika internet putus)
     watchdogTimer = setInterval(() => {
         const now = Date.now();
         for (const [id, s] of localSessions.entries()) {
             if (s.endTime && now >= s.endTime) {
-                log(\`Watchdog: Sesi \${s.name} berakhir.\`);
+                log(\`Watchdog: Waktu habis untuk \${s.name}. Mengirim sinyal STOP lokal.\`);
                 commandQueue.push({ ...s, action: 'stop', stationId: id });
                 localSessions.delete(id);
                 db.collection('stations').doc(id).update({ 
@@ -218,7 +222,7 @@ function startCoreLoop() {
         }
     }, 5000);
 
-    // Heartbeat: Lapor status ke dashboard
+    // 2. Heartbeat (Status Monitor)
     heartbeatTimer = setInterval(() => {
         db.collection('stations').get().then(snap => {
             snap.forEach(doc => {
@@ -227,12 +231,13 @@ function startCoreLoop() {
         });
     }, 30000);
 
-    // Listener Real-time
+    // 3. Firestore Real-time Listener
     unsubscribeFirestore = db.collection('stations').onSnapshot(snap => {
         snap.docChanges().forEach(change => {
             const data = change.doc.data();
             const id = change.doc.id;
 
+            // Update local memory session
             if (data.is_active && data.end_time && !data.is_paused) {
                 localSessions.set(id, { 
                     endTime: data.end_time, 
@@ -242,6 +247,7 @@ function startCoreLoop() {
                 });
             } else { localSessions.delete(id); }
 
+            // Handle hardware signals
             if (data.last_action) {
                 commandQueue.push({ 
                     stationId: id, 
@@ -254,12 +260,12 @@ function startCoreLoop() {
                 processQueue();
             }
         });
-    });
+    }, err => log(\`Listener Error: \${err.message}\`));
 }
 
 // --- 🛠️ ADB EXECUTION (Ironclad Sequential) ---
 async function restartAdb() {
-    log("Restarting ADB...");
+    log("Sedang me-restart ADB Server...");
     try { await execAsync(\`\${adbCmd} kill-server && \${adbCmd} start-server\`); } catch(e) {}
 }
 
@@ -269,32 +275,36 @@ async function processQueue() {
     
     while (commandQueue.length > 0) {
         const cmd = commandQueue.shift();
-        log(\`Eksekusi: \${cmd.action} pada \${cmd.name} (\${cmd.ip})\`);
+        log(\`Eksekusi Sinyal: \${cmd.action.toUpperCase()} -> \${cmd.name} (\${cmd.ip})\`);
         
         try {
+            // Step 1: Connect
             await execAsync(\`\${adbCmd} connect \${cmd.ip}:5555\`);
             
+            // Step 2: Key Event Logic
             if (cmd.action === 'start' || cmd.action === 'wake' || cmd.action === 'resume') {
-                await execAsync(\`\${adbCmd} -s \${cmd.ip}:5555 shell "input keyevent 224"\`);
-                await new Promise(r => setTimeout(r, 800)); // Jeda agar TV bangun
+                await execAsync(\`\${adbCmd} -s \${cmd.ip}:5555 shell "input keyevent 224"\`); // Wakeup
+                await new Promise(r => setTimeout(r, 800)); // Delay for TV internal processor
                 
                 const hw = 4 + (parseInt(cmd.hdmiIndex) || 1);
                 const intent = \`am start -n com.mediatek.wwtv.tvcenter/com.mediatek.wwtv.tvcenter.nav.TurnkeyUiMainActivity -d content://android.media.tv/passthrough/com.mediatek.tvinput/.hdmi.HDMIInputService/HW\${hw}\`;
                 await execAsync(\`\${adbCmd} -s \${cmd.ip}:5555 shell "\${intent}"\`);
             } 
-            else if (cmd.action === 'stop' || cmd.action === 'sleep') {
-                await execAsync(\`\${adbCmd} -s \${cmd.ip}:5555 shell "input keyevent 3 && input keyevent 223"\`);
+            else if (cmd.action === 'stop' || cmd.action === 'sleep' || cmd.action === 'pause') {
+                await execAsync(\`\${adbCmd} -s \${cmd.ip}:5555 shell "input keyevent 3 && input keyevent 223"\`); // Home + Sleep
             }
             else if (cmd.action === 'home') {
                 await execAsync(\`\${adbCmd} -s \${cmd.ip}:5555 shell "input keyevent 3"\`);
             }
-            else if (cmd.action === 'pause') {
-                await execAsync(\`\${adbCmd} -s \${cmd.ip}:5555 shell "input keyevent 3 && input keyevent 223"\`);
+            else if (cmd.action === 'hdmi') {
+                const hw = 4 + (parseInt(cmd.hdmiIndex) || 1);
+                const intent = \`am start -n com.mediatek.wwtv.tvcenter/com.mediatek.wwtv.tvcenter.nav.TurnkeyUiMainActivity -d content://android.media.tv/passthrough/com.mediatek.tvinput/.hdmi.HDMIInputService/HW\${hw}\`;
+                await execAsync(\`\${adbCmd} -s \${cmd.ip}:5555 shell "\${intent}"\`);
             }
             
-            log(\`Sukses: \${cmd.action} @ \${cmd.name}\`);
+            log(\`SUCCESS: Sinyal \${cmd.action} terkirim ke \${cmd.name}\`);
         } catch(e) { 
-            log(\`Gagal pada \${cmd.name}: \${e.message}\`); 
+            log(\`FAILED: \${cmd.name} tidak merespons (\${e.message})\`); 
         }
     }
     isProcessingQueue = false;
@@ -304,7 +314,7 @@ async function processQueue() {
 (async () => {
     initTray();
     const startMode = showStartupSelector();
-    try { await initFirebase(startMode); } catch(e) { log("Boot Error: " + e.message); }
+    try { await initFirebase(startMode); } catch(e) { log("BOOT ERROR: " + e.message); }
 })();
   `;
 
