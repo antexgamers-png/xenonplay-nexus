@@ -1,7 +1,7 @@
 
 # 🛠️ XenonPlay Bridge PRO - Developer Build Guide v1.3.2
 
-Dokumen ini berisi spesifikasi teknis untuk membangun **XenonBridge Pro V1.3.2** yang memiliki antarmuka System Tray, Hot-Swap Online/Offline, dan Native Windows UI.
+Dokumen ini berisi spesifikasi teknis akhir untuk membangun **XenonBridge Pro V1.3.2** yang memiliki antarmuka System Tray, Hot-Swap Online/Offline, dan Native Windows UI.
 
 ---
 
@@ -19,6 +19,7 @@ Buat folder `XenonSource` dan pastikan struktur berikut terpenuhi:
 ---
 
 ## 2. File Metadata (package.json)
+**Penting:** Gunakan versi `systray2@2.1.2` agar instalasi berhasil di laptop Windows.
 ```json
 {
   "name": "xenon-bridge-pro",
@@ -26,13 +27,7 @@ Buat folder `XenonSource` dan pastikan struktur berikut terpenuhi:
   "main": "bridge.js",
   "dependencies": {
     "firebase-admin": "^12.0.0",
-    "systray2": "^2.3.0"
-  },
-  "pkg": {
-    "assets": [
-      "assets/**/*",
-      "bin/**/*"
-    ]
+    "systray2": "^2.1.2"
   }
 }
 ```
@@ -79,10 +74,11 @@ Filename: "{app}\xenon-bridge.exe"; Description: "Jalankan XenonPlay Bridge Pro"
 
 ---
 
-## 5. Fitur Baru V1.3.2
-- **Hot-Swap Engine**: Menggunakan `admin.app().delete()` untuk memutus koneksi secara bersih saat pindah mode.
-- **Sequential Execution**: Memastikan perintah ADB ke banyak TV diproses satu per satu untuk stabilitas server.
-- **PowerShell Dialog**: Menampilkan jendela pemilihan mode (Yes/No) tanpa butuh Electron/Webview.
+## 5. Fitur Baru V1.3.2 (Production Ready)
+- **Pathing Logic**: Menggunakan `process.execPath` agar aplikasi EXE tetap bisa menemukan folder `bin/adb` meskipun diinstal di folder Program Files yang diproteksi.
+- **Hot-Swap Engine**: Menggunakan `admin.app().delete()` untuk memutus koneksi secara bersih saat pindah mode tanpa memicu error "Default app already exists".
+- **Sequential Execution**: Memastikan perintah ADB ke banyak TV diproses satu per satu dengan *timeout* 10 detik per perintah untuk stabilitas server ADB.
+- **Native PowerShell Dialog**: Menampilkan jendela pemilihan mode (Yes/No) yang lebih akurat dengan deteksi hasil `.trim().toLowerCase()`.
 
 ---
 *© 2026 XenonPlay Nexus - Professional Hardware Automation*

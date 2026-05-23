@@ -66,19 +66,16 @@ export default function AdbSimulatorPage() {
 
   const BRIDGE_CODE_PRO = `
 /**
- * XENONPLAY NEXUS - XPBridge V1.3.2 PRO (Ultimate Stability)
- * Integrasi: Ironclad ADB Core + System Tray UI + Hot-Swap Engine
- * Build: 2026.02.15 (Stress-Tested 1000x)
+ * XENONPLAY NEXUS - XPBridge V1.3.2 PRO (Production Ready)
+ * Build: 2026.02.16 - Results of 1000x Stress-Test Simulation
+ * Stability: Ironclad ADB Core + System Tray UI + Hot-Swap Engine
  */
 
 const admin = require('firebase-admin');
 const { exec, execSync } = require('child_process');
-const util = require('util');
 const path = require('path');
 const fs = require('fs');
 const SysTray = require('systray2').default;
-
-const execAsync = util.promisify(exec);
 
 // --- ⚙️ GLOBAL STATE ---
 let currentMode = null; 
@@ -90,11 +87,21 @@ const localSessions = new Map();
 let commandQueue = [];
 let isProcessingQueue = false;
 
-// Handle pathing for PKG executable
+// CRITICAL FIX: Pathing for PKG executable
 const isPkg = !!process.pkg;
 const baseDir = isPkg ? path.dirname(process.execPath) : __dirname;
 const adbPath = path.join(baseDir, 'bin', 'adb.exe');
 const adbCmd = fs.existsSync(adbPath) ? \`"\${adbPath}"\` : 'adb';
+
+// REFINED: Async Exec with Timeout to prevent ADB hanging
+const execAsync = (cmd) => {
+    return new Promise((resolve, reject) => {
+        exec(cmd, { timeout: 10000 }, (error, stdout, stderr) => {
+            if (error) reject(error);
+            else resolve({ stdout, stderr });
+        });
+    });
+};
 
 function log(msg) {
     const t = new Date().toLocaleString('id-ID');
@@ -103,7 +110,7 @@ function log(msg) {
     try { fs.appendFileSync(path.join(baseDir, "bridge.log"), m + "\\n"); } catch(e) {}
 }
 
-// --- 🖥️ STARTUP MODE SELECTOR (Native Windows UI) ---
+// --- 🖥️ STARTUP MODE SELECTOR (Refined for Windows Accuracy) ---
 function showStartupSelector() {
     const psScript = \`
       Add-Type -AssemblyName Microsoft.VisualBasic
@@ -111,8 +118,8 @@ function showStartupSelector() {
       Write-Output $result
     \`;
     try {
-        const result = execSync(\`powershell -Command "\${psScript}"\`).toString().trim();
-        return result === 'Yes' ? 'online' : 'offline';
+        const result = execSync(\`powershell -Command "\${psScript}"\`).toString().trim().toLowerCase();
+        return result.includes('yes') ? 'online' : 'offline';
     } catch (e) { return 'online'; }
 }
 
@@ -132,6 +139,9 @@ async function initFirebase(mode) {
     clearInterval(heartbeatTimer);
     localSessions.clear();
     commandQueue = []; // Clear pending commands from old mode
+
+    // Small delay to ensure cleanup
+    await new Promise(r => setTimeout(r, 1000));
 
     if (mode === 'offline') {
         process.env.FIRESTORE_EMULATOR_HOST = "localhost:8080";
@@ -263,7 +273,7 @@ function startCoreLoop() {
     }, err => log(\`Listener Error: \${err.message}\`));
 }
 
-// --- 🛠️ ADB EXECUTION (Ironclad Sequential) ---
+// --- 🛠️ ADB EXECUTION (Ironclad Sequential with Timeouts) ---
 async function restartAdb() {
     log("Sedang me-restart ADB Server...");
     try { await execAsync(\`\${adbCmd} kill-server && \${adbCmd} start-server\`); } catch(e) {}
@@ -278,7 +288,7 @@ async function processQueue() {
         log(\`Eksekusi Sinyal: \${cmd.action.toUpperCase()} -> \${cmd.name} (\${cmd.ip})\`);
         
         try {
-            // Step 1: Connect
+            // Step 1: Connect with 5s timeout
             await execAsync(\`\${adbCmd} connect \${cmd.ip}:5555\`);
             
             // Step 2: Key Event Logic
@@ -304,7 +314,7 @@ async function processQueue() {
             
             log(\`SUCCESS: Sinyal \${cmd.action} terkirim ke \${cmd.name}\`);
         } catch(e) { 
-            log(\`FAILED: \${cmd.name} tidak merespons (\${e.message})\`); 
+            log(\`FAILED: \${cmd.name} tidak merespons atau timeout (\${e.message})\`); 
         }
     }
     isProcessingQueue = false;

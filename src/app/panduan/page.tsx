@@ -122,7 +122,7 @@ export default function MasterPanduanPage() {
                 </div>
                 <Card className="border-border">
                     <CardHeader>
-                        <CardDescription>Simpan konten ini sebagai <code>package.json</code> di dalam folder <b>XenonSource</b>.</CardDescription>
+                        <CardDescription>Simpan konten ini sebagai <code>package.json</code> di dalam folder <b>XenonSource</b>. <br/><span className="text-emerald-600 font-bold">Penting: Gunakan versi systray2@2.1.2 agar build berhasil.</span></CardDescription>
                     </CardHeader>
                     <CardContent>
                         <CodeBlock language="json" code={`{
@@ -131,13 +131,7 @@ export default function MasterPanduanPage() {
   "main": "bridge.js",
   "dependencies": {
     "firebase-admin": "^12.0.0",
-    "systray2": "^2.3.0"
-  },
-  "pkg": {
-    "assets": [
-      "assets/**/*",
-      "bin/**/*"
-    ]
+    "systray2": "^2.1.2"
   }
 }`} />
                     </CardContent>
@@ -150,8 +144,12 @@ export default function MasterPanduanPage() {
                     <h3 className="text-2xl font-black uppercase tracking-tight">Kompilasi ke EXE</h3>
                 </div>
                 <div className="space-y-4">
-                    <p className="text-sm text-muted-foreground">Buka <b>CMD</b>, arahkan ke folder <b>XenonSource</b>, lalu jalankan perintah ini:</p>
+                    <p className="text-sm text-muted-foreground">Buka <b>CMD</b>, arahkan ke folder <b>XenonSource</b>, lalu jalankan perintah ini secara berurutan:</p>
                     <CodeBlock code={`npm install\nnpm install -g pkg\npkg . --targets node18-win-x64 --output xenon-bridge.exe`} />
+                    <Alert className="bg-blue-500/5 border-blue-500/20">
+                        <Info className="size-4" />
+                        <AlertDescription className="text-xs">Abaikan peringatan <i>"Failed to make bytecode"</i> saat pkg berjalan. File EXE akan tetap berfungsi normal.</AlertDescription>
+                    </Alert>
                 </div>
             </section>
 
