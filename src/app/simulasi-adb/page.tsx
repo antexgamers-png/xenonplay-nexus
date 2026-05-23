@@ -138,7 +138,7 @@ async function initFirebase(mode) {
     clearInterval(watchdogTimer);
     clearInterval(heartbeatTimer);
     localSessions.clear();
-    commandQueue = []; // Bersihkan antrean lama agar tidak nyasar antar mode
+    commandQueue = []; // Bersihkan antrean lama setiap ganti mode
 
     await new Promise(r => setTimeout(r, 1000)); // Jeda stabilitas
 
@@ -213,7 +213,7 @@ function updateTrayMenu() {
 function startCoreLoop() {
     const db = admin.firestore();
     
-    // Watchdog: Cek sisa waktu tiap 5 detik (Backup jika internet mati saat sesi habis)
+    // Watchdog: Cek sisa waktu tiap 5 detik
     watchdogTimer = setInterval(() => {
         const now = Date.now();
         for (const [id, s] of localSessions.entries()) {
@@ -276,7 +276,7 @@ async function processQueue() {
             
             if (cmd.action === 'start' || cmd.action === 'wake' || cmd.action === 'resume') {
                 await execAsync(\`\${adbCmd} -s \${cmd.ip}:5555 shell "input keyevent 224"\`); // Wakeup
-                await new Promise(r => setTimeout(r, 800)); // TV butuh waktu bangun sebelum pindah HDMI
+                await new Promise(r => setTimeout(r, 800)); // Delay bangun TV
                 
                 const hw = 4 + (parseInt(cmd.hdmiIndex) || 1);
                 const intent = \`am start -n com.mediatek.wwtv.tvcenter/com.mediatek.wwtv.tvcenter.nav.TurnkeyUiMainActivity -d content://android.media.tv/passthrough/com.mediatek.tvinput/.hdmi.HDMIInputService/HW\${hw}\`;
@@ -286,11 +286,6 @@ async function processQueue() {
                 await execAsync(\`\${adbCmd} -s \${cmd.ip}:5555 shell "input keyevent 3 && input keyevent 223"\`); // Home + Sleep
             }
             else if (cmd.action === 'home') { await execAsync(\`\${adbCmd} -s \${cmd.ip}:5555 shell "input keyevent 3"\`); }
-            else if (cmd.action === 'hdmi') {
-                const hw = 4 + (parseInt(cmd.hdmiIndex) || 1);
-                const intent = \`am start -n com.mediatek.wwtv.tvcenter/com.mediatek.wwtv.tvcenter.nav.TurnkeyUiMainActivity -d content://android.media.tv/passthrough/com.mediatek.tvinput/.hdmi.HDMIInputService/HW\${hw}\`;
-                await execAsync(\`\${adbCmd} -s \${cmd.ip}:5555 shell "\${intent}"\`);
-            }
             log(\`SUKSES: Sinyal \${cmd.action} diterima \${cmd.name}\`);
         } catch(e) { log(\`GAGAL: \${cmd.name} (\${e.message})\`); }
     }

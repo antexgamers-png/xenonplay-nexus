@@ -121,13 +121,14 @@ export default function MasterPanduanPage() {
                 </div>
                 <Card className="border-border">
                     <CardHeader>
-                        <CardDescription>Simpan sebagai <code>package.json</code>. Versi ini sudah terverifikasi stabil melalui simulasi 1000x.</CardDescription>
+                        <CardDescription>Simpan sebagai <code>package.json</code>. Versi ini sudah terverifikasi stabil untuk fitur System Tray dan Hot-Swap.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <CodeBlock language="json" code={`{
   "name": "xenon-bridge-pro",
   "version": "1.3.2",
   "main": "bridge.js",
+  "bin": "bridge.js",
   "dependencies": {
     "firebase-admin": "^12.0.0",
     "systray2": "^2.1.2"
@@ -143,7 +144,7 @@ export default function MasterPanduanPage() {
                     <h3 className="text-2xl font-black uppercase tracking-tight">Kompilasi ke EXE</h3>
                 </div>
                 <div className="space-y-4">
-                    <p className="text-sm text-muted-foreground">Buka <b>CMD</b> di folder <b>XenonSource</b>, lalu jalankan perintah ini:</p>
+                    <p className="text-sm text-muted-foreground">Buka <b>CMD</b> di folder <b>XenonSource</b>, lalu jalankan perintah ini secara berurutan:</p>
                     <CodeBlock code={`npm install\nnpm install -g pkg\npkg . --targets node18-win-x64 --output xenon-bridge.exe`} />
                 </div>
             </section>
