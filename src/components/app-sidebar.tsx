@@ -7,7 +7,6 @@ import {
   Settings,
   ArrowRightLeft,
   Tv,
-  Zap,
   Users,
   Gift,
   Monitor as MonitorIcon,
@@ -84,7 +83,6 @@ const navGroups = [
     items: [
       { href: '/users', label: 'Manajemen Staff', icon: UserCog },
       { href: '/pengaturan/landing', label: 'Editor Beranda', icon: LayoutTemplate },
-      { href: '/pengaturan/sesi', label: 'Otomatisasi Sesi', icon: Zap },
       { href: '/pengaturan/hadiah', label: 'Katalog Hadiah', icon: Gift },
       { 
         label: 'Integrasi Hardware', 
