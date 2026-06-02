@@ -16,7 +16,7 @@ import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
 /**
- * XENONPLAY CINEMATIC WELCOME SIGNAGE v2.0
+ * XENONPLAY CINEMATIC WELCOME SIGNAGE v2.1 - DUMMY PREVIEW
  * Fitur: Video Intro Autoplay -> Smooth Transition -> Dashboard Status.
  */
 
@@ -27,8 +27,8 @@ export default function WelcomePage() {
     const [introEnded, setIntroEnded] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
 
-    // GANTI URL DI BAWAH INI DENGAN LINK VIDEO DARI GEMINI VEO ANDA
-    const videoUrl = "https://assets.mixkit.co/videos/preview/mixkit-futuristic-digital-background-4k-42095-large.mp4";
+    // VIDEO DUMMY: Futuristik Azure (Mixkit Free Asset)
+    const videoUrl = "https://assets.mixkit.co/videos/preview/mixkit-abstract-moving-blue-lines-2070-large.mp4";
 
     useEffect(() => {
         setMounted(true);
@@ -40,10 +40,10 @@ export default function WelcomePage() {
         update();
         const timer = setInterval(update, 1000);
 
-        // Jika video gagal dimuat atau terlalu lama, munculkan dashboard setelah 10 detik sebagai backup
+        // Backup: Otomatis masuk ke dashboard jika video macet setelah 10 detik
         const safetyTimer = setTimeout(() => {
             setIntroEnded(true);
-        }, 12000);
+        }, 10000);
 
         return () => {
             clearInterval(timer);
@@ -66,7 +66,7 @@ export default function WelcomePage() {
                     <motion.div 
                         initial={{ opacity: 1 }}
                         exit={{ opacity: 0, scale: 1.1 }}
-                        transition={{ duration: 1.5, ease: "easeInOut" }}
+                        transition={{ duration: 1.2, ease: "easeInOut" }}
                         className="fixed inset-0 z-[100] bg-black flex items-center justify-center"
                     >
                         <video
@@ -80,16 +80,14 @@ export default function WelcomePage() {
                             <source src={videoUrl} type="video/mp4" />
                         </video>
                         
-                        {/* Overlay Gradasi Hitam agar video terasa lebih menyatu */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/40 pointer-events-none" />
-                        
-                        {/* Tombol Skip (Hanya muncul saat interaksi mouse, berguna untuk testing) */}
-                        <button 
-                            onClick={handleVideoEnd}
-                            className="absolute bottom-10 right-10 opacity-0 hover:opacity-40 text-[10px] font-black uppercase tracking-[0.5em] transition-opacity z-[110]"
-                        >
-                            Skip Intro
-                        </button>
+                        {/* Overlay: Branding Tipis saat Intro */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/60 pointer-events-none" />
+                        <div className="absolute bottom-12 left-12 flex items-center gap-4 opacity-40">
+                             <div className="relative size-10">
+                                <Image src="/xenonplay-logo.png" alt="Logo" fill className="object-contain" />
+                             </div>
+                             <span className="text-sm font-black uppercase tracking-[0.4em]">Initializing Nexus Arena...</span>
+                        </div>
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -98,7 +96,7 @@ export default function WelcomePage() {
             <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: introEnded ? 1 : 0 }}
-                transition={{ duration: 1, delay: 0.5 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
                 className="flex-1 flex flex-col h-full relative z-10"
             >
                 {/* AMBIENT BACKGROUND LAYER */}
@@ -136,7 +134,7 @@ export default function WelcomePage() {
                         </div>
                         <div className="flex flex-col items-center justify-center p-2 rounded-2xl bg-white/5 border border-white/10">
                             <Activity className="size-[3vh] text-emerald-500 animate-pulse" />
-                            <span className="text-[0.8vh] font-black uppercase mt-1">Status: OK</span>
+                            <span className="text-[0.8vh] font-black uppercase mt-1 text-emerald-500/60">Status: OK</span>
                         </div>
                     </div>
                 </header>
@@ -146,7 +144,7 @@ export default function WelcomePage() {
                     <motion.div 
                         initial={{ y: 20, opacity: 0 }}
                         animate={{ y: introEnded ? 0 : 20, opacity: introEnded ? 1 : 0 }}
-                        transition={{ duration: 0.8, delay: 1 }}
+                        transition={{ duration: 0.8, delay: 0.4 }}
                         className="relative w-full max-w-[88vw] flex flex-col items-center"
                     >
                         {/* Floating Badge */}
@@ -184,10 +182,10 @@ export default function WelcomePage() {
                 <footer className="h-[10vh] bg-primary relative flex items-center overflow-hidden z-30 shrink-0 border-t border-white/20 shadow-[0_-15px_50px_rgba(59,130,246,0.3)]">
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.2),transparent)] opacity-30" />
                     <div className="flex whitespace-nowrap animate-marquee-css items-center h-full">
-                        <span className="text-white font-black text-[3.8vh] tracking-[0.4em] uppercase mx-[8vw] drop-shadow-md">
+                        <span className="text-white font-black text-[3.2vh] tracking-[0.4em] uppercase mx-[8vw] drop-shadow-md">
                             MOHON JAGA KEBERSIHAN • KUMPULKAN POIN MEMBER SETIAP BERMAIN • SNACK & MINUMAN TERSEDIA DI KASIR • HUBUNGI OPERATOR UNTUK TOP-UP • TERIMA KASIH TELAH MEMILIH XENONPLAY •
                         </span>
-                        <span className="text-white font-black text-[3.8vh] tracking-[0.4em] uppercase mx-[8vw] drop-shadow-md">
+                        <span className="text-white font-black text-[3.2vh] tracking-[0.4em] uppercase mx-[8vw] drop-shadow-md">
                             MOHON JAGA KEBERSIHAN • KUMPULKAN POIN MEMBER SETIAP BERMAIN • SNACK & MINUMAN TERSEDIA DI KASIR • HUBUNGI OPERATOR UNTUK TOP-UP • TERIMA KASIH TELAH MEMILIH XENONPLAY •
                         </span>
                     </div>
