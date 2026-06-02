@@ -8,6 +8,7 @@ import type { Station } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { 
     ShieldCheck, 
     Zap, 
@@ -36,6 +37,9 @@ export default function AdbSimulatorPage() {
   const { activeShift, setIsOpeningDialog } = useShift();
   const [hasCopied, setHasCopied] = useState(false);
   const [now, setNow] = useState<number>(0);
+  
+  // State untuk menyimpan input durasi custom per stasiun
+  const [customDurations, setCustomDurations] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setNow(Date.now());
@@ -171,7 +175,6 @@ setInterval(() => {
               last_action_timestamp: Date.now()
           };
           
-          // Jika action stop, pastikan is_active diset false di sini juga
           if (action === 'stop' || action === 'sleep') {
               updates.is_active = false;
               updates.end_time = null;
@@ -184,9 +187,18 @@ setInterval(() => {
       }
   };
 
-  const handleSimulateTime = async (stationId: string, minutes: number) => {
+  const handleSimulateTime = async (stationId: string) => {
       if (!firestore) return;
       if (!checkShift()) return;
+
+      const durationStr = customDurations[stationId] || '0';
+      const minutes = parseInt(durationStr);
+
+      if (isNaN(minutes) || minutes <= 0) {
+          toast({ title: "Input Salah", description: "Masukkan jumlah menit yang valid.", variant: "destructive" });
+          return;
+      }
+
       try {
           const nowMs = Date.now();
           const endTime = nowMs + minutes * 60 * 1000;
@@ -211,6 +223,10 @@ setInterval(() => {
       }
   };
 
+  const updateCustomDuration = (stationId: string, val: string) => {
+      setCustomDurations(prev => ({ ...prev, [stationId]: val }));
+  };
+
   return (
     <div className="flex flex-col gap-8 pb-20">
       <header className="flex flex-col md:grid md:grid-cols-2 justify-between items-start md:items-end gap-4">
@@ -222,7 +238,7 @@ setInterval(() => {
                 <span className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-600">Stable Legacy v1.3.0</span>
             </div>
             <h1 className="text-4xl font-black uppercase tracking-tight">Simulator <span className="text-primary">Master</span></h1>
-            <p className="text-muted-foreground text-sm font-medium">Uji coba hardware secara langsung dan simulasi waktu tanpa transaksi.</p>
+            <p className="text-muted-foreground text-sm font-medium">Uji coba hardware secara langsung dan simulasi waktu bebas (Loss Mode).</p>
         </div>
         <div className="flex flex-wrap gap-2 justify-end">
             <Link href="/panduan">
@@ -274,25 +290,25 @@ setInterval(() => {
                               </div>
 
                               <div className="pt-4 border-t border-dashed space-y-3">
-                                  <p className="text-[9px] font-black uppercase text-muted-foreground tracking-[0.2em] ml-1">Simulasi Timer (No Transaksi)</p>
+                                  <p className="text-[9px] font-black uppercase text-muted-foreground tracking-[0.2em] ml-1">Simulasi Timer (Input Bebas)</p>
                                   <div className="flex gap-2">
+                                      <div className="relative flex-1">
+                                          <Input 
+                                            type="number" 
+                                            placeholder="Menit..." 
+                                            className="h-9 pr-8 font-black font-mono text-xs rounded-xl bg-muted/30"
+                                            value={customDurations[station.id] || ''}
+                                            onChange={(e) => updateCustomDuration(station.id, e.target.value)}
+                                            disabled={station.is_active}
+                                          />
+                                          <div className="absolute right-3 top-2.5 text-[8px] font-black text-muted-foreground uppercase">Min</div>
+                                      </div>
                                       <Button 
-                                          variant="outline" 
-                                          size="sm" 
-                                          className="flex-1 h-9 rounded-xl font-black uppercase text-[9px] gap-2 border-primary/20 text-primary hover:bg-primary/5"
-                                          onClick={() => handleSimulateTime(station.id, 60)}
+                                          className="h-9 px-4 rounded-xl font-black uppercase text-[9px] gap-2 shadow-lg shadow-primary/20"
+                                          onClick={() => handleSimulateTime(station.id)}
                                           disabled={station.is_active}
                                       >
-                                          <Play className="size-3 fill-current" /> 1 Jam
-                                      </Button>
-                                      <Button 
-                                          variant="outline" 
-                                          size="sm" 
-                                          className="flex-1 h-9 rounded-xl font-black uppercase text-[9px] gap-2 border-primary/20 text-primary hover:bg-primary/5"
-                                          onClick={() => handleSimulateTime(station.id, 120)}
-                                          disabled={station.is_active}
-                                      >
-                                          <Clock className="size-3" /> 2 Jam
+                                          <Play className="size-3 fill-current" /> Play
                                       </Button>
                                       {station.is_active && (
                                           <Button 
@@ -306,6 +322,19 @@ setInterval(() => {
                                           </Button>
                                       )}
                                   </div>
+                                  {!station.is_active && (
+                                      <div className="flex gap-1">
+                                          {[60, 120, 180].map(m => (
+                                              <button 
+                                                key={m} 
+                                                onClick={() => updateCustomDuration(station.id, m.toString())}
+                                                className="px-2 py-0.5 rounded-md bg-muted text-[8px] font-black uppercase hover:bg-primary/10 hover:text-primary transition-colors"
+                                              >
+                                                  {m/60} Jam
+                                              </button>
+                                          ))}
+                                      </div>
+                                  )}
                               </div>
                           </CardContent>
                       </Card>
@@ -345,7 +374,7 @@ setInterval(() => {
                       <h4 className="text-xs font-black uppercase tracking-widest">Peringatan Simulasi</h4>
                   </div>
                   <p className="text-[11px] text-muted-foreground leading-relaxed italic">
-                      "Gunakan tombol simulasi hanya untuk pengujian hardware. Karena tidak mencatat transaksi, omzet pada laporan keuangan tidak akan bertambah."
+                      "Mode simulasi mengaktifkan timer hardware secara paksa tanpa membuat invoice. Gunakan untuk tes durasi TV atau bypass operasional mendesak."
                   </p>
               </div>
           </div>
