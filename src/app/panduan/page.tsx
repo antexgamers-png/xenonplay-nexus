@@ -261,7 +261,7 @@ Name: "{userstartup}\\XenonPlay Bridge"; Filename: "{app}\\xenon-bridge.exe"; Ic
 [Run]
 Filename: "{app}\\xenon-bridge.exe"; Description: "Jalankan XenonPlay Bridge"; Flags: nowait postinstall skipifsilent`} />
                         <p className="text-[10px] text-muted-foreground italic">
-                            Simpan, lalu <b>klik kanan setup.iss > Compile</b>. Anda akan mendapatkan file <b>XenonBridge_Pro_Setup.exe</b>.
+                            Simpan, lalu <b>klik kanan setup.iss &gt; Compile</b>. Anda akan mendapatkan file <b>XenonBridge_Pro_Setup.exe</b>.
                         </p>
                     </div>
                 </div>
