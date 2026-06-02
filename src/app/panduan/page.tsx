@@ -69,7 +69,7 @@ const RESPONSIVE_HYBRID_BRIDGE_V1_9_1 = `
  * 1. START: Welcome Screen (intro.mp4) -> Jeda 3.5s -> HDMI Intent.
  * 2. STOP: Sleep (223) -> Jeda 1.5s -> Wake (224) -> TV Landing (ended.mp4).
  *    (Alur ini memastikan TV berganti mode tanpa pernah menunjukkan menu Home).
- * 3. WAKE: Wakeup (224) -> TV Landing (ended.mp4).
+ * 3. WAKE: Wakeup (224) -> Welcome Screen (intro.mp4).
  * 4. SLEEP: Direct Sleep (223) -> TV mati total.
  */
 
@@ -145,10 +145,10 @@ async function handleAdbWorkflow(ip, action, hdmi, name) {
         const landingIntent = \`am start -a android.intent.action.VIEW -d \${landingUrl}\`;
 
         if (action === 'wake') {
-            log(\`[\${name}] Workflow: WAKEUP -> TV LANDING\`);
+            log(\`[\${name}] Workflow: WAKEUP -> WELCOME INTRO\`);
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 224"\`, execOptions); 
             await new Promise(r => setTimeout(r, 1000)); 
-            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${landingIntent}"\`, execOptions); 
+            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${welcomeIntent}"\`, execOptions); 
         } 
         else if (action === 'hdmi') {
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${hdmiIntent}"\`, execOptions); 
@@ -171,7 +171,7 @@ async function handleAdbWorkflow(ip, action, hdmi, name) {
             // Langkah 2: Bangunkan TV kembali
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 224"\`, execOptions); 
             await new Promise(r => setTimeout(r, 1000)); 
-            // Langkah 3: Langsung buka landing video
+            // Langkah 3: Langsung buka landing video (Sesi Habis)
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${landingIntent}"\`, execOptions); 
         }
         else if (action === 'home') {
@@ -529,7 +529,7 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
                         <CardTitle className="text-[10px] font-black uppercase tracking-widest">Tombol WAKE</CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 pt-0 text-[10px] text-muted-foreground leading-relaxed">
-                        Urutan: <b>Wakeup (224)</b> &rarr; <b>ended.mp4</b>. TV siaga dengan visual standby yang mewah.
+                        Urutan: <b>Wakeup (224)</b> &rarr; <b>intro.mp4</b>. TV siaga dengan visual branding yang mewah.
                     </CardContent>
                 </Card>
 
