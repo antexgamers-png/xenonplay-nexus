@@ -16,8 +16,9 @@ import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
 /**
- * XENONPLAY CINEMATIC WELCOME SIGNAGE v2.2 - LOCAL ASSET EDITION
+ * XENONPLAY CINEMATIC WELCOME SIGNAGE v2.5 - LOCAL ASSET EDITION
  * Fitur: Video Intro Autoplay (Local) -> Smooth Transition -> Dashboard Status.
+ * Dioptimalkan untuk Browser Smart TV (MediaTek/Android TV).
  */
 
 export default function WelcomePage() {
@@ -25,6 +26,7 @@ export default function WelcomePage() {
     const [date, setDate] = useState('---');
     const [mounted, setMounted] = useState(false);
     const [introEnded, setIntroEnded] = useState(false);
+    const [videoError, setVideoError] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
 
     // PATH KE FILE LOKAL: Pastikan file ditaruh di folder 'public' dengan nama 'intro.mp4'
@@ -40,19 +42,32 @@ export default function WelcomePage() {
         update();
         const timer = setInterval(update, 1000);
 
-        // Backup: Otomatis masuk ke dashboard jika video macet atau tidak ditemukan setelah 12 detik
+        // Berusaha memutar video secara eksplisit (Beberapa browser TV butuh ini)
+        if (videoRef.current) {
+            videoRef.current.play().catch(() => {
+                console.log("Autoplay blocked or failed, waiting for interaction or safety timer.");
+            });
+        }
+
+        // Backup: Otomatis masuk ke dashboard jika video macet atau tidak ditemukan setelah 15 detik
         const safetyTimer = setTimeout(() => {
-            setIntroEnded(true);
-        }, 12000);
+            if (!introEnded) setIntroEnded(true);
+        }, 15000);
 
         return () => {
             clearInterval(timer);
             clearTimeout(safetyTimer);
         };
-    }, []);
+    }, [introEnded]);
 
     const handleVideoEnd = () => {
         setIntroEnded(true);
+    };
+
+    const handleVideoError = () => {
+        console.error("Video intro.mp4 tidak ditemukan atau format tidak didukung.");
+        setVideoError(true);
+        setIntroEnded(true); // Langsung ke dashboard jika video gagal
     };
 
     if (!mounted) return null;
@@ -64,6 +79,7 @@ export default function WelcomePage() {
             <AnimatePresence>
                 {!introEnded && (
                     <motion.div 
+                        key="intro-layer"
                         initial={{ opacity: 1 }}
                         exit={{ opacity: 0, scale: 1.1 }}
                         transition={{ duration: 1.2, ease: "easeInOut" }}
@@ -75,7 +91,9 @@ export default function WelcomePage() {
                             autoPlay
                             muted
                             playsInline
+                            preload="auto"
                             onEnded={handleVideoEnd}
+                            onError={handleVideoError}
                         >
                             <source src={videoUrl} type="video/mp4" />
                         </video>
