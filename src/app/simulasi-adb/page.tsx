@@ -89,16 +89,31 @@ admin.initializeApp({
 });
 
 const db = admin.firestore();
-const localSessions = new Map(); // Simpan waktu di RAM (Hemat Kuota Read)
+const localSessions = new Map(); // Simpan waktu di RAM
 
 // Path ADB
 const adbPath = path.join(__dirname, 'bin', 'adb.exe');
 const adbCmd = fs.existsSync(adbPath) ? \`"\${adbPath}"\` : 'adb';
 
+// --- NOTIFIKASI STARTUP ---
+async function sendStartupNotification() {
+    const msg = "Xenon Bridge V1.3.3 Hybrid telah AKTIF di latar belakang.";
+    // Menggunakan PowerShell Popup agar muncul di pojok layar Windows
+    const command = \`powershell -Command "(New-Object -ComObject WScript.Shell).Popup('\${msg}', 5, 'XenonPlay Nexus', 64)"\`;
+    try {
+        await execAsync(command, execOptions);
+    } catch (e) {
+        console.log("Startup: " + msg);
+    }
+}
+
 console.log('--------------------------------------------------');
 console.log('🚀 XENON BRIDGE V1.3.3 HYBRID STARTING...');
 console.log('🛡️ Status: Parallel Mode & windowsHide Active');
 console.log('--------------------------------------------------');
+
+// Jalankan notifikasi saat startup
+sendStartupNotification();
 
 // --- 2. LISTENER PERINTAH (REAL-TIME) ---
 db.collection('stations').onSnapshot(snapshot => {
@@ -106,7 +121,6 @@ db.collection('stations').onSnapshot(snapshot => {
     const data = change.doc.data();
     const stationId = change.doc.id;
 
-    // Sinkronisasi RAM lokal untuk Watchdog
     if (data.is_active && data.end_time) {
         localSessions.set(stationId, { name: data.name, endTime: data.end_time, ip: data.ipAddress });
     } else {
@@ -115,11 +129,7 @@ db.collection('stations').onSnapshot(snapshot => {
 
     if (data.last_action) {
       console.log(\`[\${new Date().toLocaleTimeString()}] Signal: \${data.last_action.toUpperCase()} -> \${data.name}\`);
-      
-      // Reset flag segera (Non-blocking)
       db.collection('stations').doc(stationId).update({ last_action: null });
-
-      // Eksekusi PARALEL (Tidak menunggu TV lain)
       handleAdbWorkflow(data.ipAddress, data.last_action, data.hdmiIndex || 1, data.name);
     }
   });
@@ -127,7 +137,6 @@ db.collection('stations').onSnapshot(snapshot => {
 
 async function handleAdbWorkflow(ip, action, hdmi, name) {
     try {
-        // 1. Handshake (Satu per satu per stasiun)
         await execAsync(\`\${adbCmd} disconnect \${ip}:5555\`, execOptions);
         const { stdout } = await execAsync(\`\${adbCmd} connect \${ip}:5555\`, execOptions);
         
@@ -139,17 +148,16 @@ async function handleAdbWorkflow(ip, action, hdmi, name) {
         const hw = 4 + parseInt(hdmi);
         const intent = \`am start -n com.mediatek.wwtv.tvcenter/com.mediatek.wwtv.tvcenter.nav.TurnkeyUiMainActivity -d content://android.media.tv/passthrough/com.mediatek.tvinput/.hdmi.HDMIInputService/HW\${hw}\`;
 
-        // 2. Eksekusi Perintah (Tanpa operator && agar kompatibel MediaTek)
         if (action === 'start' || action === 'wake' || action === 'resume') {
-            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 224"\`, execOptions); // Wake
-            await new Promise(r => setTimeout(r, 800)); // Jeda Stabilitas
-            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${intent}"\`, execOptions); // HDMI
+            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 224"\`, execOptions);
+            await new Promise(r => setTimeout(r, 800));
+            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${intent}"\`, execOptions);
             console.log(\`✅ \${name} Started Successfully\`);
         } 
         else if (action === 'stop' || action === 'sleep' || action === 'pause') {
-            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 3"\`, execOptions); // Home
+            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 3"\`, execOptions);
             await new Promise(r => setTimeout(r, 500));
-            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 223"\`, execOptions); // Sleep
+            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 223"\`, execOptions);
             console.log(\`🛑 \${name} Stopped/Paused\`);
         }
     } catch (err) {
@@ -157,13 +165,12 @@ async function handleAdbWorkflow(ip, action, hdmi, name) {
     }
 }
 
-// --- 3. LOCAL WATCHDOG (DETEKSI WAKTU HABIS DI RAM) ---
+// --- 3. LOCAL WATCHDOG ---
 setInterval(() => {
     const now = Date.now();
     localSessions.forEach((session, id) => {
         if (now >= session.endTime) {
             console.log(\`⏰ TIME UP: \${session.name}. Sending Auto-Stop...\`);
-            // Update Firestore (Listener di atas akan menangkap ini)
             db.collection('stations').doc(id).update({
                 is_active: false,
                 end_time: null,
@@ -173,21 +180,20 @@ setInterval(() => {
             localSessions.delete(id);
         }
     });
-}, 2000); // Cek RAM setiap 2 detik
+}, 2000);
 
-// --- 4. REAL HEARTBEAT (STATUS ONLINE RIIL) ---
+// --- 4. REAL HEARTBEAT ---
 setInterval(async () => {
     const stations = await db.collection('stations').get();
     stations.forEach(async (doc) => {
         const s = doc.data();
         if (s.ipAddress) {
             try {
-                // Ping riil via ADB Shell
                 const { stdout } = await execAsync(\`\${adbCmd} -s \${s.ipAddress}:5555 shell "getprop sys.boot_completed"\`, execOptions);
                 if (stdout.trim() === '1') {
                     doc.ref.update({ last_heartbeat: Date.now() });
                 }
-            } catch (e) { /* Device is truly offline */ }
+            } catch (e) {}
         }
     });
 }, 45000);
@@ -387,4 +393,3 @@ setInterval(async () => {
     </div>
   );
 }
-
