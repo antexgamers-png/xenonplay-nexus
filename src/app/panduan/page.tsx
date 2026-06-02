@@ -61,10 +61,11 @@ const CodeBlock = ({ code, language = "bash" }: { code: string, language?: strin
     );
 };
 
-const RESPONSIVE_HYBRID_BRIDGE_V1_3_9 = `
+const RESPONSIVE_HYBRID_BRIDGE_V1_4_0 = `
 /**
- * XENONPLAY NEXUS - XPBridge v1.3.9 (Audio Control Edition)
- * Fitur: Precise HDMI Intent + Deep Heartbeat Filtering + Volume Control
+ * XENONPLAY NEXUS - XPBridge v1.4.0 (Hyper-Precision Edition)
+ * Fitur: Encoded HDMI Intent + Deep Heartbeat Filtering + Audio Control
+ * Perbaikan: Menggunakan %2F encoding untuk stabilitas switching HDMI.
  */
 
 const admin = require('firebase-admin');
@@ -86,7 +87,7 @@ function log(msg) {
 }
 
 log("==================================================");
-log("🚀 XENON BRIDGE V1.3.9 AUDIO READY ACTIVE");
+log("🚀 XENON BRIDGE V1.4.0 HYPER-PRECISION ACTIVE");
 log("📍 Location: " + baseDir);
 log("==================================================");
 
@@ -106,7 +107,7 @@ const localSessions = new Map();
 const execOptions = { windowsHide: true, timeout: 8000 };
 
 async function sendStartupNotification() {
-    const msg = "Xenon Bridge v1.3.9 AKTIF. Kendali Audio Siap.";
+    const msg = "Xenon Bridge v1.4.0 AKTIF. HDMI Precision Siap.";
     const cmd = \`powershell -Command "(New-Object -ComObject WScript.Shell).Popup('\${msg}', 4, 'XenonPlay Nexus', 64)"\`;
     try { await execAsync(cmd, execOptions); } catch (e) {}
 }
@@ -138,16 +139,17 @@ async function handleAdbWorkflow(ip, action, hdmi, name, stationId) {
         await execAsync(\`\${adbCmd} connect \${ip}:5555\`, execOptions);
         
         const hw = 4 + parseInt(hdmi);
-        const intent = \`am start -a android.intent.action.VIEW -f 0x10000000 -d content://android.media.tv/passthrough/com.mediatek.tvinput/.hdmi.HDMIInputService/HW\${hw} -n com.mediatek.wwtv.tvcenter/com.mediatek.wwtv.tvcenter.nav.TurnkeyUiMainActivity\`;
+        // ENCODED INTENT: Menggunakan %2F untuk memisahkan service dan HW port agar tidak meleset
+        const intent = \`am start -a android.intent.action.VIEW -d content://android.media.tv/passthrough/com.mediatek.tvinput%2F.hdmi.HDMIInputService%2FHW\${hw} -n com.mediatek.wwtv.tvcenter/com.mediatek.wwtv.tvcenter.nav.TurnkeyUiMainActivity -f 0x10000000\`;
 
         if (action === 'start' || action === 'wake' || action === 'resume' || action === 'hdmi') {
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 224"\`, execOptions); 
-            await new Promise(r => setTimeout(r, 400)); 
+            await new Promise(r => setTimeout(r, 600)); 
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${intent}"\`, execOptions); 
         } 
         else if (action === 'stop' || action === 'sleep' || action === 'pause') {
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 3"\`, execOptions); 
-            await new Promise(r => setTimeout(r, 300));
+            await new Promise(r => setTimeout(r, 400));
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 223"\`, execOptions); 
         }
         else if (action === 'home') {
@@ -165,6 +167,7 @@ async function handleAdbWorkflow(ip, action, hdmi, name, stationId) {
     } catch (err) { log(\`❌ [\${name}] Error: \${err.message}\`); }
 }
 
+// DEEP HEARTBEAT: Hanya lapor Online jika TV membalas perintah echo
 setInterval(async () => {
     try {
         const snap = await db.collection('stations').get();
@@ -202,8 +205,8 @@ setInterval(() => {
 
 const PACKAGE_JSON_TEMPLATE = `
 {
-  "name": "xenon-bridge-audio-pro",
-  "version": "1.3.9",
+  "name": "xenon-bridge-hyper-pro",
+  "version": "1.4.0",
   "main": "bridge.js",
   "bin": "bridge.js",
   "pkg": {
@@ -227,10 +230,10 @@ export default function MasterPanduanPage() {
   const [hasCopied, setHasCopied] = useState(false);
 
   const handleCopyScript = () => {
-    navigator.clipboard.writeText(RESPONSIVE_HYBRID_BRIDGE_V1_3_9.trim());
+    navigator.clipboard.writeText(RESPONSIVE_HYBRID_BRIDGE_V1_4_0.trim());
     setHasCopied(true);
     setTimeout(() => setHasCopied(false), 2000);
-    toast({ title: "Script v1.3.9 Tersalin!", variant: "success" });
+    toast({ title: "Script v1.4.0 Tersalin!", variant: "success" });
   };
 
   return (
@@ -238,11 +241,11 @@ export default function MasterPanduanPage() {
       <header className="space-y-2">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary mb-2">
             <ShieldCheck className="size-3.5" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em]">XenonPlay Nexus Enterprise v1.3.9 "Audio Pro"</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em]">XenonPlay Nexus Enterprise v1.4.0 "Hyper-Precision"</span>
         </div>
         <h1 className="text-4xl font-black tracking-tighter uppercase leading-none">Panduan <span className="text-primary">Master Terintegrasi</span></h1>
         <p className="text-muted-foreground text-sm max-w-3xl font-medium">
-          Dua pilar utama untuk menjaga stabilitas operasional: Teknik membangun software installer dan konfigurasi hardware yang presisi.
+          Solusi final untuk stabilitas hardware: Teknik membangun software installer dan konfigurasi HDMI precision.
         </p>
       </header>
 
@@ -396,7 +399,7 @@ export default function MasterPanduanPage() {
                             <CodeBlock language="iss" code={`
 [Setup]
 AppName=XenonPlay Bridge
-AppVersion=1.3.9
+AppVersion=1.4.0
 DefaultDirName={autopf}\\XenonPlayBridge
 OutputDir=.
 OutputBaseFilename=XenonBridge_Pro_Setup
@@ -502,7 +505,7 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
         <TabsContent value="bridge" className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
             <div className="flex items-center gap-4">
                 <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center font-black shadow-xl shadow-primary/20 text-lg">3</div>
-                <h3 className="text-2xl font-black uppercase tracking-tight">Fitur Audio v1.3.9</h3>
+                <h3 className="text-2xl font-black uppercase tracking-tight">Fitur Hyper-Precision v1.4.0</h3>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -510,11 +513,11 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
                     <div className="absolute top-0 left-0 w-1.5 h-full bg-primary" />
                     <CardHeader>
                         <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-                            <Volume2 className="size-4 text-primary" /> Kendali Audio Jarak Jauh
+                            <Zap className="size-4 text-primary" /> Encoded HDMI Intent
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="text-[11px] text-muted-foreground leading-relaxed">
-                        Kini Anda bisa mengatur Volume (+/-) dan Mute suara TV langsung dari dashboard. Fitur ini sangat berguna jika ada keluhan volume terlalu berisik tanpa harus mendatangi unit TV.
+                        Menggunakan encoding <b>%2F</b> pada URI data untuk memastikan firmware MediaTek pada TV lokal (Polytron, Coocaa, dll) mengenali port HDMI dengan tepat tanpa meleset ke Live TV.
                     </CardContent>
                 </Card>
 
@@ -522,11 +525,11 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
                     <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500" />
                     <CardHeader>
                         <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-                            <Zap className="size-4 text-emerald-600" /> Precision HDMI & Sound
+                            <ShieldCheck className="size-4 text-emerald-600" /> Deep Heartbeat Filter
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="text-[11px] text-muted-foreground leading-relaxed">
-                        Menggunakan event 24/25/164 untuk Audio dan FLAG_ACTIVITY_NEW_TASK untuk menjamin TV berpindah HDMI 100% akurat.
+                        Status online hanya dikirim jika perintah <code>shell echo 1</code> berhasil direspon oleh TV. Menghilangkan status "Ghost Connection" (TV mati tapi status hijau).
                     </CardContent>
                 </Card>
             </div>
@@ -537,10 +540,10 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
                 </div>
                 
                 <div className="space-y-2 relative z-10">
-                    <Badge variant="outline" className="border-primary/50 text-primary bg-primary/5 px-4 h-6 font-black uppercase text-[10px] tracking-widest">Script v1.3.9 Audio Ready</Badge>
+                    <Badge variant="outline" className="border-primary/50 text-primary bg-primary/5 px-4 h-6 font-black uppercase text-[10px] tracking-widest">Script v1.4.0 Final Stable</Badge>
                     <h3 className="text-3xl font-black uppercase tracking-tighter text-white">Perbarui Kode Bridge Anda</h3>
                     <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
-                        Gunakan versi v1.3.9 untuk menikmati fitur kontrol volume dan mute dari jarak jauh.
+                        Gunakan versi v1.4.0 untuk stabilitas maksimal pada TV merk lokal dan kontrol audio yang presisi.
                     </p>
                 </div>
 
@@ -553,7 +556,7 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
                     )}
                 >
                     {hasCopied ? <Check className="size-5" /> : <Terminal className="size-5" />}
-                    {hasCopied ? "Script v1.3.9 Tersalin!" : "Ambil Script v1.3.9"}
+                    {hasCopied ? "Script v1.4.0 Tersalin!" : "Ambil Script v1.4.0"}
                 </Button>
             </div>
         </TabsContent>
