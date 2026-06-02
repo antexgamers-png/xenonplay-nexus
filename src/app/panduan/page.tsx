@@ -37,7 +37,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/tabs";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
@@ -312,7 +312,7 @@ export default function MasterPanduanPage() {
                     <h3 className="text-2xl font-black uppercase tracking-tight">Membuat File Konfigurasi</h3>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 mb-2">
                             <FileJson className="size-4 text-primary" />
@@ -326,8 +326,23 @@ export default function MasterPanduanPage() {
 
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 mb-2">
+                            <FileCode className="size-4 text-blue-500" />
+                            <h4 className="text-xs font-black uppercase tracking-widest">2. bridge.js</h4>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground leading-relaxed">
+                            Logika utama kontrol hardware. Ambil kodenya di <b>Tab 3 (Script Bridge)</b> lalu simpan sebagai <code>bridge.js</code>.
+                        </p>
+                        <div className="p-4 rounded-xl border border-dashed border-primary/30 bg-primary/5">
+                            <p className="text-[10px] text-primary font-bold italic leading-relaxed">
+                                Klik tombol "Ambil Script" di tab sebelah kanan, lalu paste ke Notepad dan simpan di folder XenonSource.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2 mb-2">
                             <FileCode className="size-4 text-emerald-500" />
-                            <h4 className="text-xs font-black uppercase tracking-widest">2. hide.vbs</h4>
+                            <h4 className="text-xs font-black uppercase tracking-widest">3. hide.vbs</h4>
                         </div>
                         <p className="text-[11px] text-muted-foreground leading-relaxed">
                             Script sederhana untuk menjalankan Bridge tanpa memunculkan jendela hitam CMD.
@@ -538,3 +553,4 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; Description: "Jalank
     </div>
   );
 }
+
