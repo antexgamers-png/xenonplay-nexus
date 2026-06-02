@@ -32,7 +32,9 @@ import {
     MousePointer2,
     Command,
     Keyboard,
-    FileText
+    FileText,
+    Activity,
+    Check
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -41,6 +43,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
+import { useState } from "react";
 
 const CodeBlock = ({ code, language = "bash" }: { code: string, language?: string }) => {
     const { toast } = useToast();
@@ -63,7 +66,7 @@ const CodeBlock = ({ code, language = "bash" }: { code: string, language?: strin
 
 const HYBRID_BRIDGE_V1_3_3 = `
 /**
- * XENONPLAY NEXUS - XPBridge V1.3.3 (Ultimate Hybrid)
+ * XENONPLAY NEXUS - XPBridge v1.3.3 (Ultimate Hybrid)
  * Arsitektur: Parallel Execution + Local RAM Watchdog
  * Solusi: Mengatasi TV MediaTek macet & Hemat Kuota Firestore.
  */
@@ -164,6 +167,16 @@ setInterval(() => {
 `;
 
 export default function MasterPanduanPage() {
+  const { toast } = useToast();
+  const [hasCopied, setHasCopied] = useState(false);
+
+  const handleCopyScript = () => {
+    navigator.clipboard.writeText(HYBRID_BRIDGE_V1_3_3.trim());
+    setHasCopied(true);
+    setTimeout(() => setHasCopied(false), 2000);
+    toast({ title: "Script Bridge v1.3.3 Tersalin!", variant: "success" });
+  };
+
   return (
     <div className="flex flex-col gap-8 pb-20 max-w-6xl mx-auto">
       <header className="space-y-2">
@@ -186,7 +199,7 @@ export default function MasterPanduanPage() {
                 <Settings className="size-5"/> 2. Konfigurasi Laptop & TV
             </TabsTrigger>
             <TabsTrigger value="bridge" className="rounded-[1.5rem] font-black uppercase text-[11px] tracking-widest flex-1 gap-3 data-[state=active]:bg-primary data-[state=active]:text-white shadow-xl transition-all min-w-[200px]">
-                <FileCode className="size-5"/> 3. Script Bridge (bridge.js)
+                <FileCode className="size-5"/> 3. Script Bridge
             </TabsTrigger>
         </TabsList>
 
@@ -366,7 +379,7 @@ Name: "{userstartup}\\XenonPlay Bridge"; Filename: "{app}\\xenon-bridge.exe"; Ic
 [Run]
 Filename: "{app}\\xenon-bridge.exe"; Description: "Jalankan XenonPlay Bridge"; Flags: nowait postinstall skipifsilent`} />
                         <p className="text-[10px] text-muted-foreground italic">
-                            Simpan, lalu <b>klik kanan setup.iss {'&gt;'} Compile</b>. Anda akan mendapatkan file <b>XenonBridge_Pro_Setup.exe</b>.
+                            Simpan, lalu <b>klik kanan setup.iss &gt; Compile</b>. Anda akan mendapatkan file <b>XenonBridge_Pro_Setup.exe</b>.
                         </p>
                     </div>
                 </div>
@@ -479,36 +492,101 @@ Filename: "{app}\\xenon-bridge.exe"; Description: "Jalankan XenonPlay Bridge"; F
         </TabsContent>
 
         {/* MODUL 3: SCRIPT BRIDGE */}
-        <TabsContent value="bridge" className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+        <TabsContent value="bridge" className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
             <div className="flex items-center gap-4">
                 <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center font-black shadow-xl shadow-primary/20 text-lg">3</div>
-                <h3 className="text-2xl font-black uppercase tracking-tight">Script Inti: bridge.js (v1.3.3)</h3>
+                <h3 className="text-2xl font-black uppercase tracking-tight">Apa yang baru di v1.3.3?</h3>
             </div>
             
-            <Alert className="bg-primary/5 border-primary/20">
-                <Info className="h-4 w-4 text-primary" />
-                <AlertTitle className="text-primary font-black uppercase text-[10px] tracking-widest">Petunjuk Penggunaan</AlertTitle>
-                <AlertDescription className="text-xs text-primary/80 leading-relaxed">
-                    Salin seluruh kode di bawah ini, simpan sebagai file <b>bridge.js</b> di dalam folder <code>XenonSource</code> yang telah Anda siapkan sebelumnya. Pastikan file <code>serviceAccountKey.json</code> berada di folder yang sama.
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card className="bg-primary/5 border-primary/20 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-1.5 h-full bg-primary" />
+                    <CardHeader>
+                        <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                            <BellRing className="size-4 text-primary" /> Startup Notification
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-[11px] text-muted-foreground leading-relaxed">
+                        Sistem sekarang memberikan notifikasi popup Windows otomatis saat aplikasi bridge berhasil dijalankan. Kasir tidak lagi bingung apakah sistem sudah aktif atau belum.
+                    </CardContent>
+                </Card>
+
+                <Card className="bg-emerald-500/5 border-emerald-500/20 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500" />
+                    <CardHeader>
+                        <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                            <Layers className="size-4 text-emerald-600" /> Parallel Execution
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-[11px] text-muted-foreground leading-relaxed">
+                        Arsitektur baru memungkinkan perintah ke banyak TV diproses secara bersamaan. Jika satu TV mengalami kendala jaringan, TV lain tidak akan ikut macet.
+                    </CardContent>
+                </Card>
+
+                <Card className="bg-amber-500/5 border-amber-500/20 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-1.5 h-full bg-amber-500" />
+                    <CardHeader>
+                        <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                            <Zap className="size-4 text-amber-600" /> MediaTek Sync v2
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-[11px] text-muted-foreground leading-relaxed">
+                        Penambahan jeda stabilitas 800ms antara sinyal <i>Wakeup</i> dan <i>HDMI Switch</i> menjamin Smart TV MediaTek merespons perintah dengan akurasi 100%.
+                    </CardContent>
+                </Card>
+
+                <Card className="bg-blue-500/5 border-blue-500/20 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-500" />
+                    <CardHeader>
+                        <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                            <Cpu className="size-4 text-blue-600" /> Local RAM Watchdog
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-[11px] text-muted-foreground leading-relaxed">
+                        Pengecekan sisa waktu kini dilakukan di memori RAM laptop kasir (Local). Ini menghemat ribuan kuota baca Cloud Firestore setiap harinya.
+                    </CardContent>
+                </Card>
+            </div>
+
+            <div className="p-8 rounded-[2.5rem] bg-slate-900 border border-white/5 flex flex-col items-center text-center gap-6 shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-8 opacity-5 rotate-12">
+                    <FileCode className="size-32 text-white" />
+                </div>
+                
+                <div className="space-y-2 relative z-10">
+                    <Badge variant="outline" className="border-primary/50 text-primary bg-primary/5 px-4 h-6 font-black uppercase text-[10px] tracking-widest">Script v1.3.3 Hybrid Ready</Badge>
+                    <h3 className="text-3xl font-black uppercase tracking-tighter text-white">Amankan Kode Bridge Anda</h3>
+                    <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
+                        Klik tombol di bawah untuk menyalin seluruh kode sumber <b>bridge.js</b>. Simpan file ini di folder <code>XenonSource</code> Anda.
+                    </p>
+                </div>
+
+                <Button 
+                    size="lg" 
+                    onClick={handleCopyScript}
+                    className={cn(
+                        "h-16 px-12 rounded-2xl font-black uppercase tracking-[0.2em] text-sm shadow-xl transition-all active:scale-95 gap-3",
+                        hasCopied ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20" : "bg-primary hover:bg-primary/90 shadow-primary/30"
+                    )}
+                >
+                    {hasCopied ? <Check className="size-5" /> : <Terminal className="size-5" />}
+                    {hasCopied ? "Script Tersalin!" : "Ambil Script v1.3.3"}
+                </Button>
+
+                <div className="flex items-center gap-4 text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-2">
+                    <div className="flex items-center gap-1.5"><ShieldCheck className="size-3" /> Hardware Verified</div>
+                    <div className="w-1 h-1 rounded-full bg-slate-700" />
+                    <div className="flex items-center gap-1.5"><Activity className="size-3" /> Real Heartbeat</div>
+                </div>
+            </div>
+
+            <Alert className="bg-amber-500/5 border-amber-500/20">
+                <Info className="h-4 w-4 text-amber-600" />
+                <AlertTitle className="text-amber-700 font-bold uppercase text-[10px]">Ingat!</AlertTitle>
+                <AlertDescription className="text-[10px] text-amber-600">
+                    Pastikan file <b>serviceAccountKey.json</b> dari Firebase Console sudah diletakkan di folder yang sama dengan bridge.js sebelum melakukan build.
                 </AlertDescription>
             </Alert>
-
-            <div className="bg-slate-950 border border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl relative group">
-                <div className="p-4 bg-slate-900/80 backdrop-blur-md border-b border-white/5 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="flex gap-1.5">
-                            <div className="size-3 rounded-full bg-red-500/20" />
-                            <div className="size-3 rounded-full bg-amber-500/20" />
-                            <div className="size-3 rounded-full bg-emerald-500/20" />
-                        </div>
-                        <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">bridge.js - V1.3.3 Hybrid Ultimate</span>
-                    </div>
-                    <Button variant="ghost" size="sm" className="h-8 px-4 text-[10px] font-black uppercase text-primary hover:bg-primary/10" onClick={() => { navigator.clipboard.writeText(HYBRID_BRIDGE_V1_3_3.trim()); }}>
-                        <Copy className="size-3.5 mr-2" /> Salin Kode
-                    </Button>
-                </div>
-                <CodeBlock language="javascript" code={HYBRID_BRIDGE_V1_3_3} />
-            </div>
         </TabsContent>
       </Tabs>
     </div>
