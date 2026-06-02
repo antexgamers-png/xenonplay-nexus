@@ -69,27 +69,29 @@ export default function PublicDisplayPage() {
   const firestore = useFirestore();
   const [activeSlide, setActiveSlide] = useState(0); 
   const [now, setNow] = useState<number>(0);
+  const [mounted, setMounted] = useState(false);
   
+  useEffect(() => {
+    setMounted(true);
+    setNow(Date.now());
+    const clock = setInterval(() => setNow(Date.now()), 5000);
+    return () => clearInterval(clock);
+  }, []);
+
   const stationsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'stations') : null, [firestore]);
   const pricingQuery = useMemoFirebase(() => firestore ? collection(firestore, 'pricingRules') : null, [firestore]);
   
   const { data: stations } = useCollection<Station>(stationsQuery);
   const { data: pricingRules } = useCollection<PricingRule>(pricingQuery);
 
-  // Clock & Online Status Pulse (Dijalankan di client untuk hindari mismatch)
-  useEffect(() => {
-    setNow(Date.now());
-    const clock = setInterval(() => setNow(Date.now()), 5000);
-    return () => clearInterval(clock);
-  }, []);
-
   // Slider Interval
   useEffect(() => {
+    if (!mounted) return;
     const slider = setInterval(() => {
         setActiveSlide(prev => prev === 0 ? 1 : 0);
     }, activeSlide === 0 ? 60000 : 15000);
     return () => clearInterval(slider);
-  }, [activeSlide]);
+  }, [activeSlide, mounted]);
 
   const sortedStations = useMemo(() => (stations || []).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })), [stations]);
   const sortedPricing = useMemo(() => (pricingRules || []).sort((a, b) => a.price - b.price), [pricingRules]);
@@ -103,17 +105,13 @@ export default function PublicDisplayPage() {
     return "grid-cols-5";
   }, [sortedStations.length]);
 
-  // Hindari render konten dinamis sebelum hidrasi selesai
-  if (now === 0) return null;
+  if (!mounted) return <div className="h-screen w-screen bg-black" />;
 
   return (
     <div className="fixed inset-0 h-screen w-screen bg-background text-foreground overflow-hidden flex flex-col border-none font-body">
-      
-      {/* AMBIENT GLOW BACKGROUND */}
       <div className="absolute top-[-20%] left-[-10%] w-[70vw] h-[70vh] bg-primary/10 blur-[180px] rounded-full animate-pulse pointer-events-none" />
       <div className="absolute bottom-[-20%] right-[-10%] w-[80vw] h-[80vh] bg-accent/5 blur-[200px] rounded-full animate-pulse delay-1000 pointer-events-none" />
 
-      {/* HEADER (12vh) */}
       <header className="h-[12vh] flex justify-between items-center px-[4vw] z-20 bg-background/20 backdrop-blur-2xl border-b shrink-0">
         <div className="flex items-center gap-[2vw]">
           <div className="relative h-[8vh] w-[8vh] rotate-3 drop-shadow-[0_0_30px_rgba(59,130,246,0.4)]">
@@ -129,16 +127,15 @@ export default function PublicDisplayPage() {
         </div>
         
         <div className="text-right border-l pl-[3vw] border-border">
-          <div className="text-[6vh] font-black font-mono tracking-widest text-primary leading-none">
-            {new Date(now).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+          <div className="text-[6vh] font-black font-mono tracking-widest text-primary leading-none tabular-nums">
+            {now > 0 ? new Date(now).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '--:--:--'}
           </div>
           <div className="text-[1.3vh] font-black text-muted-foreground uppercase tracking-[0.6em] mt-[1vh]">
-            {new Date(now).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}
+            {now > 0 ? new Date(now).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' }) : '---'}
           </div>
         </div>
       </header>
 
-      {/* MAIN CONTENT (80vh) */}
       <main className="flex-1 relative overflow-hidden min-h-0">
         <AnimatePresence mode="wait">
           {activeSlide === 0 ? (
@@ -153,7 +150,7 @@ export default function PublicDisplayPage() {
               <div className={cn("grid gap-[2.5vh] h-full", gridCols)}>
                 {sortedStations.map(s => {
                   const hbMillis = s.last_heartbeat?.toMillis ? s.last_heartbeat.toMillis() : (typeof s.last_heartbeat === 'number' ? s.last_heartbeat : 0);
-                  const isOnline = hbMillis && (now - hbMillis < 95000);
+                  const isOnline = hbMillis > 0 && (now - hbMillis < 95000);
 
                   return (
                     <div 

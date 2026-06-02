@@ -3,52 +3,76 @@
 import { useEffect, useState, useRef } from 'react';
 
 /**
- * XENONPLAY CINEMATIC INTRO v3.0 - PURE VIDEO EDITION
- * Menghapus seluruh elemen UI website. 
- * Fokus 100% pada video intro /branding untuk estetika maksimal.
+ * XENONPLAY CINEMATIC INTRO v3.1 - TV OPTIMIZED
+ * Optimasi khusus Smart TV untuk menghindari lag dan tombol play muncul di awal.
  */
 
 export default function WelcomePage() {
-    const [mounted, setMounted] = useState(false);
+    const [isReady, setIsReady] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
-
-    // PATH KE FILE LOKAL: Diambil dari folder 'public/intro.mp4'
     const videoUrl = "/intro.mp4";
 
     useEffect(() => {
-        setMounted(true);
-        
-        // Memaksa video untuk berputar secara eksplisit (Beberapa browser TV membutuhkan trigger ini)
-        if (videoRef.current) {
-            videoRef.current.play().catch(() => {
-                console.log("Autoplay blocked by browser policy, waiting for interaction.");
-            });
-        }
-    }, []);
+        const video = videoRef.current;
+        if (!video) return;
 
-    if (!mounted) return null;
+        // Force play logic untuk bypass blokir autoplay browser TV
+        const attemptPlay = () => {
+            if (video) {
+                video.muted = true; // Wajib untuk autoplay
+                video.play().then(() => {
+                    setIsReady(true);
+                }).catch(() => {
+                    // Autoplay diblokir, coba lagi dalam 1 detik
+                    setTimeout(attemptPlay, 1000);
+                });
+            }
+        };
+
+        attemptPlay();
+
+        // Fix untuk GeckoView: Pastikan video me-restart jika loop bawaan gagal
+        const handleEnded = () => {
+            if (video) {
+                video.currentTime = 0;
+                video.play();
+            }
+        };
+
+        video.addEventListener('ended', handleEnded);
+        return () => video.removeEventListener('ended', handleEnded);
+    }, []);
 
     return (
         <div className="fixed inset-0 h-screen w-screen bg-black overflow-hidden flex items-center justify-center border-none select-none">
-            {/* VIDEO PLAYER LAYER */}
+            {/* 
+               Lapis Video dengan Transisi Opacity:
+               Menyembunyikan UI 'Play' bawaan browser sebelum video benar-benar siap berputar.
+            */}
             <video
                 ref={videoRef}
-                className="w-full h-full object-cover"
+                className={`w-full h-full object-cover transition-opacity duration-700 ${isReady ? 'opacity-100' : 'opacity-0'}`}
                 autoPlay
                 muted
                 loop
                 playsInline
                 preload="auto"
+                onCanPlayThrough={() => setIsReady(true)}
+                style={{ 
+                    backfaceVisibility: 'hidden', 
+                    transform: 'translateZ(0)', // Memaksa TV menggunakan chip GPU (Anti-lag)
+                    WebkitTransform: 'translateZ(0)'
+                }}
             >
                 <source src={videoUrl} type="video/mp4" />
-                {/* Fallback jika video gagal */}
-                <div className="flex flex-col items-center justify-center text-white/20">
-                    <p className="text-xs font-black uppercase tracking-[0.5em]">XENONPLAY NEXUS</p>
+                {/* Fallback jika video gagal total */}
+                <div className="flex flex-col items-center justify-center text-white/20 text-center px-10">
+                    <p className="text-xl font-black uppercase tracking-[0.5em]">XENONPLAY</p>
                 </div>
             </video>
 
-            {/* Overlay Gradient (Opsional: Memberikan kedalaman visual pada layar TV) */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-black/20 pointer-events-none" />
+            {/* Overlay ringan tanpa efek blur berat untuk menjaga FPS TV tetap stabil */}
+            <div className="absolute inset-0 bg-black/10 pointer-events-none" />
         </div>
     );
 }

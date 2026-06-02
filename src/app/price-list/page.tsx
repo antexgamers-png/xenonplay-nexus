@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -13,14 +12,16 @@ import Autoplay from 'embla-carousel-autoplay';
 import Image from 'next/image';
 
 export default function PriceListTVPage() {
-  const [now, setNow] = useState<Date | null>(null);
-  const [year, setYear] = useState<number | null>(null);
+  const [now, setNow] = useState<number>(0);
+  const [year, setYear] = useState<number>(2026);
+  const [mounted, setMounted] = useState(false);
   const firestore = useFirestore();
 
   useEffect(() => {
-    setNow(new Date());
+    setMounted(true);
+    setNow(Date.now());
     setYear(new Date().getFullYear());
-    const clock = setInterval(() => setNow(new Date()), 1000);
+    const clock = setInterval(() => setNow(Date.now()), 5000);
     return () => clearInterval(clock);
   }, []);
   
@@ -36,14 +37,13 @@ export default function PriceListTVPage() {
     return [...pricingRules].sort((a, b) => a.price - b.price);
   }, [pricingRules]);
 
+  if (!mounted) return <div className="h-screen w-screen bg-black" />;
+
   return (
     <div className="h-screen w-screen bg-background text-foreground overflow-hidden relative font-body flex flex-col select-none">
-      
-      {/* AMBIENT BACKGROUND */}
       <div className="absolute top-[-20%] left-[-10%] w-[70vw] h-[70vh] bg-primary/10 blur-[180px] rounded-full animate-pulse pointer-events-none" />
       <div className="absolute bottom-[-20%] right-[-10%] w-[80vw] h-[80vh] bg-accent/10 blur-[200px] rounded-full animate-pulse delay-1000 pointer-events-none" />
 
-      {/* HEADER SECTION */}
       <header className="h-[12vh] flex justify-between items-center px-12 relative z-20 bg-white/40 backdrop-blur-2xl border-b border-white/20 shrink-0">
         <div className="flex items-center gap-6">
           <div className="relative size-16 rotate-6 drop-shadow-[0_0_20px_rgba(59,130,246,0.4)]">
@@ -61,16 +61,15 @@ export default function PriceListTVPage() {
         </div>
         
         <div className="text-right flex flex-col items-end">
-          <div className="text-5xl font-black font-mono tracking-tighter leading-none text-primary drop-shadow-sm">
-            {now ? now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+          <div className="text-5xl font-black font-mono tracking-tighter leading-none text-primary drop-shadow-sm tabular-nums">
+            {now > 0 ? new Date(now).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
           </div>
           <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.5em] mt-2 border-t border-slate-200 pt-1">
-            {now ? now.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' }) : '---'}
+            {now > 0 ? new Date(now).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' }) : '---'}
           </div>
         </div>
       </header>
 
-      {/* MAIN CAROUSEL CONTENT */}
       <main className="flex-1 relative z-10 overflow-hidden flex items-center px-6 min-h-0">
         {isLoading ? (
             <div className="w-full flex flex-col items-center justify-center gap-4">
@@ -87,15 +86,12 @@ export default function PriceListTVPage() {
                                 animate={{ opacity: 1, scale: 1 }}
                                 className="w-full h-[70vh] bg-white/80 backdrop-blur-xl border-4 border-white rounded-[4rem] p-12 flex gap-12 items-center shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] relative overflow-hidden"
                             >
-                                {/* Subtle Large Watermark Logo */}
                                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.04] pointer-events-none scale-[2] grayscale">
                                     <Image src="/xenonplay-logo.png" alt="XenonPlay Watermark" width={600} height={600} priority />
                                 </div>
 
-                                {/* Side Accent */}
                                 <div className="absolute top-0 left-0 w-3 h-full bg-gradient-to-b from-primary via-accent to-primary" />
                                 
-                                {/* Package Details (Left) */}
                                 <div className="flex-[1.2] space-y-8 min-w-0 relative z-10">
                                     <div className="space-y-4">
                                         <div className="flex items-center gap-4">
@@ -138,7 +134,6 @@ export default function PriceListTVPage() {
                                     </div>
                                 </div>
 
-                                {/* Pricing & Items (Right) */}
                                 <div className="flex-1 flex flex-col items-center justify-center text-center space-y-8 border-l border-slate-100 pl-12 h-full relative z-10">
                                     <div className="relative">
                                         <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.6em] mb-2">ALL-INCLUSIVE RATE</p>
@@ -181,7 +176,6 @@ export default function PriceListTVPage() {
         )}
       </main>
 
-      {/* FOOTER MARQUEE */}
       <footer className="h-[8vh] bg-primary flex items-center overflow-hidden z-30 shadow-[0_-10px_30px_rgba(0,0,0,0.1)] border-t border-white/10 shrink-0">
         <motion.div
           animate={{ x: [2000, -2000] }}
@@ -196,7 +190,7 @@ export default function PriceListTVPage() {
           <span>•</span>
           <span>HUBUNGI OPERATOR UNTUK BOOKING DAN TOP-UP SESI ANDA</span>
           <span>•</span>
-          <span>© {year || '2026'} BY AFRIBR</span>
+          <span>© {year} BY AFRIBR</span>
           <span>•</span>
         </motion.div>
       </footer>
