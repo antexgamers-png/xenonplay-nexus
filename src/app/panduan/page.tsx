@@ -61,13 +61,14 @@ const CodeBlock = ({ code, language = "bash" }: { code: string, language?: strin
     );
 };
 
-const RESPONSIVE_HYBRID_BRIDGE_V1_7_0 = `
+const RESPONSIVE_HYBRID_BRIDGE_V1_8_0 = `
 /**
- * XENONPLAY NEXUS - XPBridge v1.7.0 (Logic Sync Edition)
+ * XENONPLAY NEXUS - XPBridge v1.8.0 (Direct Flow Edition)
  * 
  * PERBAIKAN:
- * 1. HDMI Bounce Fix: Menggunakan Home (3) sebagai primer sebelum HDMI Intent.
- * 2. Logic Sync: Membaca pengaturan otomatisasi langsung dari Firestore settings/session.
+ * 1. Menghapus Sinkronisasi Otomatisasi Sesi (Logic Sync).
+ * 2. Mengembalikan Alur Statis yang Terverifikasi.
+ * 3. HDMI Bounce Fix: Home (3) -> Delay -> HDMI Intent.
  */
 
 const admin = require('firebase-admin');
@@ -89,7 +90,7 @@ function log(msg) {
 }
 
 log("==================================================");
-log("🚀 XENON BRIDGE V1.7.0 LOGIC-SYNC ACTIVE");
+log("🚀 XENON BRIDGE V1.8.0 DIRECT-FLOW ACTIVE");
 log("📍 Location: " + baseDir);
 log("==================================================");
 
@@ -106,29 +107,11 @@ const adbCmd = fs.existsSync(adbPath) ? \`"\${adbPath}"\` : 'adb';
 admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
 const db = admin.firestore();
 
-// Global Settings Store
-let sessionSettings = {
-    enableAutoWake: true,
-    enableAutoHdmi: true,
-    enableAutoLanding: false,
-    enableResetOnEnd: true,
-    resetDelay: 5,
-    landingUrl: "https://xenonplay.web.app/tv-landing"
-};
-
 const localSessions = new Map();
 const execOptions = { windowsHide: true, timeout: 10000 };
 
-// Sync Settings from Firestore
-db.collection('settings').doc('session').onSnapshot(doc => {
-    if (doc.exists) {
-        sessionSettings = { ...sessionSettings, ...doc.data() };
-        log("⚙️ Settings Synced: " + JSON.stringify(sessionSettings));
-    }
-});
-
 async function sendStartupNotification() {
-    const msg = "Xenon Bridge v1.7.0 AKTIF. Sinkronisasi Logika Siap.";
+    const msg = "Xenon Bridge v1.8.0 AKTIF. Alur Langsung Siap.";
     const cmd = \`powershell -Command "(New-Object -ComObject WScript.Shell).Popup('\${msg}', 4, 'XenonPlay Nexus', 64)"\`;
     try { await execAsync(cmd, execOptions); } catch (e) {}
 }
@@ -164,8 +147,6 @@ async function handleAdbWorkflow(ip, action, hdmi, name, stationId) {
         
         const welcomeUrl = "https://xenonplay.web.app/welcome";
         const welcomeIntent = \`am start -a android.intent.action.VIEW -d \${welcomeUrl}\`;
-        const endUrl = sessionSettings.landingUrl || "https://xenonplay.web.app/tv-landing";
-        const endIntent = \`am start -a android.intent.action.VIEW -d \${endUrl}\`;
 
         if (action === 'wake') {
             log(\`[\${name}] Workflow: WAKEUP -> WELCOME SCREEN\`);
@@ -175,47 +156,21 @@ async function handleAdbWorkflow(ip, action, hdmi, name, stationId) {
         } 
         else if (action === 'hdmi') {
             log(\`[\${name}] Workflow: HOME -> HDMI INTENT (Bounce-Fix)\`);
-            // Kill Live TV Focus First
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 3"\`, execOptions); 
             await new Promise(r => setTimeout(r, 600)); 
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${hdmiIntent}"\`, execOptions); 
         } 
         else if (action === 'start' || action === 'resume') {
-            log(\`[\${name}] Workflow: APPLYING SESSION SETTINGS\`);
-            
-            if (sessionSettings.enableAutoWake) {
-                await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 224"\`, execOptions);
-                await new Promise(r => setTimeout(r, 500));
-            }
-
-            if (sessionSettings.enableAutoLanding) {
-                await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${welcomeIntent}"\`, execOptions); 
-                await new Promise(r => setTimeout(r, 2500)); 
-            } else {
-                // Jika tidak ada landing, tetap kirim Home untuk memutus Tuner
-                await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 3"\`, execOptions);
-                await new Promise(r => setTimeout(r, 500));
-            }
-
-            if (sessionSettings.enableAutoHdmi) {
-                await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${hdmiIntent}"\`, execOptions); 
-            }
+            log(\`[\${name}] Workflow: WELCOME -> HDMI INTENT\`);
+            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${welcomeIntent}"\`, execOptions); 
+            await new Promise(r => setTimeout(r, 2500)); 
+            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${hdmiIntent}"\`, execOptions); 
         }
         else if (action === 'stop' || action === 'sleep' || action === 'pause') {
-            log(\`[\${name}] Workflow: APPLYING END SETTINGS\`);
-            
-            // Go Home first
+            log(\`[\${name}] Workflow: HOME -> SLEEP\`);
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 3"\`, execOptions); 
             await new Promise(r => setTimeout(r, 500));
-
-            if (sessionSettings.enableAutoLanding) {
-                await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${endIntent}"\`, execOptions);
-                await new Promise(r => setTimeout(r, 1000));
-            }
-
-            if (action === 'sleep' || (action === 'stop' && sessionSettings.enableResetOnEnd)) {
-                await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 223"\`, execOptions); 
-            }
+            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 223"\`, execOptions); 
         }
         else if (action === 'home') {
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 3"\`, execOptions);
@@ -272,8 +227,8 @@ setInterval(() => {
 
 const PACKAGE_JSON_TEMPLATE = `
 {
-  "name": "xenon-bridge-workflow-pro",
-  "version": "1.7.0",
+  "name": "xenon-bridge-direct-flow",
+  "version": "1.8.0",
   "main": "bridge.js",
   "bin": "bridge.js",
   "pkg": {
@@ -298,10 +253,10 @@ export default function MasterPanduanPage() {
   const [hasCopied, setHasCopied] = useState(false);
 
   const handleCopyScript = () => {
-    navigator.clipboard.writeText(RESPONSIVE_HYBRID_BRIDGE_V1_7_0.trim());
+    navigator.clipboard.writeText(RESPONSIVE_HYBRID_BRIDGE_V1_8_0.trim());
     setHasCopied(true);
     setTimeout(() => setHasCopied(false), 2000);
-    toast({ title: "Script v1.7.0 Tersalin!", variant: "success" });
+    toast({ title: "Script v1.8.0 Tersalin!", variant: "success" });
   };
 
   return (
@@ -309,11 +264,11 @@ export default function MasterPanduanPage() {
       <header className="space-y-2">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary mb-2">
             <ShieldCheck className="size-3.5" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em]">XenonPlay Nexus Enterprise v1.7.0 "Logic Sync"</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em]">XenonPlay Nexus Enterprise v1.8.0 "Direct Flow"</span>
         </div>
         <h1 className="text-4xl font-black tracking-tighter uppercase leading-none">Panduan <span className="text-primary">Master Terintegrasi</span></h1>
         <p className="text-muted-foreground text-sm max-w-3xl font-medium">
-            Implementasi sinkronisasi logika otomatisasi sesi dan perbaikan stabilitas HDMI Bounce.
+            Logika sekuensial statis untuk stabilitas maksimal pada Smart TV merek lokal.
         </p>
       </header>
 
@@ -462,10 +417,10 @@ export default function MasterPanduanPage() {
                             <CodeBlock language="iss" code={`
 [Setup]
 AppName=XenonPlay Bridge
-AppVersion=1.7.0
+AppVersion=1.8.0
 DefaultDirName={autopf}\\XenonPlayBridge
 OutputDir=.
-OutputBaseFilename=XenonBridge_Setup_v17
+OutputBaseFilename=XenonBridge_Setup_v18
 SetupIconFile=assets\\app-icon.ico
 SolidCompression=yes
 
@@ -565,7 +520,7 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
         <TabsContent value="bridge" className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
             <div className="flex items-center gap-4">
                 <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center font-black shadow-xl shadow-primary/20 text-lg">3</div>
-                <h3 className="text-2xl font-black uppercase tracking-tight">Fitur Logic Sync v1.7.0</h3>
+                <h3 className="text-2xl font-black uppercase tracking-tight">Logika Alur v1.8.0</h3>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -575,27 +530,27 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
                         <CardTitle className="text-sm font-black uppercase tracking-widest">Tombol WAKE</CardTitle>
                     </CardHeader>
                     <CardContent className="text-[11px] text-muted-foreground leading-relaxed">
-                        Urutan: <b>Wakeup (224)</b> &rarr; <b>Welcome Screen</b>. Tetap konsisten untuk inisialisasi visual.
+                        Urutan: <b>Wakeup (224)</b> &rarr; <b>Welcome Screen</b>. Hanya sampai inisialisasi visual.
                     </CardContent>
                 </Card>
 
                 <Card className="bg-amber-500/5 border-amber-500/20 relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-1.5 h-full bg-amber-500" />
                     <CardHeader>
-                        <CardTitle className="text-sm font-black uppercase tracking-widest">HDMI Bounce-Fix</CardTitle>
+                        <CardTitle className="text-sm font-black uppercase tracking-widest">Tombol HDMI</CardTitle>
                     </CardHeader>
                     <CardContent className="text-[11px] text-muted-foreground leading-relaxed">
-                        Urutan: <b>Home (3)</b> &rarr; <b>Wait 600ms</b> &rarr; <b>HDMI Intent</b>. Memaksa Tuner TV berhenti sebelum pindah input.
+                        Urutan: <b>Home (3)</b> &rarr; <b>Wait 600ms</b> &rarr; <b>HDMI Intent</b>. Memaksa memutus Tuner Live TV.
                     </CardContent>
                 </Card>
 
                 <Card className="bg-emerald-500/5 border-emerald-500/20 relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500" />
                     <CardHeader>
-                        <CardTitle className="text-sm font-black uppercase tracking-widest">Logic Automation</CardTitle>
+                        <CardTitle className="text-sm font-black uppercase tracking-widest">Tombol START</CardTitle>
                     </CardHeader>
                     <CardContent className="text-[11px] text-muted-foreground leading-relaxed">
-                        Bridge kini membaca pengaturan <b>Otomatisasi Sesi</b> di dashboard web secara real-time.
+                        Urutan: <b>Welcome Screen</b> &rarr; <b>Wait 2.5s</b> &rarr; <b>HDMI Intent</b>. Transisi visual sultan.
                     </CardContent>
                 </Card>
             </div>
@@ -606,10 +561,10 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
                 </div>
                 
                 <div className="space-y-2 relative z-10">
-                    <Badge variant="outline" className="border-primary/50 text-primary bg-primary/5 px-4 h-6 font-black uppercase text-[10px] tracking-widest">Script v1.7.0 "Logic Sync"</Badge>
+                    <Badge variant="outline" className="border-primary/50 text-primary bg-primary/5 px-4 h-6 font-black uppercase text-[10px] tracking-widest">Script v1.8.0 "Direct Flow"</Badge>
                     <h3 className="text-3xl font-black uppercase tracking-tighter text-white">Dapatkan Kode Bridge Terbaru</h3>
                     <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
-                        Satu skrip untuk semua kendali. Pastikan file serviceAccountKey.json sudah ada di folder yang sama.
+                        Fitur otomatisasi yang tidak stabil telah dihapus. Menggunakan alur statis yang 100% diprediksi oleh sistem.
                     </p>
                 </div>
 
@@ -622,7 +577,7 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
                     )}
                 >
                     {hasCopied ? <Check className="size-5" /> : <Terminal className="size-5" />}
-                    {hasCopied ? "Script v1.7.0 Tersalin!" : "Ambil Script v1.7.0"}
+                    {hasCopied ? "Script v1.8.0 Tersalin!" : "Ambil Script v1.8.0"}
                 </Button>
             </div>
         </TabsContent>
