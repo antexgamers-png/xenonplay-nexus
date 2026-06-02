@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -60,11 +61,12 @@ const CodeBlock = ({ code, language = "bash" }: { code: string, language?: strin
     );
 };
 
-const RESPONSIVE_HYBRID_BRIDGE_V1_4_5 = `
+const RESPONSIVE_HYBRID_BRIDGE_V1_5_0 = `
 /**
- * XENONPLAY NEXUS - XPBridge v1.4.5 (Triple-Action Edition)
- * Perbaikan: Alur sekuensial WAKE -> HOME -> HDMI Intent.
- * Dirancang khusus untuk TV MediaTek yang butuh persiapan sistem sebelum pindah input.
+ * XENONPLAY NEXUS - XPBridge v1.5.0 (Welcome-Sequence Edition)
+ * Perbaikan: Alur sekuensial baru untuk stabilitas TV Lokal.
+ * Wake Action: WAKE -> WELCOME -> HDMI.
+ * HDMI Action: WAKE -> HDMI.
  */
 
 const admin = require('firebase-admin');
@@ -86,7 +88,7 @@ function log(msg) {
 }
 
 log("==================================================");
-log("🚀 XENON BRIDGE V1.4.5 TRIPLE-ACTION ACTIVE");
+log("🚀 XENON BRIDGE V1.5.0 WELCOME-SEQUENCE ACTIVE");
 log("📍 Location: " + baseDir);
 log("==================================================");
 
@@ -106,7 +108,7 @@ const localSessions = new Map();
 const execOptions = { windowsHide: true, timeout: 8000 };
 
 async function sendStartupNotification() {
-    const msg = "Xenon Bridge v1.4.5 AKTIF. Alur Triple-Action Siap.";
+    const msg = "Xenon Bridge v1.5.0 AKTIF. Alur Welcome Siap.";
     const cmd = \`powershell -Command "(New-Object -ComObject WScript.Shell).Popup('\${msg}', 4, 'XenonPlay Nexus', 64)"\`;
     try { await execAsync(cmd, execOptions); } catch (e) {}
 }
@@ -138,23 +140,34 @@ async function handleAdbWorkflow(ip, action, hdmi, name, stationId) {
         await execAsync(\`\${adbCmd} connect \${ip}:5555\`, execOptions);
         
         const hw = 4 + parseInt(hdmi);
-        const intent = \`am start -a android.intent.action.VIEW -d content://android.media.tv/passthrough/com.mediatek.tvinput%2F.hdmi.HDMIInputService%2FHW\${hw} -n com.mediatek.wwtv.tvcenter/com.mediatek.wwtv.tvcenter.nav.TurnkeyUiMainActivity -f 0x10000000\`;
+        const hdmiIntent = \`am start -a android.intent.action.VIEW -d content://android.media.tv/passthrough/com.mediatek.tvinput%2F.hdmi.HDMIInputService%2FHW\${hw} -n com.mediatek.wwtv.tvcenter/com.mediatek.wwtv.tvcenter.nav.TurnkeyUiMainActivity -f 0x10000000\`;
+        
+        // Sesuaikan dengan URL hosting Anda
+        const welcomeUrl = "https://xenonplay.web.app/welcome";
+        const welcomeIntent = \`am start -a android.intent.action.VIEW -d \${welcomeUrl}\`;
 
-        if (action === 'start' || action === 'hdmi' || action === 'wake' || action === 'resume') {
-            // STEP 1: WAKEUP (Pastikan layar menyala & sistem merespon)
+        if (action === 'wake') {
+            // wake (224) → welcome screen → HDMI Intent
+            log(\`[\${name}] Sequence: WAKE -> WELCOME -> HDMI\`);
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 224"\`, execOptions); 
-            await new Promise(r => setTimeout(r, 600)); 
-
-            // STEP 2: HOME (Hentikan paksa Live TV yang mungkin otomatis aktif saat wakeup)
-            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 3"\`, execOptions); 
-            await new Promise(r => setTimeout(r, 600)); 
-
-            // STEP 3: HDMI Intent
-            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${intent}"\`, execOptions); 
+            await new Promise(r => setTimeout(r, 1000)); 
             
-            if (action === 'start' || action === 'hdmi') {
-                await new Promise(r => setTimeout(r, 800)); 
-                await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${intent}"\`, execOptions); 
+            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${welcomeIntent}"\`, execOptions); 
+            await new Promise(r => setTimeout(r, 2500)); 
+            
+            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${hdmiIntent}"\`, execOptions); 
+        } 
+        else if (action === 'start' || action === 'hdmi' || action === 'resume') {
+            // wake (224) → HDMI Intent
+            log(\`[\${name}] Sequence: WAKE -> HDMI\`);
+            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 224"\`, execOptions); 
+            await new Promise(r => setTimeout(r, 1000)); 
+            
+            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${hdmiIntent}"\`, execOptions); 
+            
+            if (action === 'start') {
+                await new Promise(r => setTimeout(r, 1000)); 
+                await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${hdmiIntent}"\`, execOptions); 
             }
         } 
         else if (action === 'stop' || action === 'sleep' || action === 'pause') {
@@ -214,8 +227,8 @@ setInterval(() => {
 
 const PACKAGE_JSON_TEMPLATE = `
 {
-  "name": "xenon-bridge-triple-pro",
-  "version": "1.4.5",
+  "name": "xenon-bridge-welcome-pro",
+  "version": "1.5.0",
   "main": "bridge.js",
   "bin": "bridge.js",
   "pkg": {
@@ -229,7 +242,6 @@ const PACKAGE_JSON_TEMPLATE = `
 
 const HIDE_VBS_TEMPLATE = `
 ' XENON BRIDGE SILENT LAUNCHER v2.0
-' Path-Aware script to fix error 80070002
 Set WshShell = CreateObject("WScript.Shell")
 strPath = CreateObject("Scripting.FileSystemObject").GetParentFolderName(WScript.ScriptFullName)
 WshShell.CurrentDirectory = strPath
@@ -241,10 +253,10 @@ export default function MasterPanduanPage() {
   const [hasCopied, setHasCopied] = useState(false);
 
   const handleCopyScript = () => {
-    navigator.clipboard.writeText(RESPONSIVE_HYBRID_BRIDGE_V1_4_5.trim());
+    navigator.clipboard.writeText(RESPONSIVE_HYBRID_BRIDGE_V1_5_0.trim());
     setHasCopied(true);
     setTimeout(() => setHasCopied(false), 2000);
-    toast({ title: "Script v1.4.5 Tersalin!", variant: "success" });
+    toast({ title: "Script v1.5.0 Tersalin!", variant: "success" });
   };
 
   return (
@@ -252,11 +264,11 @@ export default function MasterPanduanPage() {
       <header className="space-y-2">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary mb-2">
             <ShieldCheck className="size-3.5" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em]">XenonPlay Nexus Enterprise v1.4.5 "Triple-Action"</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em]">XenonPlay Nexus Enterprise v1.5.0 "Welcome-Sequence"</span>
         </div>
         <h1 className="text-4xl font-black tracking-tighter uppercase leading-none">Panduan <span className="text-primary">Master Terintegrasi</span></h1>
         <p className="text-muted-foreground text-sm max-w-3xl font-medium">
-          Solusi final stabilitas hardware: Alur sekuensial Wake-Home-Intent untuk kompatibilitas mutlak.
+          Alur inisialisasi cerdas: Wake-Welcome-HDMI untuk visualitas premium dan stabilitas input TV lokal.
         </p>
       </header>
 
@@ -360,11 +372,6 @@ export default function MasterPanduanPage() {
                         <p className="text-[11px] text-muted-foreground leading-relaxed">
                             Logika utama kontrol hardware. Ambil kodenya di <b>Tab 3 (Script Bridge)</b> lalu simpan sebagai <code>bridge.js</code>.
                         </p>
-                        <div className="p-4 rounded-xl border border-dashed border-primary/30 bg-primary/5">
-                            <p className="text-[10px] text-primary font-bold italic leading-relaxed">
-                                Klik tombol "Ambil Script" di tab sebelah kanan, lalu paste ke Notepad dan simpan di folder XenonSource.
-                            </p>
-                        </div>
                     </div>
 
                     <div className="space-y-4">
@@ -410,10 +417,10 @@ export default function MasterPanduanPage() {
                             <CodeBlock language="iss" code={`
 [Setup]
 AppName=XenonPlay Bridge
-AppVersion=1.4.5
+AppVersion=1.5.0
 DefaultDirName={autopf}\\XenonPlayBridge
 OutputDir=.
-OutputBaseFilename=XenonBridge_Pro_Setup
+OutputBaseFilename=XenonBridge_Welcome_Setup
 SetupIconFile=assets\\app-icon.ico
 SolidCompression=yes
 
@@ -494,9 +501,6 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
                                 Wajib dilakukan manual agar status TV tidak 'Unauthorized'. Hubungkan kabel USB atau pastikan TV menyala.
                             </p>
                             <CodeBlock code={`cd "C:\\Program Files (x86)\\XenonPlayBridge\\bin"\nadb connect [IP_TV]:5555`} />
-                            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                                <p className="text-[10px] text-amber-600 font-bold italic">"Cek layar TV, centang 'Always Allow' lalu klik OK."</p>
-                            </div>
                         </div>
                         <div className="p-6 rounded-[2.5rem] bg-muted/30 border border-border space-y-4 shadow-sm">
                             <div className="flex items-center gap-3 text-primary">
@@ -516,7 +520,7 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
         <TabsContent value="bridge" className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
             <div className="flex items-center gap-4">
                 <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center font-black shadow-xl shadow-primary/20 text-lg">3</div>
-                <h3 className="text-2xl font-black uppercase tracking-tight">Fitur Triple-Action v1.4.5</h3>
+                <h3 className="text-2xl font-black uppercase tracking-tight">Fitur Welcome-Sequence v1.5.0</h3>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -524,11 +528,11 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
                     <div className="absolute top-0 left-0 w-1.5 h-full bg-primary" />
                     <CardHeader>
                         <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-                            <Zap className="size-4 text-primary" /> Triple-Action Protocol
+                            <Zap className="size-4 text-primary" /> Triple-Action (Wake Sequence)
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="text-[11px] text-muted-foreground leading-relaxed">
-                        Mengirimkan urutan perintah paling aman: <b>Wakeup</b> (untuk memastikan sistem responsif) → <b>Home</b> (untuk membersihkan stack memori Live TV) → <b>HDMI Intent</b>. Ini menjamin TV tidak "bingung" saat berpindah input.
+                        Urutan khusus Tombol Wake: <b>Wakeup (224)</b> → <b>Welcome Screen (Web)</b> → <b>HDMI Intent</b>. Ini memastikan TV "bersih" dan menampilkan visual pembuka sebelum masuk ke input game.
                     </CardContent>
                 </Card>
 
@@ -536,11 +540,11 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
                     <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500" />
                     <CardHeader>
                         <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-                            <Volume2 className="size-4 text-emerald-600" /> Audio Pro Control
+                            <Zap className="size-4 text-emerald-600" /> HDMI Direct Sequence
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="text-[11px] text-muted-foreground leading-relaxed">
-                        Mendukung kontrol volume +/- dan Mute langsung dari dashboard Nexus. Kini operator bisa mengatur suara TV tanpa perlu remote fisik.
+                        Urutan khusus Tombol HDMI: <b>Wakeup (224)</b> → <b>HDMI Intent</b>. Memberikan akses cepat ke port HDMI tanpa melewati layar welcome.
                     </CardContent>
                 </Card>
             </div>
@@ -551,10 +555,10 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
                 </div>
                 
                 <div className="space-y-2 relative z-10">
-                    <Badge variant="outline" className="border-primary/50 text-primary bg-primary/5 px-4 h-6 font-black uppercase text-[10px] tracking-widest">Script v1.4.5 Final Stable</Badge>
-                    <h3 className="text-3xl font-black uppercase tracking-tighter text-white">Perbarui Kode Bridge Anda</h3>
+                    <Badge variant="outline" className="border-primary/50 text-primary bg-primary/5 px-4 h-6 font-black uppercase text-[10px] tracking-widest">Script v1.5.0 "Welcome-Sequence"</Badge>
+                    <h3 className="text-3xl font-black uppercase tracking-tighter text-white">Dapatkan Kode Bridge Terbaru</h3>
                     <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
-                        Gunakan versi v1.4.5 untuk alur sekuensial <b>Wake-Home-Intent</b> yang menjamin stabilitas perpindahan port HDMI di TV merek lokal.
+                        Implementasi logika <b>Wake-Welcome-HDMI</b> untuk alur operasional yang lebih estetik dan stabil pada TV Android lokal.
                     </p>
                 </div>
 
@@ -567,7 +571,7 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
                     )}
                 >
                     {hasCopied ? <Check className="size-5" /> : <Terminal className="size-5" />}
-                    {hasCopied ? "Script v1.4.5 Tersalin!" : "Ambil Script v1.4.5"}
+                    {hasCopied ? "Script v1.5.0 Tersalin!" : "Ambil Script v1.5.0"}
                 </Button>
             </div>
         </TabsContent>
