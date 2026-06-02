@@ -65,10 +65,10 @@ function MonitorTimer({ endTime, remainingSeconds, isPaused }: MonitorTimerProps
   );
 }
 
-export function PublicDisplayPage() {
+export default function PublicDisplayPage() {
   const firestore = useFirestore();
   const [activeSlide, setActiveSlide] = useState(0); 
-  const [now, setNow] = useState<number>(Date.now());
+  const [now, setNow] = useState<number>(0);
   
   const stationsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'stations') : null, [firestore]);
   const pricingQuery = useMemoFirebase(() => firestore ? collection(firestore, 'pricingRules') : null, [firestore]);
@@ -76,8 +76,9 @@ export function PublicDisplayPage() {
   const { data: stations } = useCollection<Station>(stationsQuery);
   const { data: pricingRules } = useCollection<PricingRule>(pricingQuery);
 
-  // Clock & Online Status Pulse (Refresh every 5 seconds for more responsive status)
+  // Clock & Online Status Pulse (Dijalankan di client untuk hindari mismatch)
   useEffect(() => {
+    setNow(Date.now());
     const clock = setInterval(() => setNow(Date.now()), 5000);
     return () => clearInterval(clock);
   }, []);
@@ -101,6 +102,9 @@ export function PublicDisplayPage() {
     if (c <= 12) return "grid-cols-4";
     return "grid-cols-5";
   }, [sortedStations.length]);
+
+  // Hindari render konten dinamis sebelum hidrasi selesai
+  if (now === 0) return null;
 
   return (
     <div className="fixed inset-0 h-screen w-screen bg-background text-foreground overflow-hidden flex flex-col border-none font-body">
