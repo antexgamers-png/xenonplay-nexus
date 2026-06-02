@@ -38,7 +38,7 @@ const HardwareLinkStatus = ({ station }: { station: Station }) => {
         return () => clearInterval(interval);
     }, []);
 
-    // Konversi heartbeat ke millis dengan toleransi 95 detik
+    // Konversi heartbeat ke millis dengan toleransi 95 detik (Sync dengan Bridge v1.3.6)
     const hbMillis = station.last_heartbeat?.toMillis ? station.last_heartbeat.toMillis() : (typeof station.last_heartbeat === 'number' ? station.last_heartbeat : 0);
     const isOnline = hbMillis && (now - hbMillis < 95000);
 
@@ -204,7 +204,7 @@ export const getStationColumns = (onEdit: (station: Station) => void): ColumnDef
   {
     id: 'link_status',
     header: 'Hardware Link',
-    cell: ({ row }) => <HardwareLinkStatus row.original />,
+    cell: ({ row }) => <HardwareLinkStatus station={row.original} />,
   },
   {
     id: 'actions',
