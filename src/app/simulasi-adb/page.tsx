@@ -20,7 +20,8 @@ import {
     Settings2,
     Timer,
     Terminal,
-    Loader2
+    Copy,
+    RefreshCw
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -28,6 +29,7 @@ import Image from 'next/image';
 import { Separator } from '@/components/ui/separator';
 import { useShift } from '@/components/providers/shift-provider';
 import Link from 'next/link';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function AdbSimulatorPage() {
   const firestore = useFirestore();
@@ -64,247 +66,102 @@ export default function AdbSimulatorPage() {
     return true;
   };
 
-  const BRIDGE_CODE_PRO = `
+  const STABLE_BRIDGE_V1_3_0 = `
 /**
- * XENONPLAY NEXUS - XPBridge V1.3.2 PRO (Enterprise Final)
- * Build: 2026.02.16 - Verified by 1000x Stress-Test Simulation
- * Stability: Ironclad ADB Core + Native Windows UI + Hot-Swap Engine
+ * XENONPLAY NEXUS - XPBridge V1.3.0 (Stable Legacy)
+ * Arsitektur: Node.js Pure Script (Terminal Edition)
+ * Karakteristik: Paling stabil, rendah latency, tembus koneksi TV sulit.
  */
 
 const admin = require('firebase-admin');
-const { exec, execSync } = require('child_process');
-const path = require('path');
+const { exec } = require('child_process');
 const fs = require('fs');
-const SysTray = require('systray2').default;
+const path = require('path');
 
-// --- ⚙️ GLOBAL STATE ---
-let currentMode = null; 
-let tray = null;
-let watchdogTimer = null;
-let heartbeatTimer = null;
-let unsubscribeFirestore = null;
-const localSessions = new Map();
-let commandQueue = [];
-let isProcessingQueue = false;
+// --- 1. KONFIGURASI PATH ---
+const serviceAccount = require('./serviceAccountKey.json');
 
-// PATHING FIX: Menggunakan process.execPath agar bisa menemukan file di folder instalasi fisik
-const isPkg = !!process.pkg;
-const baseDir = isPkg ? path.dirname(process.execPath) : __dirname;
-const adbPath = path.join(baseDir, 'bin', 'adb.exe');
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+
+const db = admin.firestore();
+
+// Path ADB Portabel (Jika ada di folder bin)
+const adbPath = path.join(__dirname, 'bin', 'adb.exe');
 const adbCmd = fs.existsSync(adbPath) ? \`"\${adbPath}"\` : 'adb';
 
-// REFINED: Async Exec dengan Timeout 10 detik agar antrean tidak macet jika TV mati
-const execAsync = (cmd) => {
-    return new Promise((resolve, reject) => {
-        exec(cmd, { timeout: 10000 }, (error, stdout, stderr) => {
-            if (error) reject(error);
-            else resolve({ stdout, stderr });
-        });
-    });
-};
+console.log('--------------------------------------------------');
+console.log('🚀 XENON BRIDGE V1.3.0 STABLE IS RUNNING');
+console.log('--------------------------------------------------');
 
-function log(msg) {
-    const t = new Date().toLocaleString('id-ID');
-    const m = \`[\${t}] [\${currentMode?.toUpperCase() || 'SYS'}] \${msg}\`;
-    console.log(m);
-    try { fs.appendFileSync(path.join(baseDir, "bridge.log"), m + "\\n"); } catch(e) {}
-}
+// --- 2. LOGIKA MONITORING & EKSEKUSI ---
+db.collection('stations').onSnapshot(snapshot => {
+  snapshot.docChanges().forEach(change => {
+    const data = change.doc.data();
+    const stationId = change.doc.id;
 
-// --- 🖥️ STARTUP MODE SELECTOR (Native Windows Dialog) ---
-function showStartupSelector() {
-    const psScript = \`
-      Add-Type -AssemblyName Microsoft.VisualBasic
-      $result = [Microsoft.VisualBasic.Interaction]::MsgBox('Jalankan XenonBridge dalam Mode Online?\\n\\nYES = Online (Cloud)\\nNO = Offline (Lokal)', 'YesNo,Information,DefaultButton1', 'XenonBridge Pro V1.3.2')
-      Write-Output $result
-    \`;
-    try {
-        const result = execSync(\`powershell -Command "\${psScript}"\`).toString().trim().toLowerCase();
-        return result.includes('yes') ? 'online' : 'offline';
-    } catch (e) { return 'online'; }
-}
+    if (data.last_action) {
+      console.log(\`[\${new Date().toLocaleTimeString()}] Menerima sinyal: \${data.last_action.toUpperCase()} -> \${data.name}\`);
+      
+      const ip = data.ipAddress;
+      const action = data.last_action;
+      const hdmiIndex = data.hdmiIndex || 1;
 
-// --- 📡 FIREBASE ENGINE (Hot-Swap Enabled) ---
-async function initFirebase(mode) {
-    if (currentMode === mode && admin.apps.length) return;
-    
-    log(\`Sistem berpindah ke Mode: \${mode.toUpperCase()}...\`);
-    currentMode = mode;
-    
-    // Cleanup: Memutus koneksi lama secara bersih sebelum ganti mode
-    if (unsubscribeFirestore) unsubscribeFirestore();
-    if (admin.apps.length) {
-        try { await admin.app().delete(); } catch(e) {}
-    }
-    clearInterval(watchdogTimer);
-    clearInterval(heartbeatTimer);
-    localSessions.clear();
-    commandQueue = []; // Bersihkan antrean lama setiap ganti mode
-
-    await new Promise(r => setTimeout(r, 1000)); // Jeda stabilitas
-
-    if (mode === 'offline') {
-        process.env.FIRESTORE_EMULATOR_HOST = "localhost:8080";
-        process.env.FIREBASE_AUTH_EMULATOR_HOST = "localhost:9099";
-        admin.initializeApp({ projectId: "studio-6812150142-ab408" });
-    } else {
-        delete process.env.FIRESTORE_EMULATOR_HOST;
-        delete process.env.FIREBASE_AUTH_EMULATOR_HOST;
-        const saPath = path.join(baseDir, "serviceAccountKey.json");
-        if (!fs.existsSync(saPath)) {
-            log("CRITICAL ERROR: serviceAccountKey.json tidak ditemukan!");
-            return;
-        }
-        admin.initializeApp({ 
-            credential: admin.credential.cert(JSON.parse(fs.readFileSync(saPath, 'utf8'))) 
-        });
-    }
-
-    startCoreLoop();
-    updateTrayMenu();
-}
-
-// --- 📦 SYSTEM TRAY CONTROLLER ---
-function initTray() {
-    const iconPath = path.join(baseDir, 'assets', 'app-icon.ico');
-    const menu = {
-        icon: fs.existsSync(iconPath) ? fs.readFileSync(iconPath).toString('base64') : "",
-        title: "XenonBridge",
-        tooltip: "XenonPlay Controller Pro",
-        items: [
-            { title: "Status: Menginisialisasi...", enabled: false },
-            { title: "---", enabled: false },
-            { title: "🚀 Ganti ke Mode Online (Cloud)", checked: false },
-            { title: "🏠 Ganti ke Mode Offline (Lokal)", checked: false },
-            { title: "---", enabled: false },
-            { title: "🔄 Restart ADB Server" },
-            { title: "❌ Keluar Aplikasi" }
-        ]
-    };
-
-    tray = new SysTray({ menu, debug: false, copyDir: true });
-    tray.onClick(action => {
-        if (action.item.title.includes("Online")) initFirebase('online');
-        else if (action.item.title.includes("Offline")) initFirebase('offline');
-        else if (action.item.title.includes("Restart ADB")) restartAdb();
-        else if (action.item.title.includes("Keluar")) process.exit(0);
-    });
-}
-
-function updateTrayMenu() {
-    if (!tray) return;
-    const isOnline = currentMode === 'online';
-    tray.sendAction({
-        type: 'update-menu',
-        menu: {
-            items: [
-                { title: \`📍 Mode Aktif: \${currentMode.toUpperCase()}\`, enabled: false },
-                { title: "---", enabled: false },
-                { title: "🚀 Ganti ke Mode Online (Cloud)", checked: isOnline },
-                { title: "🏠 Ganti ke Mode Offline (Lokal)", checked: !isOnline },
-                { title: "---", enabled: false },
-                { title: "🔄 Restart ADB Server" },
-                { title: "❌ Keluar Aplikasi" }
-            ]
-        }
-    });
-}
-
-// --- ⚡ CORE LOGIC (V1.3.0 Engine + Local Watchdog) ---
-function startCoreLoop() {
-    const db = admin.firestore();
-    
-    // Watchdog: Cek sisa waktu tiap 5 detik
-    watchdogTimer = setInterval(() => {
-        const now = Date.now();
-        for (const [id, s] of localSessions.entries()) {
-            if (s.endTime && now >= s.endTime) {
-                log(\`Watchdog: Sesi \${s.name} Habis. Mengirim STOP.\`);
-                commandQueue.push({ ...s, action: 'stop', stationId: id });
-                localSessions.delete(id);
-                db.collection('stations').doc(id).update({ 
-                    is_active: false, 
-                    end_time: null, 
-                    last_action: 'stop' 
-                }).catch(() => {});
-                processQueue();
+      // 3. FORCE HANDSHAKE (Disconnect -> Connect)
+      exec(\`\${adbCmd} disconnect \${ip}:5555\`, () => {
+        setTimeout(() => {
+          exec(\`\${adbCmd} connect \${ip}:5555\`, (err, stdout) => {
+            if (stdout.includes('connected')) {
+              console.log(\`✅ Terhubung ke \${data.name} (\${ip})\`);
+              executeAdbCommand(ip, action, hdmiIndex, data.name);
+            } else {
+              console.log(\`❌ Gagal terhubung ke \${data.name}\`);
             }
-        }
-    }, 5000);
+          });
+        }, 1200); // Jeda stabilitas socket
+      });
 
-    // Heartbeat: Melaporkan status online tiap 30 detik
-    heartbeatTimer = setInterval(() => {
-        db.collection('stations').get().then(snap => {
-            snap.forEach(doc => doc.ref.update({ last_heartbeat: Date.now() }).catch(() => {}));
-        });
-    }, 30000);
-
-    // Real-time Listener
-    unsubscribeFirestore = db.collection('stations').onSnapshot(snap => {
-        snap.docChanges().forEach(change => {
-            const data = change.doc.data();
-            const id = change.doc.id;
-
-            if (data.is_active && data.end_time && !data.is_paused) {
-                localSessions.set(id, { endTime: data.end_time, ip: data.ipAddress, name: data.name, hdmiIndex: data.hdmiIndex || 1 });
-            } else { localSessions.delete(id); }
-
-            if (data.last_action) {
-                commandQueue.push({ stationId: id, ip: data.ipAddress, action: data.last_action, name: data.name, hdmiIndex: data.hdmiIndex || 1 });
-                change.doc.ref.update({ last_action: null }).catch(() => {});
-                processQueue();
-            }
-        });
-    }, err => log(\`Listener Error: \${err.message}\`));
-}
-
-// --- 🛠️ ADB EXECUTION (Ironclad Sequential) ---
-async function restartAdb() {
-    log("Me-restart ADB Server...");
-    try { await execAsync(\`\${adbCmd} kill-server && \${adbCmd} start-server\`); } catch(e) {}
-}
-
-async function processQueue() {
-    if (isProcessingQueue || !commandQueue.length) return;
-    isProcessingQueue = true;
-    
-    while (commandQueue.length > 0) {
-        const cmd = commandQueue.shift();
-        log(\`Eksekusi: \${cmd.action.toUpperCase()} -> \${cmd.name}\`);
-        
-        try {
-            await execAsync(\`\${adbCmd} connect \${cmd.ip}:5555\`);
-            
-            if (cmd.action === 'start' || cmd.action === 'wake' || cmd.action === 'resume') {
-                await execAsync(\`\${adbCmd} -s \${cmd.ip}:5555 shell "input keyevent 224"\`); // Wakeup
-                await new Promise(r => setTimeout(r, 800)); // Delay bangun TV
-                
-                const hw = 4 + (parseInt(cmd.hdmiIndex) || 1);
-                const intent = \`am start -n com.mediatek.wwtv.tvcenter/com.mediatek.wwtv.tvcenter.nav.TurnkeyUiMainActivity -d content://android.media.tv/passthrough/com.mediatek.tvinput/.hdmi.HDMIInputService/HW\${hw}\`;
-                await execAsync(\`\${adbCmd} -s \${cmd.ip}:5555 shell "\${intent}"\`);
-            } 
-            else if (cmd.action === 'stop' || cmd.action === 'sleep' || cmd.action === 'pause') {
-                await execAsync(\`\${adbCmd} -s \${cmd.ip}:5555 shell "input keyevent 3 && input keyevent 223"\`); // Home + Sleep
-            }
-            else if (cmd.action === 'home') { await execAsync(\`\${adbCmd} -s \${cmd.ip}:5555 shell "input keyevent 3"\`); }
-            log(\`SUKSES: Sinyal \${cmd.action} diterima \${cmd.name}\`);
-        } catch(e) { log(\`GAGAL: \${cmd.name} (\${e.message})\`); }
+      // Reset flag agar tidak loop
+      db.collection('stations').doc(stationId).update({ last_action: null });
     }
-    isProcessingQueue = false;
+  });
+});
+
+function executeAdbCommand(ip, action, hdmi, name) {
+  let cmd = '';
+  const hw = 4 + parseInt(hdmi);
+  const intent = \`am start -n com.mediatek.wwtv.tvcenter/com.mediatek.wwtv.tvcenter.nav.TurnkeyUiMainActivity -d content://android.media.tv/passthrough/com.mediatek.tvinput/.hdmi.HDMIInputService/HW\${hw}\`;
+
+  if (action === 'start' || action === 'wake' || action === 'resume') {
+    cmd = \`shell "input keyevent 224 && sleep 0.8 && \${intent}"\`;
+  } else if (action === 'stop' || action === 'sleep' || action === 'pause') {
+    cmd = \`shell "input keyevent 3 && input keyevent 223"\`;
+  } else if (action === 'home') {
+    cmd = \`shell "input keyevent 3"\`;
+  }
+
+  if (cmd) {
+    exec(\`\${adbCmd} -s \${ip}:5555 \${cmd}\`, (err) => {
+      if (!err) console.log(\`✨ Sinyal \${action} sukses terkirim ke \${name}\`);
+      else console.log(\`⚠️ \${name} tidak merespons perintah\`);
+    });
+  }
 }
 
-// --- 🚀 BOOTSTRAP ---
-(async () => {
-    initTray();
-    const mode = showStartupSelector();
-    try { await initFirebase(mode); } catch(e) { log("ERROR BOOT: " + e.message); }
-})();
+// Heartbeat Status (Online Indicator)
+setInterval(() => {
+    db.collection('stations').get().then(snap => {
+        snap.forEach(d => d.ref.update({ last_heartbeat: Date.now() }));
+    });
+}, 30000);
   `;
 
   const handleCopyCode = () => {
-      navigator.clipboard.writeText(BRIDGE_CODE_PRO.trim());
+      navigator.clipboard.writeText(STABLE_BRIDGE_V1_3_0.trim());
       setHasCopied(true);
       setTimeout(() => setHasCopied(false), 2000);
-      toast({ title: "XPBridge Pro V1.3.2 Tersalin!", variant: "success" });
+      toast({ title: "XPBridge v1.3.0 Tersalin!", variant: "success" });
   };
 
   const handleAction = async (stationId: string, action: string) => {
@@ -326,35 +183,35 @@ async function processQueue() {
       <header className="flex flex-col md:grid md:grid-cols-2 justify-between items-start md:items-end gap-4">
         <div>
             <div className="flex items-center gap-2 mb-2">
-                <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+                <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600">
                     <ShieldCheck className="size-4" />
                 </div>
-                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Bridge Pro Controller</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-600">Stable Legacy v1.3.0</span>
             </div>
             <h1 className="text-4xl font-black uppercase tracking-tight">Simulator <span className="text-primary">Master</span></h1>
-            <p className="text-muted-foreground text-sm font-medium">Versi Pro: Pindah mode tanpa restart & kontrol system tray.</p>
+            <p className="text-muted-foreground text-sm font-medium">Mode terminal Node.js yang paling tangguh untuk operasional harian.</p>
         </div>
         <div className="flex flex-wrap gap-2 justify-end">
             <Link href="/panduan">
-                <Button variant="outline" className="font-black uppercase text-[10px] tracking-widest gap-2 h-12 px-6 rounded-xl border-primary/20 text-primary">
-                    <BookText className="size-4" /> Panduan Build Pro
+                <Button variant="outline" className="font-black uppercase text-[10px] tracking-widest gap-2 h-12 px-6 rounded-xl border-border">
+                    <BookText className="size-4" /> Panduan
                 </Button>
             </Link>
             <Button onClick={handleCopyCode} className="font-black uppercase text-[10px] tracking-widest gap-2 h-12 px-6 rounded-xl shadow-xl shadow-primary/30">
-                {hasCopied ? <Check className="size-4" /> : <Settings2 className="size-4" />}
-                {hasCopied ? 'Tersalin' : 'Ambil Master Pro V1.3.2'}
+                {hasCopied ? <Check className="size-4" /> : <Terminal className="size-4" />}
+                {hasCopied ? 'Tersalin' : 'Ambil Script v1.3.0'}
             </Button>
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="lg:col-span-7 grid grid-cols-1 md:grid-cols-2 gap-4">
               {sortedStations?.map(station => {
                   const hbMillis = station.last_heartbeat?.toMillis ? station.last_heartbeat.toMillis() : (typeof station.last_heartbeat === 'number' ? station.last_heartbeat : 0);
                   const isOnline = hbMillis > 0 && (now - hbMillis < 45000);
                   
                   return (
-                      <Card key={station.id} className="border-border bg-card shadow-sm overflow-hidden">
+                      <Card key={station.id} className="border-border bg-card shadow-sm overflow-hidden rounded-2xl">
                           <CardHeader className="p-5 pb-3 border-b bg-muted/20">
                               <div className="flex justify-between items-start">
                                   <div className="flex items-center gap-3">
@@ -369,63 +226,18 @@ async function processQueue() {
                                           </div>
                                       </div>
                                   </div>
-                                  <Badge className={cn(
-                                      "text-[9px] font-black uppercase px-2 h-5 border-none",
-                                      isOnline ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" : "bg-red-500/10 text-red-500"
-                                  )}>
-                                      {isOnline ? 'PRO ONLINE' : 'OFFLINE'}
-                                  </Badge>
+                                  <div className={cn(
+                                      "size-2.5 rounded-full",
+                                      isOnline ? "bg-emerald-500 animate-pulse" : "bg-red-500"
+                                  )} title={isOnline ? 'Bridge Terkoneksi' : 'Offline'} />
                               </div>
                           </CardHeader>
-                          <CardContent className="p-5 space-y-6">
-                              <div className="space-y-4">
-                                  <div className="flex items-center gap-2 text-primary">
-                                      <Zap className="size-3.5 fill-current" />
-                                      <p className="text-[10px] font-black uppercase tracking-widest">Tes Cepat</p>
-                                  </div>
-                                  <div className="flex gap-2">
-                                      <div className="relative flex-1">
-                                          <Timer className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                          <Input 
-                                              type="number" 
-                                              placeholder="Menit" 
-                                              className="pl-9 h-10 font-bold"
-                                              value={simDurations[station.id] || ''}
-                                              onChange={(e) => setSimDurations({...simDurations, [station.id]: parseInt(e.target.value) || 0})}
-                                          />
-                                      </div>
-                                      <Button 
-                                          className="font-black uppercase text-[10px] tracking-widest h-10 px-4"
-                                          disabled={station.is_active}
-                                          onClick={() => { if(checkShift()) {
-                                              const duration = simDurations[station.id] || 60;
-                                              const ts = Date.now();
-                                              updateDoc(doc(firestore!, 'stations', station.id), {
-                                                  is_active: true,
-                                                  is_paused: false,
-                                                  start_time: ts,
-                                                  end_time: ts + (duration * 60 * 1000),
-                                                  last_action: 'start',
-                                                  last_action_timestamp: ts
-                                              });
-                                              toast({ title: "Simulasi Dimulai" });
-                                          }}}
-                                      >
-                                          Start
-                                      </Button>
-                                  </div>
-                              </div>
-
-                              <Separator />
-
-                              <div className="space-y-3">
-                                  <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">Manual Remote Hardware</p>
-                                  <div className="grid grid-cols-4 gap-2">
-                                      <Button variant="outline" size="sm" className="h-10 flex flex-col gap-1 text-emerald-600 border-emerald-500/20" onClick={() => handleAction(station.id, 'wake')}><Power className="size-3.5" /><span className="text-[8px] font-black">WAKE</span></Button>
-                                      <Button variant="outline" size="sm" className="h-10 flex flex-col gap-1 text-red-600 border-red-500/20" onClick={() => handleAction(station.id, 'sleep')}><Moon className="size-3.5" /><span className="text-[8px] font-black">SLEEP</span></Button>
-                                      <Button variant="outline" size="sm" className="h-10 flex flex-col gap-1" onClick={() => handleAction(station.id, 'home')}><Home className="size-3.5" /><span className="text-[8px] font-black">HOME</span></Button>
-                                      <Button variant="outline" size="sm" className="h-10 flex flex-col gap-1" onClick={() => handleAction(station.id, 'hdmi')}><Zap className="size-3.5" /><span className="text-[8px] font-black">HDMI</span></Button>
-                                  </div>
+                          <CardContent className="p-5 space-y-4">
+                              <div className="grid grid-cols-4 gap-2">
+                                  <Button variant="outline" size="sm" className="h-10 flex flex-col gap-1 text-emerald-600 border-emerald-500/20" onClick={() => handleAction(station.id, 'wake')}><Power className="size-3.5" /><span className="text-[8px] font-black">WAKE</span></Button>
+                                  <Button variant="outline" size="sm" className="h-10 flex flex-col gap-1 text-red-600 border-red-500/20" onClick={() => handleAction(station.id, 'sleep')}><Moon className="size-3.5" /><span className="text-[8px] font-black">SLEEP</span></Button>
+                                  <Button variant="outline" size="sm" className="h-10 flex flex-col gap-1" onClick={() => handleAction(station.id, 'home')}><Home className="size-3.5" /><span className="text-[8px] font-black">HOME</span></Button>
+                                  <Button variant="outline" size="sm" className="h-10 flex flex-col gap-1" onClick={() => handleAction(station.id, 'hdmi')}><Zap className="size-3.5" /><span className="text-[8px] font-black">HDMI</span></Button>
                               </div>
                           </CardContent>
                       </Card>
@@ -433,32 +245,35 @@ async function processQueue() {
               })}
           </div>
 
-          <div className="space-y-6">
-              <Card className="bg-primary/5 border-primary/20 shadow-xl overflow-hidden rounded-3xl relative">
-                  <CardHeader className="relative z-10">
-                      <div className="p-3 rounded-2xl bg-primary text-white w-fit mb-4">
-                        <ShieldCheck className="size-8" />
+          <div className="lg:col-span-5 space-y-6">
+              <Card className="bg-slate-950 border-slate-800 shadow-2xl overflow-hidden rounded-3xl">
+                  <div className="p-4 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                          <div className="size-2 rounded-full bg-red-500" />
+                          <div className="size-2 rounded-full bg-amber-500" />
+                          <div className="size-2 rounded-full bg-emerald-500" />
+                          <span className="ml-2 text-[10px] font-black uppercase text-slate-500 tracking-widest">bridge.js (Classic)</span>
                       </div>
-                      <CardTitle className="text-xl font-black uppercase">XPBridge <span className="text-primary">Pro</span></CardTitle>
-                      <CardDescription className="text-muted-foreground text-xs mt-1">Satu Aplikasi, Kontrol Penuh.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-5 pt-0 relative z-10">
-                      <div className="space-y-3">
-                          <div className="flex items-center gap-3">
-                              <div className="size-6 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600"><Check className="size-3.5" /></div>
-                              <p className="text-[10px] font-bold uppercase">Hot-Swap Online/Offline</p>
-                          </div>
-                          <div className="flex items-center gap-3">
-                              <div className="size-6 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600"><Check className="size-3.5" /></div>
-                              <p className="text-[10px] font-bold uppercase">Single Installer (.exe)</p>
-                          </div>
-                          <div className="flex items-center gap-3">
-                              <div className="size-6 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600"><Check className="size-3.5" /></div>
-                              <p className="text-[10px] font-bold uppercase">Auto-Run on Startup</p>
-                          </div>
-                      </div>
-                  </CardContent>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-500" onClick={handleCopyCode}>
+                          <Copy className="size-3" />
+                      </Button>
+                  </div>
+                  <ScrollArea className="h-[400px]">
+                      <pre className="p-6 text-[11px] font-mono text-emerald-400 leading-relaxed">
+                          <code>{STABLE_BRIDGE_V1_3_0.trim()}</code>
+                      </pre>
+                  </ScrollArea>
               </Card>
+
+              <div className="p-6 rounded-3xl bg-amber-500/5 border border-amber-500/20 space-y-3">
+                  <div className="flex items-center gap-2 text-amber-600">
+                      <Zap className="size-4" />
+                      <h4 className="text-xs font-black uppercase tracking-widest">Kenapa Pakai Versi Ini?</h4>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed italic">
+                      "Versi Classic v1.3.0 memangkas lapisan GUI yang berat, memberikan akses langsung ke shell Windows. Jika Anda bisa connect manual via CMD, script ini dijamin 100% bisa connect juga."
+                  </p>
+              </div>
           </div>
       </div>
     </div>
