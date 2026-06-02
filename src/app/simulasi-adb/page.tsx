@@ -31,13 +31,12 @@ export default function AdbSimulatorPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
   const { activeShift, setIsOpeningDialog } = useShift();
-  const [now, setNow] = useState<number>(0);
+  const [now, setNow] = useState<number>(Date.now());
   
   const [customDurations, setCustomDurations] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    setNow(Date.now());
-    const interval = setInterval(() => setNow(Date.now()), 10000);
+    const interval = setInterval(() => setNow(Date.now()), 5000);
     return () => clearInterval(interval);
   }, []);
   
@@ -138,7 +137,7 @@ export default function AdbSimulatorPage() {
           <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-4">
               {sortedStations?.map(station => {
                   const hbMillis = station.last_heartbeat?.toMillis ? station.last_heartbeat.toMillis() : (typeof station.last_heartbeat === 'number' ? station.last_heartbeat : 0);
-                  const isOnline = hbMillis > 0 && (now - hbMillis < 60000);
+                  const isOnline = hbMillis > 0 && (now - hbMillis < 95000);
                   
                   return (
                       <Card key={station.id} className="border-border bg-card shadow-sm overflow-hidden rounded-2xl">
@@ -157,7 +156,7 @@ export default function AdbSimulatorPage() {
                                       </div>
                                   </div>
                                   <div className={cn(
-                                      "size-2.5 rounded-full",
+                                      "size-2.5 rounded-full transition-all duration-500",
                                       isOnline ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" : "bg-red-500 animate-pulse"
                                   )} title={isOnline ? 'Bridge Connection OK' : 'No Response'} />
                               </div>

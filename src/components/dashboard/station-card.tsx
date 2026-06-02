@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { Station, PricingRule, FnbItem, Transaction, Member } from '@/lib/types';
@@ -161,7 +160,7 @@ export function StationCard({
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
   const [isCrediting, setIsCrediting] = useState(false);
-  const [now, setNow] = useState<number>(0);
+  const [now, setNow] = useState<number>(Date.now());
   
   const [showVoucherResult, setShowVoucherResult] = useState(false);
   const [generatedCode, setGeneratedCode] = useState('');
@@ -173,8 +172,7 @@ export function StationCard({
   const { activeShift, setIsOpeningDialog } = useShift();
 
   useEffect(() => {
-    setNow(Date.now());
-    const ticker = setInterval(() => setNow(Date.now()), 10000);
+    const ticker = setInterval(() => setNow(Date.now()), 5000);
     return () => clearInterval(ticker);
   }, []);
 
@@ -188,7 +186,6 @@ export function StationCard({
   const outstanding = currentTransaction ? (currentTransaction.amount || 0) - (currentTransaction.discount || 0) - (currentTransaction.paidAmount || 0) : 0;
   const isPaid = currentTransaction?.status === 'paid';
   
-  // PARSING HEARTBEAT ROBUST (90s Tolerance for 60s bridge interval)
   const hbMillis = last_heartbeat?.toMillis ? last_heartbeat.toMillis() : (typeof last_heartbeat === 'number' ? last_heartbeat : 0);
   const isOnline = hbMillis && (now - hbMillis < 95000);
 

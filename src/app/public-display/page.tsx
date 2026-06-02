@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -77,9 +76,9 @@ export function PublicDisplayPage() {
   const { data: stations } = useCollection<Station>(stationsQuery);
   const { data: pricingRules } = useCollection<PricingRule>(pricingQuery);
 
-  // Clock & Online Status Pulse (Forcing re-calculation of isOnline)
+  // Clock & Online Status Pulse (Refresh every 5 seconds for more responsive status)
   useEffect(() => {
-    const clock = setInterval(() => setNow(Date.now()), 10000);
+    const clock = setInterval(() => setNow(Date.now()), 5000);
     return () => clearInterval(clock);
   }, []);
 
@@ -150,7 +149,6 @@ export function PublicDisplayPage() {
               <div className={cn("grid gap-[2.5vh] h-full", gridCols)}>
                 {sortedStations.map(s => {
                   const hbMillis = s.last_heartbeat?.toMillis ? s.last_heartbeat.toMillis() : (typeof s.last_heartbeat === 'number' ? s.last_heartbeat : 0);
-                  // 95s tolerance for 60s ping
                   const isOnline = hbMillis && (now - hbMillis < 95000);
 
                   return (

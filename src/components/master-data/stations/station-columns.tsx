@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { ColumnDef } from '@tanstack/react-table';
@@ -35,11 +34,11 @@ const HardwareLinkStatus = ({ station }: { station: Station }) => {
     const [now, setNow] = useState(Date.now());
 
     useEffect(() => {
-        const interval = setInterval(() => setNow(Date.now()), 10000);
+        const interval = setInterval(() => setNow(Date.now()), 5000);
         return () => clearInterval(interval);
     }, []);
 
-    // Konversi heartbeat ke millis dengan toleransi 90 detik
+    // Konversi heartbeat ke millis dengan toleransi 95 detik
     const hbMillis = station.last_heartbeat?.toMillis ? station.last_heartbeat.toMillis() : (typeof station.last_heartbeat === 'number' ? station.last_heartbeat : 0);
     const isOnline = hbMillis && (now - hbMillis < 95000);
 
@@ -205,7 +204,7 @@ export const getStationColumns = (onEdit: (station: Station) => void): ColumnDef
   {
     id: 'link_status',
     header: 'Hardware Link',
-    cell: ({ row }) => <HardwareLinkStatus station={row.original} />,
+    cell: ({ row }) => <HardwareLinkStatus row.original />,
   },
   {
     id: 'actions',
