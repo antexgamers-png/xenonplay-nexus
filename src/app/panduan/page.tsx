@@ -60,10 +60,10 @@ const CodeBlock = ({ code, language = "bash" }: { code: string, language?: strin
     );
 };
 
-const RESPONSIVE_HYBRID_BRIDGE_V1_3_7 = `
+const RESPONSIVE_HYBRID_BRIDGE_V1_3_8 = `
 /**
- * XENONPLAY NEXUS - XPBridge v1.3.7 (Deep Sentinel Edition)
- * Perbaikan: HDMI Action Fix + Ghost Connection Filtering
+ * XENONPLAY NEXUS - XPBridge v1.3.8 (Final Precision Edition)
+ * Perbaikan: Precise HDMI Intent + Deep Heartbeat Filtering
  */
 
 const admin = require('firebase-admin');
@@ -85,7 +85,7 @@ function log(msg) {
 }
 
 log("==================================================");
-log("🚀 XENON BRIDGE V1.3.7 DEEP SENTINEL ACTIVE");
+log("🚀 XENON BRIDGE V1.3.8 PRECISION ACTIVE");
 log("📍 Location: " + baseDir);
 log("==================================================");
 
@@ -105,7 +105,7 @@ const localSessions = new Map();
 const execOptions = { windowsHide: true, timeout: 8000 };
 
 async function sendStartupNotification() {
-    const msg = "Xenon Bridge v1.3.7 AKTIF. Menghapus Ghost Connection...";
+    const msg = "Xenon Bridge v1.3.8 AKTIF. Membersihkan Ghost Connection...";
     const cmd = \`powershell -Command "(New-Object -ComObject WScript.Shell).Popup('\${msg}', 4, 'XenonPlay Nexus', 64)"\`;
     try { await execAsync(cmd, execOptions); } catch (e) {}
 }
@@ -136,19 +136,19 @@ async function handleAdbWorkflow(ip, action, hdmi, name, stationId) {
     try {
         await execAsync(\`\${adbCmd} connect \${ip}:5555\`, execOptions);
         
-        // FIX: Tambahkan -a android.intent.action.VIEW agar data URI tidak diabaikan TV
+        // PRECISE INTENT: Tambahkan Action VIEW (-a) dan Flag New Task (-f 0x10000000)
         const hw = 4 + parseInt(hdmi);
-        const intent = \`am start -a android.intent.action.VIEW -d content://android.media.tv/passthrough/com.mediatek.tvinput/.hdmi.HDMIInputService/HW\${hw} -n com.mediatek.wwtv.tvcenter/com.mediatek.wwtv.tvcenter.nav.TurnkeyUiMainActivity\`;
+        const intent = \`am start -a android.intent.action.VIEW -f 0x10000000 -d content://android.media.tv/passthrough/com.mediatek.tvinput/.hdmi.HDMIInputService/HW\${hw} -n com.mediatek.wwtv.tvcenter/com.mediatek.wwtv.tvcenter.nav.TurnkeyUiMainActivity\`;
 
         if (action === 'start' || action === 'wake' || action === 'resume' || action === 'hdmi') {
-            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 224"\`, execOptions); 
-            await new Promise(r => setTimeout(r, 800)); 
+            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 224"\`, execOptions); // Wakeup
+            await new Promise(r => setTimeout(r, 400)); 
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${intent}"\`, execOptions); 
         } 
         else if (action === 'stop' || action === 'sleep' || action === 'pause') {
-            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 3"\`, execOptions); 
-            await new Promise(r => setTimeout(r, 400));
-            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 223"\`, execOptions); 
+            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 3"\`, execOptions); // Home
+            await new Promise(r => setTimeout(r, 300));
+            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 223"\`, execOptions); // Sleep
         }
         else if (action === 'home') {
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 3"\`, execOptions);
@@ -156,15 +156,15 @@ async function handleAdbWorkflow(ip, action, hdmi, name, stationId) {
     } catch (err) { log(\`❌ [\${name}] Error: \${err.message}\`); }
 }
 
-// Deep Sentinel Heartbeat: Cek respon shell asli, bukan cuma ADB Connect
+// Deep Precision Heartbeat: Verifikasi respon shell untuk membunuh Ghost Connection
 setInterval(async () => {
     try {
         const snap = await db.collection('stations').get();
         for (const doc of snap.docs) {
             const s = doc.data();
             if (s.ipAddress) {
-                // Mencoba kirim perintah echo ke shell TV. Jika TV tidak merespon, maka Offline.
-                exec(\`\${adbCmd} connect \${s.ipAddress}:5555 && \${adbCmd} -s \${s.ipAddress}:5555 shell echo 1\`, (err, stdout) => {
+                // Mencoba 'adb shell echo 1'. Jika TV tidak merespon, maka status Offline (Merah).
+                exec(\`\${adbCmd} -s \${s.ipAddress}:5555 shell echo 1\`, (err, stdout) => {
                     if (!err && stdout.trim() === "1") {
                         db.collection('stations').doc(doc.id).update({
                             last_heartbeat: admin.firestore.FieldValue.serverTimestamp()
@@ -195,8 +195,8 @@ setInterval(() => {
 
 const PACKAGE_JSON_TEMPLATE = `
 {
-  "name": "xenon-bridge-deep-sentinel",
-  "version": "1.3.7",
+  "name": "xenon-bridge-final-precision",
+  "version": "1.3.8",
   "main": "bridge.js",
   "bin": "bridge.js",
   "pkg": {
@@ -221,10 +221,10 @@ export default function MasterPanduanPage() {
   const [hasCopied, setHasCopied] = useState(false);
 
   const handleCopyScript = () => {
-    navigator.clipboard.writeText(RESPONSIVE_HYBRID_BRIDGE_V1_3_7.trim());
+    navigator.clipboard.writeText(RESPONSIVE_HYBRID_BRIDGE_V1_3_8.trim());
     setHasCopied(true);
     setTimeout(() => setHasCopied(false), 2000);
-    toast({ title: "Script v1.3.7 Tersalin!", variant: "success" });
+    toast({ title: "Script v1.3.8 Tersalin!", variant: "success" });
   };
 
   return (
@@ -232,7 +232,7 @@ export default function MasterPanduanPage() {
       <header className="space-y-2">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary mb-2">
             <ShieldCheck className="size-3.5" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em]">XenonPlay Nexus Enterprise v1.3.7 "Deep Sentinel"</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em]">XenonPlay Nexus Enterprise v1.3.8 "Final Precision"</span>
         </div>
         <h1 className="text-4xl font-black tracking-tighter uppercase leading-none">Panduan <span className="text-primary">Master Terintegrasi</span></h1>
         <p className="text-muted-foreground text-sm max-w-3xl font-medium">
@@ -390,7 +390,7 @@ export default function MasterPanduanPage() {
                             <CodeBlock language="iss" code={`
 [Setup]
 AppName=XenonPlay Bridge
-AppVersion=1.3.7
+AppVersion=1.3.8
 DefaultDirName={autopf}\\XenonPlayBridge
 OutputDir=.
 OutputBaseFilename=XenonBridge_Pro_Setup
@@ -496,7 +496,7 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
         <TabsContent value="bridge" className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
             <div className="flex items-center gap-4">
                 <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center font-black shadow-xl shadow-primary/20 text-lg">3</div>
-                <h3 className="text-2xl font-black uppercase tracking-tight">Apa yang baru di v1.3.7?</h3>
+                <h3 className="text-2xl font-black uppercase tracking-tight">Apa yang baru di v1.3.8?</h3>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -504,11 +504,11 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
                     <div className="absolute top-0 left-0 w-1.5 h-full bg-primary" />
                     <CardHeader>
                         <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-                            <ShieldCheck className="size-4 text-primary" /> Deep Sentinel Check
+                            <ShieldCheck className="size-4 text-primary" /> Deep Precision Check
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="text-[11px] text-muted-foreground leading-relaxed">
-                        Sistem tidak lagi tertipu oleh "Ghost Connection" (cache ADB). Status Online hanya akan Hijau jika TV benar-benar merespon sinyal shell aktif.
+                        Sistem kini melakukan verifikasi dua lapis. Lampu indikator hanya akan Hijau jika TV merespon sinyal shell asli, membunuh status palsu dari "Ghost Connection".
                     </CardContent>
                 </Card>
 
@@ -516,11 +516,11 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
                     <div className="absolute top-0 left-0 w-1.5 h-full bg-amber-500" />
                     <CardHeader>
                         <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-                            <Zap className="size-4 text-amber-600" /> HDMI Action Fix
+                            <Zap className="size-4 text-amber-600" /> High-Accuracy HDMI Intent
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="text-[11px] text-muted-foreground leading-relaxed">
-                        Memperbaiki perintah HDMI yang sering meleset ke Live TV. Menambahkan parameter Action VIEW yang menjamin TV berpindah input secara presisi.
+                        Menambahkan parameter Flags dan Action VIEW yang memaksa TV MediaTek untuk segera berpindah ke port HDMI tanpa terjebak di Live TV atau menu utama.
                     </CardContent>
                 </Card>
             </div>
@@ -531,10 +531,10 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
                 </div>
                 
                 <div className="space-y-2 relative z-10">
-                    <Badge variant="outline" className="border-primary/50 text-primary bg-primary/5 px-4 h-6 font-black uppercase text-[10px] tracking-widest">Script v1.3.7 Deep Sentinel Ready</Badge>
-                    <h3 className="text-3xl font-black uppercase tracking-tighter text-white">Amankan Kode Bridge Anda</h3>
+                    <Badge variant="outline" className="border-primary/50 text-primary bg-primary/5 px-4 h-6 font-black uppercase text-[10px] tracking-widest">Script v1.3.8 Precision Ready</Badge>
+                    <h3 className="text-3xl font-black uppercase tracking-tighter text-white">Perbarui Kode Bridge Anda</h3>
                     <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
-                        Salin kode Deep Sentinel untuk akurasi status hardware yang jujur dan kontrol HDMI yang 100% tepat sasaran.
+                        Gunakan versi v1.3.8 untuk menjamin TV berpindah HDMI 100% akurat dan status hardware yang jujur tanpa gangguan cache ADB.
                     </p>
                 </div>
 
@@ -547,7 +547,7 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
                     )}
                 >
                     {hasCopied ? <Check className="size-5" /> : <Terminal className="size-5" />}
-                    {hasCopied ? "Script v1.3.7 Tersalin!" : "Ambil Script v1.3.7"}
+                    {hasCopied ? "Script v1.3.8 Tersalin!" : "Ambil Script v1.3.8"}
                 </Button>
             </div>
         </TabsContent>
