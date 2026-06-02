@@ -1,22 +1,28 @@
 
 # 💎 XenonPlay Nexus - Enterprise Game Center Manager
 
-Sistem manajemen rental PlayStation real-time dengan teknologi **Hybrid Autonomy** (Tetap stabil meskipun internet terputus).
+Sistem manajemen rental PlayStation real-time dengan teknologi **Hybrid Autonomy V1.3.3**.
 
 ## 🚀 Prosedur Deployment (Online)
 Jika Anda melakukan perubahan pada tampilan web, gunakan perintah ini di terminal:
 ```bash
 sh deploy.sh
 ```
-Aplikasi akan diperbarui secara otomatis di **[https://xenonplay.web.app](https://xenonplay.web.app)**.
+Akses Server: **[https://xenonplay.web.app](https://xenonplay.web.app)**.
 
-## 📟 Setup Laptop Kasir (XPBridge V1.3.0 Stable)
-Sistem ini menggunakan laptop kasir sebagai pengawas hardware.
+## 📟 Setup Laptop Kasir (XPBridge V1.3.3 Hybrid - REKOMENDASI)
+Sistem ini menggunakan satu laptop kasir sebagai pengawas hardware anti-macet.
 
-### Langkah Instalasi Pertama:
+### Mengapa V1.3.3 Hybrid?
+- **Parallel Core**: TV macet tidak menyandera TV lain.
+- **MediaTek Sync**: Jeda stabilitas 800ms untuk menjamin TV bangun & pindah HDMI 100% sukses.
+- **Real Heartbeat**: Status hijau di dashboard benar-benar dicek via ADB Ping (Bukan Fake Date).
+- **Quota Saver**: Pengecekan sisa waktu dilakukan di RAM laptop, menghemat biaya Cloud Google.
+
+### Langkah Instalasi:
 1. Buka dashboard di menu **Integrasi > Simulator Control**.
-2. Klik tombol **Ambil Master Bridge V1.3.0**.
-3. Simpan kodenya sebagai `bridge.js` di laptop kasir.
+2. Klik tombol **Ambil Script v1.3.3**.
+3. Simpan kodenya sebagai `bridge.js` di folder `C:\XenonBridge`.
 4. Masukkan file `serviceAccountKey.json` dari Firebase Console ke folder yang sama.
 5. Jalankan perintah:
    ```bash
@@ -24,13 +30,8 @@ Sistem ini menggunakan laptop kasir sebagai pengawas hardware.
    node bridge.js
    ```
 
-### Fitur Unggulan V1.3.0:
-- **Local Watchdog**: TV pasti mati tepat waktu meskipun internet mati saat sesi berakhir.
-- **Deep Sleep Fix**: Sinyal "Burst Wakeup" menjamin TV bangun instan dari tidur nyenyak.
-- **Persistent Connection**: Menggunakan < 1% CPU laptop, sangat ringan dan dingin.
-
-## 🏠 Mode Server Offline (Kedaulatan 100%)
-Jika Anda ingin sistem berjalan sepenuhnya di jaringan lokal tanpa internet sama sekali, ikuti panduan di `docs/OFFLINE_SETUP_GUIDE.md`.
+## 🏠 Mode Server Offline
+Jika internet terputus, sistem tetap berjalan lancar. Ikuti panduan di `docs/OFFLINE_SETUP_GUIDE.md`.
 
 ---
-Handcrafted by **AfrIbr Studio** © 2026 • *Build for Stability*
+Handcrafted by **AfrIbr Studio** © 2026 • *Stability is the Core of Business*
