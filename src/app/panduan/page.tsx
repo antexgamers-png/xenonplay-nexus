@@ -29,7 +29,9 @@ import {
     Check,
     Wifi,
     MonitorOff,
-    MonitorPlay
+    MonitorPlay,
+    FolderPlus,
+    FileArchive
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -71,11 +73,9 @@ const path = require('path');
 const util = require('util');
 const execAsync = util.promisify(exec);
 
-// --- 1. PATH RESOLUTION (FIX FOR EXE) ---
 const isPkg = !!process.pkg;
 const baseDir = isPkg ? path.dirname(process.execPath) : __dirname;
 
-// --- 2. LOGGING ---
 const logFile = path.join(baseDir, "bridge.log");
 function log(msg) {
     const timestamp = new Date().toLocaleString('id-ID');
@@ -89,7 +89,6 @@ log("🚀 XENON BRIDGE V1.3.6 SENTINEL ACTIVE");
 log("📍 Root: " + baseDir);
 log("==================================================");
 
-// --- 3. KONFIGURASI ---
 const serviceAccountPath = path.join(baseDir, "serviceAccountKey.json");
 if (!fs.existsSync(serviceAccountPath)) {
     log("❌ FATAL: serviceAccountKey.json tidak ditemukan!");
@@ -113,20 +112,17 @@ async function sendStartupNotification() {
 
 sendStartupNotification();
 
-// --- 4. COMMAND LISTENER ---
 db.collection('stations').onSnapshot(snapshot => {
   snapshot.docChanges().forEach(async change => {
     const data = change.doc.data();
     const stationId = change.doc.id;
 
-    // Sinkronisasi Watchdog Local
     if (data.is_active && data.end_time) {
         localSessions.set(stationId, { name: data.name, endTime: data.end_time, ip: data.ipAddress, hdmi: data.hdmiIndex || 1 });
     } else {
         localSessions.delete(stationId);
     }
 
-    // Eksekusi Signal Dashboard
     if (data.last_action) {
       log(\`📡 Signal: \${data.last_action.toUpperCase()} -> \${data.name}\`);
       await db.collection('stations').doc(stationId).update({ last_action: null });
@@ -155,15 +151,12 @@ async function handleAdbWorkflow(ip, action, hdmi, name, stationId) {
     } catch (err) { log(\`❌ [\${name}] Error: \${err.message}\`); }
 }
 
-// --- 5. SENTINEL ENGINE (Heartbeat & Watchdog) ---
-// Heartbeat Otomatis Tiap 60 Detik (Update Status Dashboard)
 setInterval(async () => {
     try {
         const snap = await db.collection('stations').get();
         for (const doc of snap.docs) {
             const s = doc.data();
             if (s.ipAddress) {
-                // Background check tanpa mengganggu antrean utama
                 exec(\`\${adbCmd} connect \${s.ipAddress}:5555\`, (err, stdout) => {
                     if (!err && stdout.includes("connected")) {
                         db.collection('stations').doc(doc.id).update({
@@ -176,7 +169,6 @@ setInterval(async () => {
     } catch (e) {}
 }, 60000);
 
-// Watchdog Durasi (Check tiap 2 detik)
 setInterval(() => {
     const now = Date.now();
     localSessions.forEach((session, id) => {
@@ -192,6 +184,26 @@ setInterval(() => {
         }
     });
 }, 2000);
+`;
+
+const PACKAGE_JSON_TEMPLATE = `
+{
+  "name": "xenon-bridge-sentinel",
+  "version": "1.3.6",
+  "main": "bridge.js",
+  "bin": "bridge.js",
+  "pkg": {
+    "assets": ["bin/**/*", "serviceAccountKey.json"]
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  }
+}
+`;
+
+const HIDE_VBS_TEMPLATE = `
+Set WshShell = CreateObject("WScript.Shell")
+WshShell.Run "xenon-bridge.exe", 0, false
 `;
 
 export default function MasterPanduanPage() {
@@ -224,7 +236,7 @@ export default function MasterPanduanPage() {
                 <Package className="size-5"/> 1. Membangun Installer
             </TabsTrigger>
             <TabsTrigger value="konfigurasi" className="rounded-[1.5rem] font-black uppercase text-[11px] tracking-widest flex-1 gap-3 data-[state=active]:bg-primary data-[state=active]:text-white shadow-xl transition-all min-w-[200px]">
-                <Settings className="size-5"/> 2. Konfigurasi Laptop & TV
+                <Settings className="size-5"/> 2. Konfigurasi Sistem
             </TabsTrigger>
             <TabsTrigger value="bridge" className="rounded-[1.5rem] font-black uppercase text-[11px] tracking-widest flex-1 gap-3 data-[state=active]:bg-primary data-[state=active]:text-white shadow-xl transition-all min-w-[200px]">
                 <FileCode className="size-5"/> 3. Script Bridge
@@ -232,128 +244,136 @@ export default function MasterPanduanPage() {
         </TabsList>
 
         <TabsContent value="installer" className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <section className="space-y-6">
-                <div className="flex items-center gap-4">
-                    <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center font-black shadow-xl shadow-primary/20 text-lg">0</div>
-                    <h3 className="text-2xl font-black uppercase tracking-tight">Persiapan Alat (Build Tools)</h3>
-                </div>
-                <div className="grid gap-6 md:grid-cols-3">
-                    <Card className="border-border">
-                        <CardHeader className="pb-3 border-b bg-muted/20">
-                            <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
-                                <Cpu className="size-4 text-primary" /> 1. Node.js LTS
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-6">
-                            <p className="text-[11px] text-muted-foreground mb-4">Mesin utama untuk menjalankan skrip JavaScript.</p>
-                            <Button variant="outline" size="sm" className="w-full h-9 text-[10px] font-black uppercase" asChild>
-                                <a href="https://nodejs.org/" target="_blank"><ExternalLink className="size-3 mr-2" /> Download</a>
-                            </Button>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-border">
-                        <CardHeader className="pb-3 border-b bg-muted/20">
-                            <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
-                                <Terminal className="size-4 text-primary" /> 2. ADB Platform Tools
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-6">
-                            <p className="text-[11px] text-muted-foreground mb-4">Binary <code>adb.exe</code> dan DLL pendukung.</p>
-                            <Button variant="outline" size="sm" className="w-full h-9 text-[10px] font-black uppercase" asChild>
-                                <a href="https://developer.android.com/tools/releases/platform-tools" target="_blank"><ExternalLink className="size-3 mr-2" /> Download</a>
-                            </Button>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-border">
-                        <CardHeader className="pb-3 border-b bg-muted/20">
-                            <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
-                                <Layers className="size-4 text-primary" /> 3. Inno Setup
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-6">
-                            <p className="text-[11px] text-muted-foreground mb-4">Software pembuat installer Windows.</p>
-                            <Button variant="outline" size="sm" className="w-full h-9 text-[10px] font-black uppercase" asChild>
-                                <a href="https://jrsoftware.org/isdl.php" target="_blank"><ExternalLink className="size-3 mr-2" /> Download</a>
-                            </Button>
-                        </CardContent>
-                    </Card>
-                </div>
-            </section>
-
+            {/* TAHAP 1: PERSIAPAN FOLDER */}
             <section className="space-y-6">
                 <div className="flex items-center gap-4">
                     <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center font-black shadow-xl shadow-primary/20 text-lg">1</div>
-                    <h3 className="text-2xl font-black uppercase tracking-tight">Menyiapkan Folder XenonSource</h3>
+                    <h3 className="text-2xl font-black uppercase tracking-tight">Persiapan Folder & Aset</h3>
                 </div>
-                <div className="grid gap-8 md:grid-cols-2">
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-4">
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                            Buat folder <b>XenonSource</b> di Desktop. Ini adalah sumber installer Anda.
-                        </p>
-                        <div className="p-5 rounded-2xl bg-muted/30 border border-border space-y-4">
-                            <div className="flex items-center gap-3">
-                                <div className="size-6 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center text-[10px] font-black">A</div>
-                                <p className="text-xs font-bold uppercase">Folder bin/ (3 File Wajib)</p>
-                            </div>
-                            <p className="text-[10px] text-muted-foreground pl-9">Wajib: <code>adb.exe</code>, <code>AdbWinApi.dll</code>, <code>AdbWinUsbApi.dll</code>.</p>
-                            
-                            <div className="flex items-center gap-3">
-                                <div className="size-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-black">B</div>
-                                <p className="text-xs font-bold uppercase">True Silent Script (hide.vbs)</p>
-                            </div>
-                            <p className="text-[10px] text-muted-foreground pl-9">Buat file <code>hide.vbs</code> agar CMD tidak muncul.</p>
-                            <CodeBlock language="vbscript" code={`Set WshShell = CreateObject("WScript.Shell")\nWshShell.Run "xenon-bridge.exe", 0, false`} />
-                        </div>
+                        <Card className="border-border">
+                            <CardHeader className="bg-muted/20">
+                                <CardTitle className="text-sm font-black uppercase flex items-center gap-2">
+                                    <FolderPlus className="size-4 text-primary" /> Buat Struktur Root
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="pt-4 space-y-3">
+                                <p className="text-xs text-muted-foreground leading-relaxed">
+                                    Buat folder baru di Desktop dengan nama <b>XenonSource</b>. Di dalamnya, buatlah sub-folder berikut:
+                                </p>
+                                <ul className="text-[11px] space-y-2 font-bold text-slate-600 list-disc list-inside">
+                                    <li>📁 <b>bin/</b> - Untuk menyimpan binary ADB.</li>
+                                    <li>📁 <b>assets/</b> - Untuk file ikon (.ico) dan gambar.</li>
+                                </ul>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="border-border">
+                            <CardHeader className="bg-muted/20">
+                                <CardTitle className="text-sm font-black uppercase flex items-center gap-2">
+                                    <Box className="size-4 text-primary" /> Isi Folder bin/
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="pt-4 space-y-3 text-[11px] text-muted-foreground">
+                                <p>Ekstrak ADB Platform Tools ke dalam folder <b>bin/</b>. Pastikan 3 file ini ada:</p>
+                                <div className="flex flex-wrap gap-2">
+                                    <Badge variant="outline" className="font-mono text-[9px]">adb.exe</Badge>
+                                    <Badge variant="outline" className="font-mono text-[9px]">AdbWinApi.dll</Badge>
+                                    <Badge variant="outline" className="font-mono text-[9px]">AdbWinUsbApi.dll</Badge>
+                                </div>
+                            </CardContent>
+                        </Card>
                     </div>
+
                     <div className="p-6 rounded-[2.5rem] bg-slate-950 border border-white/5 shadow-2xl relative overflow-hidden flex flex-col justify-center">
                         <div className="absolute top-0 right-0 p-8 opacity-5">
                             <FolderTree className="size-32 text-white" />
                         </div>
-                        <p className="text-emerald-500 font-bold mb-4 text-[10px] tracking-widest uppercase">Target Folder:</p>
+                        <p className="text-emerald-500 font-bold mb-4 text-[10px] tracking-widest uppercase">Target Visual Folder:</p>
                         <div className="font-mono text-[11px] text-slate-300 space-y-3">
                             <p className="flex items-center gap-3"><Box className="size-3 text-primary"/> 📁 <b>XenonSource/</b></p>
-                            <p className="flex items-center gap-3 ml-6 text-emerald-400"><FileCode className="size-3"/> 📄 <b>hide.vbs</b> (Wajib)</p>
-                            <p className="flex items-center gap-3 ml-6"><Box className="size-3 text-emerald-500"/> 📁 <b>bin/</b></p>
-                            <p className="flex items-center gap-3 ml-6 text-primary"><FileCode className="size-3"/> 📄 <b>bridge.js</b></p>
+                            <p className="flex items-center gap-3 ml-6"><Box className="size-3 text-emerald-500"/> 📁 <b>bin/</b> <span className="text-[9px] text-slate-500">(ADB Files)</span></p>
+                            <p className="flex items-center gap-3 ml-6"><Box className="size-3 text-amber-500"/> 📁 <b>assets/</b> <span className="text-[9px] text-slate-500">(app-icon.ico)</span></p>
                             <p className="flex items-center gap-3 ml-6 text-primary"><FileJson className="size-3"/> 📄 <b>package.json</b></p>
+                            <p className="flex items-center gap-3 ml-6 text-primary"><FileCode className="size-3"/> 📄 <b>bridge.js</b></p>
+                            <p className="flex items-center gap-3 ml-6 text-primary"><FileCode className="size-3"/> 📄 <b>hide.vbs</b></p>
                             <p className="flex items-center gap-3 ml-6 text-amber-500"><FileJson className="size-3"/> 📄 <b>serviceAccountKey.json</b></p>
                         </div>
                     </div>
                 </div>
             </section>
 
+            {/* TAHAP 2: PEMBUATAN FILE KONFIGURASI */}
             <section className="space-y-6">
                 <div className="flex items-center gap-4">
                     <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center font-black shadow-xl shadow-primary/20 text-lg">2</div>
-                    <h3 className="text-2xl font-black uppercase tracking-tight">Kompilasi & Skrip Inno Setup</h3>
+                    <h3 className="text-2xl font-black uppercase tracking-tight">Membuat File Konfigurasi</h3>
                 </div>
-                <div className="grid gap-8 md:grid-cols-2 items-start">
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-4">
-                        <h4 className="font-bold text-sm uppercase flex items-center gap-2">
-                            <Terminal className="size-4 text-primary" /> Langkah A: Build Binary
-                        </h4>
-                        <CodeBlock code={`npm install\nnpm install -g pkg\npkg . --targets node18-win-x64 --output xenon-bridge.exe`} />
-                        <Alert className="bg-emerald-500/5 border-emerald-500/20">
-                            <CheckCircle2 className="size-4 text-emerald-600" />
-                            <AlertDescription className="text-[10px] text-emerald-600">Pastikan <b>xenon-bridge.exe</b> muncul sebelum lanjut ke Inno Setup.</AlertDescription>
-                        </Alert>
+                        <div className="flex items-center gap-2 mb-2">
+                            <FileJson className="size-4 text-primary" />
+                            <h4 className="text-xs font-black uppercase tracking-widest">1. package.json</h4>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground leading-relaxed">
+                            File ini memberitahu <b>pkg</b> file mana saja yang harus dibungkus ke dalam EXE.
+                        </p>
+                        <CodeBlock language="json" code={PACKAGE_JSON_TEMPLATE} />
                     </div>
-                    <div className="p-6 rounded-[2.5rem] bg-card border border-border space-y-4">
-                        <h4 className="font-bold text-sm uppercase flex items-center gap-2">
-                            <FileText className="size-4 text-primary" /> Langkah B: Inno Setup (.iss)
-                        </h4>
-                        <p className="text-[11px] text-muted-foreground">Penting: Launcher menggunakan <b>hide.vbs</b> untuk menyembunyikan jendela CMD.</p>
-                        <CodeBlock language="iss" code={`[Setup]
+
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            <FileCode className="size-4 text-emerald-500" />
+                            <h4 className="text-xs font-black uppercase tracking-widest">2. hide.vbs</h4>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground leading-relaxed">
+                            Script sederhana untuk menjalankan Bridge tanpa memunculkan jendela hitam CMD.
+                        </p>
+                        <CodeBlock language="vbscript" code={HIDE_VBS_TEMPLATE} />
+                    </div>
+                </div>
+            </section>
+
+            {/* TAHAP 3: KOMPILASI & PACKAGING */}
+            <section className="space-y-6">
+                <div className="flex items-center gap-4">
+                    <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center font-black shadow-xl shadow-primary/20 text-lg">3</div>
+                    <h3 className="text-2xl font-black uppercase tracking-tight">Kompilasi & Inno Setup</h3>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <Card className="border-border">
+                        <CardHeader className="pb-3 border-b bg-muted/20">
+                            <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                                <Terminal className="size-4 text-primary" /> Langkah A: Build EXE
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-5 space-y-4">
+                            <p className="text-[10px] text-muted-foreground">Jalankan di terminal dalam folder <b>XenonSource</b>:</p>
+                            <CodeBlock code={`npm install\nnpm install -g pkg\npkg . --targets node18-win-x64 --output xenon-bridge.exe`} />
+                        </CardContent>
+                    </Card>
+
+                    <Card className="lg:col-span-2 border-border">
+                        <CardHeader className="pb-3 border-b bg-muted/20">
+                            <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                                <FileArchive className="size-4 text-primary" /> Langkah B: Inno Setup (.iss)
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-5 space-y-4">
+                            <p className="text-[10px] text-muted-foreground">Buat file <code>setup.iss</code>, salin kode ini untuk membuat Installer profesional:</p>
+                            <CodeBlock language="iss" code={`
+[Setup]
 AppName=XenonPlay Bridge
 AppVersion=1.3.6
 DefaultDirName={autopf}\\XenonPlayBridge
 OutputDir=.
-OutputBaseFilename=XenonBridge_Setup
-Compression=lzma
-SolidCompression=yes
+OutputBaseFilename=XenonBridge_Pro_Setup
 SetupIconFile=assets\\app-icon.ico
+SolidCompression=yes
 
 [Files]
 Source: "xenon-bridge.exe"; DestDir: "{app}"; Flags: ignoreversion
@@ -364,8 +384,18 @@ Source: "assets\\*"; DestDir: "{app}\\assets"; Flags: ignoreversion
 
 [Icons]
 Name: "{commondesktop}\\XenonPlay Bridge"; Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; IconFilename: "{app}\\assets\\app-icon.ico"
-Name: "{userstartup}\\XenonPlay Bridge"; Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; IconFilename: "{app}\\assets\\app-icon.ico"`} />
-                    </div>
+Name: "{userstartup}\\XenonPlay Bridge"; Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; IconFilename: "{app}\\assets\\app-icon.ico"
+
+[Run]
+Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; Description: "Jalankan XenonPlay Bridge Sekarang"; Flags: nowait postinstall skipifsilent
+                            `} />
+                            <div className="p-3 rounded-xl bg-primary/5 border border-primary/20">
+                                <p className="text-[10px] text-primary font-bold italic leading-relaxed">
+                                    Simpan, lalu <b>klik kanan setup.iss &gt; Compile</b>. Anda akan mendapatkan file <b>XenonBridge_Pro_Setup.exe</b>.
+                                </p>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
             </section>
         </TabsContent>
@@ -384,7 +414,7 @@ Name: "{userstartup}\\XenonPlay Bridge"; Filename: "wscript.exe"; Parameters: ""
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-6 space-y-4">
-                            <ol className="text-xs space-y-3 text-muted-foreground list-decimal list-inside">
+                            <ol className="text-xs space-y-3 text-muted-foreground list-decimal list-inside font-medium">
                                 <li>Buka <i>Settings &gt; Device Preferences &gt; About</i>.</li>
                                 <li>Klik baris <b>Build Number</b> 7 kali.</li>
                                 <li>Masuk menu <b>Developer Options</b>.</li>
@@ -399,7 +429,7 @@ Name: "{userstartup}\\XenonPlay Bridge"; Filename: "wscript.exe"; Parameters: ""
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-6 space-y-4">
-                            <p className="text-xs text-muted-foreground leading-relaxed">
+                            <p className="text-xs text-muted-foreground leading-relaxed font-medium">
                                 Wajib setel IP Statis agar koneksi bridge tidak putus saat router restart.
                             </p>
                             <Alert className="bg-amber-500/5 border-amber-500/20 p-3 mt-2">
@@ -414,27 +444,32 @@ Name: "{userstartup}\\XenonPlay Bridge"; Filename: "wscript.exe"; Parameters: ""
             <section className="space-y-6">
                 <div className="flex items-center gap-4">
                     <div className="size-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center font-black shadow-xl shadow-amber-500/20 text-lg">2</div>
-                    <h3 className="text-2xl font-black uppercase tracking-tight">Sinkronisasi & Handshake Manual</h3>
+                    <h3 className="text-2xl font-black uppercase tracking-tight">Handshake & Policy Windows</h3>
                 </div>
                 <div className="space-y-4">
                     <div className="grid gap-6 md:grid-cols-2">
-                        <div className="p-6 rounded-[2.5rem] bg-slate-900 border border-white/5 space-y-4">
+                        <div className="p-6 rounded-[2.5rem] bg-slate-900 border border-white/5 space-y-4 shadow-xl">
                             <div className="flex items-center gap-3 text-amber-500">
                                 <Keyboard className="size-5" />
                                 <h4 className="font-bold text-xs uppercase tracking-widest">Handshake ADB (Sekali Saja)</h4>
                             </div>
-                            <p className="text-[11px] text-slate-400 leading-relaxed">Wajib agar status TV tidak 'Unauthorized'.</p>
+                            <p className="text-[11px] text-slate-400 leading-relaxed">
+                                Wajib dilakukan manual agar status TV tidak 'Unauthorized'. Hubungkan kabel USB atau pastikan TV menyala.
+                            </p>
                             <CodeBlock code={`cd "C:\\Program Files (x86)\\XenonPlayBridge\\bin"\nadb connect [IP_TV]:5555`} />
                             <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
                                 <p className="text-[10px] text-amber-600 font-bold italic">"Cek layar TV, centang 'Always Allow' lalu klik OK."</p>
                             </div>
                         </div>
-                        <div className="p-6 rounded-[2.5rem] bg-muted/30 border border-border space-y-4">
+                        <div className="p-6 rounded-[2.5rem] bg-muted/30 border border-border space-y-4 shadow-sm">
                             <div className="flex items-center gap-3 text-primary">
                                 <ShieldAlert className="size-5" />
                                 <h4 className="font-bold text-xs uppercase tracking-widest">Izin Notifikasi Windows</h4>
                             </div>
-                            <CodeBlock code={`Set-ExecutionPolicy RemoteSigned`} />
+                            <p className="text-[11px] text-muted-foreground leading-relaxed font-medium">
+                                Jalankan PowerShell sebagai <b>Administrator</b> dan ketik perintah ini agar notifikasi bridge 100% muncul:
+                            </p>
+                            <CodeBlock code={`Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force`} />
                         </div>
                     </div>
                 </div>
