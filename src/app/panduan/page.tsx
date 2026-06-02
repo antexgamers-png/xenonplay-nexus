@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -66,9 +65,9 @@ const RESPONSIVE_HYBRID_BRIDGE_V1_8_1 = `
  * XENONPLAY NEXUS - XPBridge v1.8.1 (Direct Flow Edition)
  * 
  * ALUR STATIS TERVERIFIKASI:
- * 1. WAKE: Wakeup (224) -> Welcome Screen.
+ * 1. WAKE: Wakeup (224) -> Cinematic Intro.
  * 2. HDMI: Home (3) -> Jeda 600ms -> HDMI Intent.
- * 3. START: Welcome Screen -> Jeda 2.5s -> HDMI Intent.
+ * 3. START: Cinematic Intro -> Jeda 2.5s -> HDMI Intent.
  * 4. SLEEP: Direct Sleep (223) -> TV langsung mati.
  */
 
@@ -141,7 +140,7 @@ async function handleAdbWorkflow(ip, action, hdmi, name) {
         const welcomeIntent = \`am start -a android.intent.action.VIEW -d \${welcomeUrl}\`;
 
         if (action === 'wake') {
-            log(\`[\${name}] Workflow: WAKEUP -> WELCOME SCREEN\`);
+            log(\`[\${name}] Workflow: WAKEUP -> CINEMATIC INTRO\`);
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 224"\`, execOptions); 
             await new Promise(r => setTimeout(r, 1000)); 
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${welcomeIntent}"\`, execOptions); 
@@ -153,7 +152,7 @@ async function handleAdbWorkflow(ip, action, hdmi, name) {
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${hdmiIntent}"\`, execOptions); 
         } 
         else if (action === 'start' || action === 'resume') {
-            log(\`[\${name}] Workflow: WELCOME -> HDMI INTENT\`);
+            log(\`[\${name}] Workflow: INTRO -> HDMI INTENT\`);
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${welcomeIntent}"\`, execOptions); 
             await new Promise(r => setTimeout(r, 2500)); 
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${hdmiIntent}"\`, execOptions); 
@@ -352,7 +351,7 @@ export default function MasterPanduanPage() {
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 mb-2">
                             <FileJson className="size-4 text-primary" />
-                            <h4 className="text-xs font-black uppercase tracking-widest">1. package.json</h4>
+                            <h4 className="font-bold text-xs uppercase tracking-widest">1. package.json</h4>
                         </div>
                         <p className="text-[11px] text-muted-foreground leading-relaxed">
                             File ini memberitahu <b>pkg</b> file mana saja yang harus dibungkus ke dalam EXE.
@@ -363,7 +362,7 @@ export default function MasterPanduanPage() {
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 mb-2">
                             <FileCode className="size-4 text-blue-500" />
-                            <h4 className="text-xs font-black uppercase tracking-widest">2. bridge.js</h4>
+                            <h4 className="font-bold text-xs uppercase tracking-widest">2. bridge.js</h4>
                         </div>
                         <p className="text-[11px] text-muted-foreground leading-relaxed">
                             Logika utama kontrol hardware. Ambil kodenya di <b>Tab 3 (Script Bridge)</b> lalu simpan sebagai <code>bridge.js</code>.
@@ -373,7 +372,7 @@ export default function MasterPanduanPage() {
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 mb-2">
                             <FileCode className="size-4 text-emerald-500" />
-                            <h4 className="text-xs font-black uppercase tracking-widest">3. hide.vbs</h4>
+                            <h4 className="font-bold text-xs uppercase tracking-widest">3. hide.vbs</h4>
                         </div>
                         <p className="text-[11px] text-muted-foreground leading-relaxed font-bold text-emerald-600">
                             PENTING: Gunakan versi terbaru di bawah untuk menghindari error "File Not Found".
@@ -526,7 +525,7 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
                         <CardTitle className="text-[10px] font-black uppercase tracking-widest">Tombol WAKE</CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 pt-0 text-[10px] text-muted-foreground leading-relaxed">
-                        Urutan: <b>Wakeup (224)</b> &rarr; <b>Welcome Screen</b>. Hanya inisialisasi visual.
+                        Urutan: <b>Wakeup (224)</b> &rarr; <b>Cinematic Intro</b>. Inisialisasi visual premium.
                     </CardContent>
                 </Card>
 
@@ -546,7 +545,7 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
                         <CardTitle className="text-[10px] font-black uppercase tracking-widest">Tombol START</CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 pt-0 text-[10px] text-muted-foreground leading-relaxed">
-                        Urutan: <b>Welcome Screen</b> &rarr; <b>Wait 2.5s</b> &rarr; <b>HDMI Intent</b>. Transisi visual.
+                        Urutan: <b>Cinematic Intro</b> &rarr; <b>Wait 2.5s</b> &rarr; <b>HDMI Intent</b>. Transisi visual.
                     </CardContent>
                 </Card>
 
@@ -556,7 +555,7 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
                         <CardTitle className="text-[10px] font-black uppercase tracking-widest">Tombol SLEEP</CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 pt-0 text-[10px] text-muted-foreground leading-relaxed">
-                        Urutan: <b>Sleep (223)</b> secara langsung. TV langsung mati tanpa mampir ke Home.
+                        Urutan: <b>Sleep (223)</b> secara langsung. TV langsung mati secara instan.
                     </CardContent>
                 </Card>
             </div>
@@ -570,7 +569,7 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
                     <Badge variant="outline" className="border-primary/50 text-primary bg-primary/5 px-4 h-6 font-black uppercase text-[10px] tracking-widest">Script v1.8.1 "Direct Flow"</Badge>
                     <h3 className="text-3xl font-black uppercase tracking-tighter text-white">Dapatkan Kode Bridge Terbaru</h3>
                     <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
-                        Pembaruan v1.8.1: Aksi SLEEP kini bersifat instan. Memisahkan alur pembersihan 'Home' dari perintah mematikan daya.
+                        Pembaruan v1.8.1: Fokus pada performa video intro murni. Menghapus status dashboard web untuk kecepatan startup maksimal.
                     </p>
                 </div>
 
