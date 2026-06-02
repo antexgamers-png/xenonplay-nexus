@@ -60,15 +60,16 @@ const CodeBlock = ({ code, language = "bash" }: { code: string, language?: strin
     );
 };
 
-const RESPONSIVE_HYBRID_BRIDGE_V1_8_1 = `
+const RESPONSIVE_HYBRID_BRIDGE_V1_9_0 = `
 /**
- * XENONPLAY NEXUS - XPBridge v1.8.1 (Direct Flow Edition)
+ * XENONPLAY NEXUS - XPBridge v1.9.0 (Active Branding Edition)
  * 
- * ALUR STATIS TERVERIFIKASI:
- * 1. WAKE: Wakeup (224) -> Cinematic Intro.
+ * ALUR SULTAN TERVERIFIKASI:
+ * 1. WAKE: Wakeup (224) -> TV Landing (ended.mp4). Menandakan unit READY.
  * 2. HDMI: Home (3) -> Jeda 600ms -> HDMI Intent.
- * 3. START: Cinematic Intro -> Jeda 2.5s -> HDMI Intent.
- * 4. SLEEP: Direct Sleep (223) -> TV langsung mati.
+ * 3. START: Welcome Screen (intro.mp4) -> Jeda 3.5s -> HDMI Intent.
+ * 4. STOP: Home (3) -> Jeda 600ms -> TV Landing (ended.mp4). TV TETAP NYALA.
+ * 5. SLEEP: Direct Sleep (223) -> TV langsung mati gelap.
  */
 
 const admin = require('firebase-admin');
@@ -90,7 +91,7 @@ function log(msg) {
 }
 
 log("==================================================");
-log("🚀 XENON BRIDGE V1.8.1 DIRECT-FLOW ACTIVE");
+log("🚀 XENON BRIDGE V1.9.0 ACTIVE-BRANDING READY");
 log("==================================================");
 
 const serviceAccountPath = path.join(baseDir, "serviceAccountKey.json");
@@ -137,13 +138,16 @@ async function handleAdbWorkflow(ip, action, hdmi, name) {
         const hdmiIntent = \`am start -a android.intent.action.VIEW -d content://android.media.tv/passthrough/com.mediatek.tvinput%2F.hdmi.HDMIInputService%2FHW\${hw} -n com.mediatek.wwtv.tvcenter/com.mediatek.wwtv.tvcenter.nav.TurnkeyUiMainActivity -f 0x10000000\`;
         
         const welcomeUrl = "https://xenonplay.web.app/welcome";
+        const landingUrl = "https://xenonplay.web.app/tv-landing";
+        
         const welcomeIntent = \`am start -a android.intent.action.VIEW -d \${welcomeUrl}\`;
+        const landingIntent = \`am start -a android.intent.action.VIEW -d \${landingUrl}\`;
 
         if (action === 'wake') {
-            log(\`[\${name}] Workflow: WAKEUP -> CINEMATIC INTRO\`);
+            log(\`[\${name}] Workflow: WAKEUP -> TV LANDING (Active Mode)\`);
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 224"\`, execOptions); 
             await new Promise(r => setTimeout(r, 1000)); 
-            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${welcomeIntent}"\`, execOptions); 
+            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${landingIntent}"\`, execOptions); 
         } 
         else if (action === 'hdmi') {
             log(\`[\${name}] Workflow: HOME -> HDMI INTENT (Bounce-Fix)\`);
@@ -152,20 +156,20 @@ async function handleAdbWorkflow(ip, action, hdmi, name) {
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${hdmiIntent}"\`, execOptions); 
         } 
         else if (action === 'start' || action === 'resume') {
-            log(\`[\${name}] Workflow: INTRO -> HDMI INTENT\`);
+            log(\`[\${name}] Workflow: WELCOME INTRO -> HDMI INTENT\`);
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${welcomeIntent}"\`, execOptions); 
-            await new Promise(r => setTimeout(r, 2500)); 
+            await new Promise(r => setTimeout(r, 3500)); 
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${hdmiIntent}"\`, execOptions); 
         }
         else if (action === 'sleep') {
-            log(\`[\${name}] Workflow: DIRECT SLEEP\`);
+            log(\`[\${name}] Workflow: DIRECT SLEEP (Night Mode)\`);
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 223"\`, execOptions); 
         }
         else if (action === 'stop' || action === 'pause') {
-            log(\`[\${name}] Workflow: HOME -> SLEEP\`);
+            log(\`[\${name}] Workflow: HOME -> TV LANDING (Session Ended)\`);
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 3"\`, execOptions); 
-            await new Promise(r => setTimeout(r, 500));
-            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 223"\`, execOptions); 
+            await new Promise(r => setTimeout(r, 600));
+            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${landingIntent}"\`, execOptions); 
         }
         else if (action === 'home') {
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 3"\`, execOptions);
@@ -222,8 +226,8 @@ setInterval(() => {
 
 const PACKAGE_JSON_TEMPLATE = `
 {
-  "name": "xenon-bridge-direct-flow",
-  "version": "1.8.1",
+  "name": "xenon-bridge-active-branding",
+  "version": "1.9.0",
   "main": "bridge.js",
   "bin": "bridge.js",
   "pkg": {
@@ -248,10 +252,10 @@ export default function MasterPanduanPage() {
   const [hasCopied, setHasCopied] = useState(false);
 
   const handleCopyScript = () => {
-    navigator.clipboard.writeText(RESPONSIVE_HYBRID_BRIDGE_V1_8_1.trim());
+    navigator.clipboard.writeText(RESPONSIVE_HYBRID_BRIDGE_V1_9_0.trim());
     setHasCopied(true);
     setTimeout(() => setHasCopied(false), 2000);
-    toast({ title: "Script v1.8.1 Tersalin!", variant: "success" });
+    toast({ title: "Script v1.9.0 Tersalin!", variant: "success" });
   };
 
   return (
@@ -259,11 +263,11 @@ export default function MasterPanduanPage() {
       <header className="space-y-2">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary mb-2">
             <ShieldCheck className="size-3.5" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em]">XenonPlay Nexus Enterprise v1.8.1 "Direct Flow"</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em]">XenonPlay Nexus Enterprise v1.9.0 "Active Branding"</span>
         </div>
         <h1 className="text-4xl font-black tracking-tighter uppercase leading-none">Panduan <span className="text-primary">Master Terintegrasi</span></h1>
         <p className="text-muted-foreground text-sm max-w-3xl font-medium">
-            Logika sekuensial statis untuk stabilitas maksimal pada Smart TV merek lokal.
+            Workflow berbasis video untuk memaksimalkan daya tarik visual di arena rental Anda.
         </p>
       </header>
 
@@ -412,10 +416,10 @@ export default function MasterPanduanPage() {
                             <CodeBlock language="iss" code={`
 [Setup]
 AppName=XenonPlay Bridge
-AppVersion=1.8.1
+AppVersion=1.9.0
 DefaultDirName={autopf}\\XenonPlayBridge
 OutputDir=.
-OutputBaseFilename=XenonBridge_Setup_v181
+OutputBaseFilename=XenonBridge_Setup_v190
 SetupIconFile=assets\\app-icon.ico
 SolidCompression=yes
 
@@ -515,7 +519,7 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
         <TabsContent value="bridge" className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
             <div className="flex items-center gap-4">
                 <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center font-black shadow-xl shadow-primary/20 text-lg">3</div>
-                <h3 className="text-2xl font-black uppercase tracking-tight">Logika Alur v1.8.1</h3>
+                <h3 className="text-2xl font-black uppercase tracking-tight">Logika Alur v1.9.0</h3>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -525,27 +529,27 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
                         <CardTitle className="text-[10px] font-black uppercase tracking-widest">Tombol WAKE</CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 pt-0 text-[10px] text-muted-foreground leading-relaxed">
-                        Urutan: <b>Wakeup (224)</b> &rarr; <b>Cinematic Intro</b>. Inisialisasi visual premium.
+                        Urutan: <b>Wakeup (224)</b> &rarr; <b>ended.mp4</b>. TV siaga dengan visual standby yang mewah.
                     </CardContent>
                 </Card>
 
                 <Card className="bg-amber-500/5 border-amber-500/20 relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-1.5 h-full bg-amber-500" />
                     <CardHeader className="p-4">
-                        <CardTitle className="text-[10px] font-black uppercase tracking-widest">Tombol HDMI</CardTitle>
+                        <CardTitle className="text-[10px] font-black uppercase tracking-widest">Tombol START</CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 pt-0 text-[10px] text-muted-foreground leading-relaxed">
-                        Urutan: <b>Home (3)</b> &rarr; <b>Wait 600ms</b> &rarr; <b>HDMI Intent</b>. Memaksa pindah input.
+                        Urutan: <b>intro.mp4</b> &rarr; <b>Jeda 3.5s</b> &rarr; <b>HDMI Intent</b>. Intro premium sebelum main.
                     </CardContent>
                 </Card>
 
                 <Card className="bg-emerald-500/5 border-emerald-500/20 relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500" />
                     <CardHeader className="p-4">
-                        <CardTitle className="text-[10px] font-black uppercase tracking-widest">Tombol START</CardTitle>
+                        <CardTitle className="text-[10px] font-black uppercase tracking-widest">Sesi HABIS / STOP</CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 pt-0 text-[10px] text-muted-foreground leading-relaxed">
-                        Urutan: <b>Cinematic Intro</b> &rarr; <b>Wait 2.5s</b> &rarr; <b>HDMI Intent</b>. Transisi visual.
+                        Urutan: <b>Home (3)</b> &rarr; <b>ended.mp4</b>. TV tetap menyala menunjukkan stasiun kosong.
                     </CardContent>
                 </Card>
 
@@ -555,7 +559,7 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
                         <CardTitle className="text-[10px] font-black uppercase tracking-widest">Tombol SLEEP</CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 pt-0 text-[10px] text-muted-foreground leading-relaxed">
-                        Urutan: <b>Sleep (223)</b> secara langsung. TV langsung mati secara instan.
+                        Urutan: <b>Sleep (223)</b> langsung. Digunakan hanya saat tutup toko atau istirahat total.
                     </CardContent>
                 </Card>
             </div>
@@ -566,10 +570,10 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
                 </div>
                 
                 <div className="space-y-2 relative z-10">
-                    <Badge variant="outline" className="border-primary/50 text-primary bg-primary/5 px-4 h-6 font-black uppercase text-[10px] tracking-widest">Script v1.8.1 "Direct Flow"</Badge>
+                    <Badge variant="outline" className="border-primary/50 text-primary bg-primary/5 px-4 h-6 font-black uppercase text-[10px] tracking-widest">Script v1.9.0 "Active Branding"</Badge>
                     <h3 className="text-3xl font-black uppercase tracking-tighter text-white">Dapatkan Kode Bridge Terbaru</h3>
                     <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
-                        Pembaruan v1.8.1: Fokus pada performa video intro murni. Menghapus status dashboard web untuk kecepatan startup maksimal.
+                        Pembaruan v1.9.0: Integrasi penuh video Intro dan Sesi Habis. Menghilangkan "layar mati" saat sesi berakhir agar arena tetap terlihat ramai.
                     </p>
                 </div>
 
@@ -582,7 +586,7 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
                     )}
                 >
                     {hasCopied ? <Check className="size-5" /> : <Terminal className="size-5" />}
-                    {hasCopied ? "Script v1.8.1 Tersalin!" : "Ambil Script v1.8.1"}
+                    {hasCopied ? "Script v1.9.0 Tersalin!" : "Ambil Script v1.9.0"}
                 </Button>
             </div>
         </TabsContent>
