@@ -5,10 +5,9 @@ import { useState, useMemo, useEffect } from 'react';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, doc, updateDoc } from 'firebase/firestore';
 import type { Station } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { 
     ShieldCheck, 
     Zap, 
@@ -17,16 +16,14 @@ import {
     Home, 
     Check,
     BookText,
-    Settings2,
-    Timer,
     Terminal,
     Copy,
-    RefreshCw
+    RefreshCw,
+    Activity
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
-import { Separator } from '@/components/ui/separator';
 import { useShift } from '@/components/providers/shift-provider';
 import Link from 'next/link';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -36,7 +33,6 @@ export default function AdbSimulatorPage() {
   const { toast } = useToast();
   const { activeShift, setIsOpeningDialog } = useShift();
   const [hasCopied, setHasCopied] = useState(false);
-  const [simDurations, setSimDurations] = useState<Record<string, number>>({});
   const [now, setNow] = useState<number>(0);
 
   useEffect(() => {
@@ -243,6 +239,12 @@ setInterval(() => {
                       </Card>
                   )
               })}
+              {sortedStations.length === 0 && (
+                  <div className="col-span-full py-20 text-center border-2 border-dashed rounded-3xl opacity-30">
+                      <Activity className="size-12 mx-auto mb-4" />
+                      <p className="font-black uppercase tracking-widest text-xs">Belum ada unit TV terdaftar</p>
+                  </div>
+              )}
           </div>
 
           <div className="lg:col-span-5 space-y-6">
@@ -252,13 +254,13 @@ setInterval(() => {
                           <div className="size-2 rounded-full bg-red-500" />
                           <div className="size-2 rounded-full bg-amber-500" />
                           <div className="size-2 rounded-full bg-emerald-500" />
-                          <span className="ml-2 text-[10px] font-black uppercase text-slate-500 tracking-widest">bridge.js (Classic)</span>
+                          <span className="ml-2 text-[10px] font-black uppercase text-slate-500 tracking-widest">bridge.js (Legacy Stable)</span>
                       </div>
                       <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-500" onClick={handleCopyCode}>
                           <Copy className="size-3" />
                       </Button>
                   </div>
-                  <ScrollArea className="h-[400px]">
+                  <ScrollArea className="h-[500px]">
                       <pre className="p-6 text-[11px] font-mono text-emerald-400 leading-relaxed">
                           <code>{STABLE_BRIDGE_V1_3_0.trim()}</code>
                       </pre>
@@ -268,10 +270,10 @@ setInterval(() => {
               <div className="p-6 rounded-3xl bg-amber-500/5 border border-amber-500/20 space-y-3">
                   <div className="flex items-center gap-2 text-amber-600">
                       <Zap className="size-4" />
-                      <h4 className="text-xs font-black uppercase tracking-widest">Kenapa Pakai Versi Ini?</h4>
+                      <h4 className="text-xs font-black uppercase tracking-widest">Saran Operasional</h4>
                   </div>
                   <p className="text-[11px] text-muted-foreground leading-relaxed italic">
-                      "Versi Classic v1.3.0 memangkas lapisan GUI yang berat, memberikan akses langsung ke shell Windows. Jika Anda bisa connect manual via CMD, script ini dijamin 100% bisa connect juga."
+                      "Versi ini adalah yang paling aman. Jika Anda menemui kendala koneksi, cukup matikan (Ctrl+C) dan jalankan ulang perintah 'node bridge.js' di terminal laptop Anda."
                   </p>
               </div>
           </div>
