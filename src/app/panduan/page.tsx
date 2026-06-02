@@ -31,7 +31,8 @@ import {
     Wifi,
     MousePointer2,
     Command,
-    Keyboard
+    Keyboard,
+    FileText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -208,11 +209,14 @@ export default function MasterPanduanPage() {
             <section className="space-y-6">
                 <div className="flex items-center gap-4">
                     <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center font-black shadow-xl shadow-primary/20 text-lg">3</div>
-                    <h3 className="text-2xl font-black uppercase tracking-tight">Proses Kompilasi Binary</h3>
+                    <h3 className="text-2xl font-black uppercase tracking-tight">Proses Kompilasi & Installer</h3>
                 </div>
                 <div className="grid gap-6 md:grid-cols-2 items-start">
                     <div className="space-y-4">
-                        <p className="text-sm text-muted-foreground leading-relaxed">
+                        <h4 className="font-bold text-sm uppercase flex items-center gap-2">
+                            <Terminal className="size-4 text-primary" /> Langkah A: Build Binary (.exe)
+                        </h4>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
                             Buka CMD di dalam folder <b>XenonSource</b> dan jalankan perintah kompilasi ini satu per satu:
                         </p>
                         <CodeBlock code={`npm install\nnpm install -g pkg\npkg . --targets node18-win-x64 --output xenon-bridge.exe`} />
@@ -224,16 +228,37 @@ export default function MasterPanduanPage() {
                     </div>
                     <div className="p-6 rounded-[2.5rem] bg-card border border-border space-y-4">
                         <h4 className="font-bold text-sm uppercase flex items-center gap-2">
-                            <Layers className="size-4 text-primary" /> Final: Membungkus dengan Inno Setup
+                            <FileText className="size-4 text-primary" /> Langkah B: Skrip Inno Setup (.iss)
                         </h4>
-                        <ol className="text-xs space-y-4 text-muted-foreground list-decimal list-inside">
-                            <li>Buka <b>Inno Setup Compiler</b>, pilih <i>File &gt; New</i>.</li>
-                            <li>Tentukan nama aplikasi: <b>XenonPlay Bridge</b>.</li>
-                            <li>Pada bagian <b>Files</b>, masukkan <code>xenon-bridge.exe</code> sebagai file utama.</li>
-                            <li>Klik <b>Add Folder</b> dan pilih folder <code>bin/</code> agar ADB ikut terinstal.</li>
-                            <li>Masukkan <code>serviceAccountKey.json</code> ke daftar file tambahan.</li>
-                            <li>Klik <b>Compile</b> untuk menghasilkan file <b><code>XenonBridge_Setup.exe</code></b>.</li>
-                        </ol>
+                        <p className="text-[11px] text-muted-foreground leading-relaxed">
+                            Buat file baru bernama <b><code>setup.iss</code></b> di folder XenonSource, lalu tempel kode di bawah ini. Skrip ini akan membuat file Installer otomatis.
+                        </p>
+                        <CodeBlock language="iss" code={`[Setup]
+AppName=XenonPlay Bridge
+AppVersion=1.3.3
+DefaultDirName={autopf}\\XenonPlayBridge
+DefaultGroupName=XenonPlay Bridge
+OutputDir=.
+OutputBaseFilename=XenonBridge_Pro_Setup
+Compression=lzma
+SolidCompression=yes
+SetupIconFile=assets\\app-icon.ico
+
+[Files]
+Source: "xenon-bridge.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\\*"; DestDir: "{app}\\bin"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "serviceAccountKey.json"; DestDir: "{app}"; Flags: ignoreversion
+Source: "assets\\*"; DestDir: "{app}\\assets"; Flags: ignoreversion recursesubdirs
+
+[Icons]
+Name: "{commondesktop}\\XenonPlay Bridge"; Filename: "{app}\\xenon-bridge.exe"; IconFilename: "{app}\\assets\\app-icon.ico"
+Name: "{userstartup}\\XenonPlay Bridge"; Filename: "{app}\\xenon-bridge.exe"; IconFilename: "{app}\\assets\\app-icon.ico"
+
+[Run]
+Filename: "{app}\\xenon-bridge.exe"; Description: "Jalankan XenonPlay Bridge"; Flags: nowait postinstall skipifsilent`} />
+                        <p className="text-[10px] text-muted-foreground italic">
+                            Setelah file disimpan, klik kanan <b>setup.iss</b> lalu pilih <b>Compile</b>. Anda akan mendapatkan file <b>XenonBridge_Pro_Setup.exe</b>.
+                        </p>
                     </div>
                 </div>
             </section>
@@ -272,7 +297,7 @@ export default function MasterPanduanPage() {
                         <CardContent className="p-6 space-y-4">
                             <p className="text-xs text-muted-foreground leading-relaxed">
                                 Agar koneksi tidak terputus saat router restart, Anda <b>WAJIB</b> menyetel IP Statis di menu:
-                                <br/><code className="bg-muted px-2 py-1 rounded block mt-2 text-[10px]">Network & Internet &gt; [Nama WiFi] &gt; IP Settings &gt; Static</code>
+                                <br/><code className="bg-muted px-2 py-1 rounded block mt-2 text-[10px]">Network &amp; Internet &gt; [Nama WiFi] &gt; IP Settings &gt; Static</code>
                             </p>
                             <Alert className="bg-amber-500/5 border-amber-500/20 p-3 mt-2">
                                 <Info className="size-3.5 text-amber-600" />
@@ -291,7 +316,7 @@ export default function MasterPanduanPage() {
                 </div>
                 <div className="space-y-4">
                     <p className="text-sm text-muted-foreground leading-relaxed">
-                        Instal file <b>XenonBridge_Setup.exe</b> yang telah Anda buat di Modul 1. Setelah terinstal, lakukan langkah sinkronisasi pertama:
+                        Instal file <b>XenonBridge_Pro_Setup.exe</b> yang telah Anda buat di Modul 1. Setelah terinstal, lakukan langkah sinkronisasi pertama:
                     </p>
                     <div className="grid gap-6 md:grid-cols-2">
                         <div className="p-6 rounded-[2.5rem] bg-slate-900 border border-white/5 space-y-4">
@@ -319,7 +344,7 @@ export default function MasterPanduanPage() {
             <section className="space-y-6">
                 <header className="flex items-center gap-4 text-red-500">
                     <div className="size-12 rounded-2xl bg-red-500 text-white flex items-center justify-center font-black shadow-xl shadow-red-500/20 text-lg">!</div>
-                    <h3 className="text-2xl font-black uppercase tracking-tight">Analisis & Solusi Kendala</h3>
+                    <h3 className="text-2xl font-black uppercase tracking-tight">Analisis &amp; Solusi Kendala</h3>
                 </header>
                 <div className="grid gap-6 md:grid-cols-3">
                     <div className="p-5 rounded-2xl bg-red-500/[0.03] border border-red-500/10 space-y-3">
