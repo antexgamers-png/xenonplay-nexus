@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -37,7 +36,10 @@ import {
     FileKey,
     UserCog,
     Settings2,
-    FolderTree
+    FolderTree,
+    FileJson,
+    Wrench,
+    BellRing
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -99,12 +101,14 @@ export default function MasterPanduanPage() {
 
       <Tabs defaultValue="tahap-0" className="w-full">
         <TabsList className="bg-muted/50 p-1 h-14 rounded-2xl mb-8 border flex w-full overflow-x-auto scrollbar-hide">
-            <TabsTrigger value="tahap-0" className="rounded-xl font-black uppercase text-[9px] tracking-widest px-6 flex-1 gap-2"><Cpu className="size-3.5"/> 0. Persiapan Alat</TabsTrigger>
-            <TabsTrigger value="tahap-1" className="rounded-xl font-black uppercase text-[9px] tracking-widest px-6 flex-1 gap-2"><Laptop className="size-3.5"/> 1. Setup Laptop</TabsTrigger>
-            <TabsTrigger value="tahap-2" className="rounded-xl font-black uppercase text-[9px] tracking-widest px-6 flex-1 gap-2"><Monitor className="size-3.5"/> 2. Setting TV</TabsTrigger>
-            <TabsTrigger value="trouble" className="rounded-xl font-black uppercase text-[9px] tracking-widest px-6 flex-1 gap-2 text-red-500"><ShieldAlert className="size-3.5"/> 3. Troubleshooting</TabsTrigger>
+            <TabsTrigger value="tahap-0" className="rounded-xl font-black uppercase text-[9px] tracking-widest px-6 flex-1 gap-2"><Cpu className="size-3.5"/> 0. Alat</TabsTrigger>
+            <TabsTrigger value="tahap-1" className="rounded-xl font-black uppercase text-[9px] tracking-widest px-6 flex-1 gap-2"><Laptop className="size-3.5"/> 1. Laptop</TabsTrigger>
+            <TabsTrigger value="tahap-2" className="rounded-xl font-black uppercase text-[9px] tracking-widest px-6 flex-1 gap-2"><Monitor className="size-3.5"/> 2. TV</TabsTrigger>
+            <TabsTrigger value="trouble" className="rounded-xl font-black uppercase text-[9px] tracking-widest px-6 flex-1 gap-2 text-red-500"><ShieldAlert className="size-3.5"/> 3. Error</TabsTrigger>
+            <TabsTrigger value="build-exe" className="rounded-xl font-black uppercase text-[9px] tracking-widest px-6 flex-1 gap-2 text-primary border-primary/20"><Package className="size-3.5"/> 4. Build EXE</TabsTrigger>
         </TabsList>
 
+        {/* TAHAP 0 */}
         <TabsContent value="tahap-0" className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
             <div className="grid gap-6 md:grid-cols-2">
                 <Card className="border-border bg-card">
@@ -159,6 +163,7 @@ export default function MasterPanduanPage() {
             </div>
         </TabsContent>
 
+        {/* TAHAP 1 */}
         <TabsContent value="tahap-1" className="space-y-10 animate-in fade-in slide-in-from-left-4">
             <section className="space-y-6">
                 <div className="flex items-center gap-4">
@@ -186,11 +191,11 @@ export default function MasterPanduanPage() {
                 <div className="space-y-4">
                     <p className="text-sm text-muted-foreground">Buka CMD di dalam folder tersebut, instal library, lalu jalankan:</p>
                     <CodeBlock code={`npm install firebase-admin\nnode bridge.js`} />
-                    <p className="text-[10px] text-amber-600 font-bold uppercase mt-2">🛡️ windowsHide Active: Jendela CMD tidak akan memunculkan kedipan pop-up saat TV diperintah.</p>
                 </div>
             </section>
         </TabsContent>
 
+        {/* TAHAP 2 */}
         <TabsContent value="tahap-2" className="space-y-8 animate-in fade-in slide-in-from-right-4">
             <section className="space-y-6">
                 <div className="flex items-center gap-4">
@@ -229,6 +234,7 @@ export default function MasterPanduanPage() {
             </section>
         </TabsContent>
 
+        {/* TAHAP 3: TROUBLESHOOTING */}
         <TabsContent value="trouble" className="space-y-8 animate-in fade-in zoom-in-95">
             <section className="space-y-6">
                 <div className="flex items-center gap-4 text-red-500">
@@ -240,40 +246,91 @@ export default function MasterPanduanPage() {
                     <div className="p-6 rounded-3xl border border-red-500/20 bg-red-500/[0.02] flex flex-col md:flex-row gap-6">
                         <div className="md:w-1/3">
                             <Badge className="bg-red-500 text-white border-none text-[9px] font-black uppercase px-2 mb-3">Masalah</Badge>
-                            <h4 className="text-sm font-black uppercase text-red-700">Satu TV Macet Membekukan Semua</h4>
+                            <h4 className="text-sm font-black uppercase text-red-700">TV Offline di Dashboard</h4>
                             <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed">
-                                <b>Penyebab:</b> Penggunaan Single-Queue di versi 1.3.2.<br/>
-                                <b>Solusi:</b> Ganti script ke <b>V1.3.3 Hybrid</b> di simulator. Versi ini menggunakan eksekusi Paralel.
+                                <b>Solusi:</b> Buka CMD di laptop, ketik <code>adb connect [IP_TV]:5555</code> secara manual. Jika muncul pesan "Unauthorized", cek layar TV dan klik "Izinkan Selalu".
                             </p>
                         </div>
-                        <div className="flex-1 space-y-4">
-                            <div className="p-4 rounded-2xl bg-white border border-border shadow-sm">
-                                <p className="text-xs font-bold text-slate-900 flex items-center gap-2 mb-2"><CheckCircle2 className="size-3.5 text-emerald-500"/> Cara Update:</p>
-                                <ol className="list-decimal list-inside text-[10px] text-muted-foreground space-y-2 ml-1">
-                                    <li>Matikan script lama di laptop (Ctrl+C).</li>
-                                    <li>Timpa file <code>bridge.js</code> dengan kode V1.3.3 terbaru.</li>
-                                    <li>Jalankan kembali dengan <code>node bridge.js</code>.</li>
-                                </ol>
-                            </div>
-                        </div>
                     </div>
+                </div>
+            </section>
+        </TabsContent>
 
-                    <div className="p-6 rounded-3xl border border-amber-500/20 bg-amber-500/[0.02] flex flex-col md:flex-row gap-6">
-                        <div className="md:w-1/3">
-                            <Badge className="bg-amber-500 text-white border-none text-[9px] font-black uppercase px-2 mb-3">Masalah</Badge>
-                            <h4 className="text-sm font-black uppercase text-amber-700">TV Bangun Tapi Tidak Pindah HDMI</h4>
-                            <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed">
-                                <b>Penyebab:</b> Sinyal dikirim terlalu cepat sebelum TV MediaTek siap.<br/>
-                                <b>Solusi:</b> V1.3.3 menyertakan jeda 800ms khusus untuk stabilitas MediaTek.
-                            </p>
-                        </div>
-                        <div className="flex-1 space-y-4">
-                            <div className="p-4 rounded-2xl bg-white border border-border shadow-sm">
-                                <p className="text-xs font-bold text-slate-900 flex items-center gap-2 mb-2"><CheckCircle2 className="size-3.5 text-emerald-500"/> Verifikasi:</p>
-                                <p className="text-[10px] text-muted-foreground leading-relaxed">Gunakan menu <b>Verify Link</b> atau <b>HDMI Test</b> di Simulator Master untuk memastikan sinkronisasi sinyal.</p>
-                            </div>
-                        </div>
+        {/* TAHAP 4: BUILD EXE (NEW TAB) */}
+        <TabsContent value="build-exe" className="space-y-10 animate-in fade-in slide-in-from-bottom-6">
+            <section className="space-y-6">
+                <div className="flex items-center gap-4">
+                    <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center font-black shadow-xl shadow-primary/20 text-lg">
+                        <Wrench className="size-6" />
                     </div>
+                    <div>
+                        <h3 className="text-2xl font-black uppercase tracking-tight">Build Executable (.EXE)</h3>
+                        <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Transformasi skrip v1.3.3 menjadi aplikasi Windows.</p>
+                    </div>
+                </div>
+
+                <div className="grid gap-8">
+                    {/* LANGKAH 1: PACKAGE JSON */}
+                    <Card className="border-border">
+                        <CardHeader className="pb-3 border-b bg-muted/20">
+                            <div className="flex items-center justify-between">
+                                <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                                    <FileJson className="size-4 text-primary" /> 1. Konfigurasi Metadata
+                                </CardTitle>
+                                <Badge variant="secondary" className="text-[8px] font-black">package.json</Badge>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-6 space-y-4">
+                            <p className="text-xs text-muted-foreground">Buat file bernama <code>package.json</code> di folder <code>XenonBridge</code> Anda:</p>
+                            <CodeBlock language="json" code={`{
+  "name": "xenon-bridge-hybrid",
+  "version": "1.3.3",
+  "main": "bridge.js",
+  "bin": "bridge.js",
+  "pkg": {
+    "assets": ["bin/**/*", "serviceAccountKey.json"]
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  }
+}`} />
+                        </CardContent>
+                    </Card>
+
+                    {/* LANGKAH 2: KOMPILASI */}
+                    <Card className="border-border">
+                        <CardHeader className="pb-3 border-b bg-muted/20">
+                            <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                                <Terminal className="size-4 text-primary" /> 2. Proses Kompilasi
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-6 space-y-4">
+                            <p className="text-xs text-muted-foreground">Instal alat pembungkus EXE lalu jalankan kompilasi:</p>
+                            <CodeBlock code={`npm install -g pkg\npkg . --targets node18-win-x64 --output xenon-bridge.exe`} />
+                        </CardContent>
+                    </Card>
+
+                    {/* LANGKAH 3: SILENT MODE */}
+                    <Card className="border-emerald-500/20 bg-emerald-500/[0.01]">
+                        <CardHeader className="pb-3 border-b border-emerald-500/10 bg-emerald-500/5">
+                            <div className="flex items-center justify-between">
+                                <CardTitle className="text-xs font-black uppercase tracking-widest text-emerald-600 flex items-center gap-2">
+                                    <MousePointer2 className="size-4" /> 3. Aktifkan Silent Mode
+                                </CardTitle>
+                                <Badge className="bg-emerald-500 text-white border-none text-[8px] font-black">REKOMENDASI</Badge>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-6 space-y-4">
+                            <p className="text-xs text-muted-foreground leading-relaxed">Agar jendela hitam CMD tidak mengganggu kasir, buat file <code>run-bridge.vbs</code> di folder yang sama:</p>
+                            <CodeBlock language="vbs" code={`Set WshShell = CreateObject("WScript.Shell")\nWshShell.Run "xenon-bridge.exe", 0, false`} />
+                            <div className="p-4 rounded-xl bg-background border border-border flex items-start gap-3">
+                                <BellRing className="size-4 text-primary shrink-0 mt-0.5" />
+                                <p className="text-[10px] text-muted-foreground italic">
+                                    <b>Catatan:</b> Meskipun berjalan tanpa jendela, kasir akan tetap menerima <b>Notifikasi Popup Windows</b> saat aplikasi berhasil aktif berkat fitur startup alert di v1.3.3.
+                                </p>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
             </section>
         </TabsContent>
@@ -295,4 +352,3 @@ export default function MasterPanduanPage() {
     </div>
   );
 }
-
