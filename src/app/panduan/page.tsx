@@ -139,22 +139,20 @@ async function handleAdbWorkflow(ip, action, hdmi, name, stationId) {
         await execAsync(\`\${adbCmd} connect \${ip}:5555\`, execOptions);
         
         const hw = 4 + parseInt(hdmi);
-        // ENCODED INTENT: Menggunakan %2F untuk kompatibilitas MediaTek Lokal
         const intent = \`am start -a android.intent.action.VIEW -d content://android.media.tv/passthrough/com.mediatek.tvinput%2F.hdmi.HDMIInputService%2FHW\${hw} -n com.mediatek.wwtv.tvcenter/com.mediatek.wwtv.tvcenter.nav.TurnkeyUiMainActivity -f 0x10000000\`;
 
         if (action === 'start' || action === 'hdmi' || action === 'wake' || action === 'resume') {
-            // INTENT-FIRST LOGIC: Langsung kirim intent tanpa memicu reset ke Live TV via keyevent 224
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${intent}"\`, execOptions); 
             
             if (action === 'start' || action === 'hdmi') {
                 await new Promise(r => setTimeout(r, 600)); 
-                await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${intent}"\`, execOptions); // Double-Check locking
+                await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${intent}"\`, execOptions); 
             }
         } 
         else if (action === 'stop' || action === 'sleep' || action === 'pause') {
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 3"\`, execOptions); 
             await new Promise(r => setTimeout(r, 400));
-            await execAsync(\`\${adbCmd} -s \text{\${ip}:5555} shell "input keyevent 223"\`, execOptions); 
+            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 223"\`, execOptions); 
         }
         else if (action === 'home') {
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 3"\`, execOptions);
@@ -171,7 +169,6 @@ async function handleAdbWorkflow(ip, action, hdmi, name, stationId) {
     } catch (err) { log(\`❌ [\${name}] Error: \${err.message}\`); }
 }
 
-// DEEP HEARTBEAT: Verifikasi kejujuran status TV (Offline jika shell tidak merespon)
 setInterval(async () => {
     try {
         const snap = await db.collection('stations').get();
@@ -447,7 +444,7 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
                         </CardHeader>
                         <CardContent className="p-6 space-y-4">
                             <ol className="text-xs space-y-3 text-muted-foreground list-decimal list-inside font-medium">
-                                <li>Buka <i>Settings &gt; Device Preferences &gt; About</i>.</li>
+                                <li>Buka <i>Settings > Device Preferences > About</i>.</li>
                                 <li>Klik baris <b>Build Number</b> 7 kali.</li>
                                 <li>Masuk menu <b>Developer Options</b>.</li>
                                 <li>Aktifkan <b>USB Debugging</b> dan <b>Wireless Debugging</b>.</li>
