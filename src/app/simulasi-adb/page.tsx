@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -19,7 +20,10 @@ import {
     Play,
     AlertCircle,
     MonitorPlay,
-    Volume2
+    Volume2,
+    Plus,
+    Minus,
+    VolumeX
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -169,6 +173,12 @@ export default function AdbSimulatorPage() {
                                   <Button variant="outline" size="sm" className="h-10 flex flex-col gap-1" onClick={() => handleAction(station.id, 'hdmi')}><Zap className="size-3.5" /><span className="text-[8px] font-black">HDMI</span></Button>
                               </div>
 
+                              <div className="grid grid-cols-3 gap-2 bg-muted/30 p-2 rounded-xl border border-border/50">
+                                  <Button variant="ghost" size="sm" className="h-9 gap-1.5 text-primary hover:bg-primary/10" onClick={() => handleAction(station.id, 'vol_up')}><Plus className="size-3" /><span className="text-[9px] font-black">VOL +</span></Button>
+                                  <Button variant="ghost" size="sm" className="h-9 gap-1.5 text-primary hover:bg-primary/10" onClick={() => handleAction(station.id, 'vol_down')}><Minus className="size-3" /><span className="text-[9px] font-black">VOL -</span></Button>
+                                  <Button variant="ghost" size="sm" className="h-9 gap-1.5 text-amber-600 hover:bg-amber-500/10" onClick={() => handleAction(station.id, 'mute')}><VolumeX className="size-3" /><span className="text-[9px] font-black">MUTE</span></Button>
+                              </div>
+
                               <div className="pt-4 border-t border-dashed space-y-3">
                                   <div className="flex items-center justify-between px-1">
                                       <p className="text-[9px] font-black uppercase text-muted-foreground tracking-[0.2em]">Simulasi Injeksi Waktu</p>
@@ -228,8 +238,8 @@ export default function AdbSimulatorPage() {
                           <span>**Wake & Sleep**: Mengirim perintah power asli ke Smart TV via ADB.</span>
                       </li>
                       <li className="flex items-start gap-2">
-                          <Home className="size-3 text-blue-500 shrink-0 mt-0.5" />
-                          <span>**Home & HDMI**: Memaksa TV berpindah input secara instan.</span>
+                          <Volume2 className="size-3 text-blue-500 shrink-0 mt-0.5" />
+                          <span>**Audio Control**: Mengatur suara TV (v1.3.9+) dari jarak jauh.</span>
                       </li>
                       <li className="flex items-start gap-2">
                           <Activity className="size-3 text-blue-500 shrink-0 mt-0.5" />
