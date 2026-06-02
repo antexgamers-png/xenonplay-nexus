@@ -444,7 +444,7 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
                         </CardHeader>
                         <CardContent className="p-6 space-y-4">
                             <ol className="text-xs space-y-3 text-muted-foreground list-decimal list-inside font-medium">
-                                <li>Buka <i>Settings > Device Preferences > About</i>.</li>
+                                <li>Buka <i>Settings &gt; Device Preferences &gt; About</i>.</li>
                                 <li>Klik baris <b>Build Number</b> 7 kali.</li>
                                 <li>Masuk menu <b>Developer Options</b>.</li>
                                 <li>Aktifkan <b>USB Debugging</b> dan <b>Wireless Debugging</b>.</li>
