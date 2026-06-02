@@ -61,14 +61,15 @@ const CodeBlock = ({ code, language = "bash" }: { code: string, language?: strin
     );
 };
 
-const RESPONSIVE_HYBRID_BRIDGE_V1_8_0 = `
+const RESPONSIVE_HYBRID_BRIDGE_V1_8_1 = `
 /**
- * XENONPLAY NEXUS - XPBridge v1.8.0 (Direct Flow Edition)
+ * XENONPLAY NEXUS - XPBridge v1.8.1 (Direct Flow Edition)
  * 
  * ALUR STATIS TERVERIFIKASI:
  * 1. WAKE: Wakeup (224) -> Welcome Screen.
  * 2. HDMI: Home (3) -> Jeda 600ms -> HDMI Intent.
  * 3. START: Welcome Screen -> Jeda 2.5s -> HDMI Intent.
+ * 4. SLEEP: Direct Sleep (223) -> TV langsung mati.
  */
 
 const admin = require('firebase-admin');
@@ -90,7 +91,7 @@ function log(msg) {
 }
 
 log("==================================================");
-log("🚀 XENON BRIDGE V1.8.0 DIRECT-FLOW ACTIVE");
+log("🚀 XENON BRIDGE V1.8.1 DIRECT-FLOW ACTIVE");
 log("==================================================");
 
 const serviceAccountPath = path.join(baseDir, "serviceAccountKey.json");
@@ -157,7 +158,11 @@ async function handleAdbWorkflow(ip, action, hdmi, name) {
             await new Promise(r => setTimeout(r, 2500)); 
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${hdmiIntent}"\`, execOptions); 
         }
-        else if (action === 'stop' || action === 'sleep' || action === 'pause') {
+        else if (action === 'sleep') {
+            log(\`[\${name}] Workflow: DIRECT SLEEP\`);
+            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 223"\`, execOptions); 
+        }
+        else if (action === 'stop' || action === 'pause') {
             log(\`[\${name}] Workflow: HOME -> SLEEP\`);
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 3"\`, execOptions); 
             await new Promise(r => setTimeout(r, 500));
@@ -219,7 +224,7 @@ setInterval(() => {
 const PACKAGE_JSON_TEMPLATE = `
 {
   "name": "xenon-bridge-direct-flow",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "main": "bridge.js",
   "bin": "bridge.js",
   "pkg": {
@@ -232,7 +237,7 @@ const PACKAGE_JSON_TEMPLATE = `
 `;
 
 const HIDE_VBS_TEMPLATE = `
-' XENON BRIDGE SILENT LAUNCHER v2.0
+' XENON BRIDGE SILENT LAUNCHER v2.1
 Set WshShell = CreateObject("WScript.Shell")
 strPath = CreateObject("Scripting.FileSystemObject").GetParentFolderName(WScript.ScriptFullName)
 WshShell.CurrentDirectory = strPath
@@ -244,10 +249,10 @@ export default function MasterPanduanPage() {
   const [hasCopied, setHasCopied] = useState(false);
 
   const handleCopyScript = () => {
-    navigator.clipboard.writeText(RESPONSIVE_HYBRID_BRIDGE_V1_8_0.trim());
+    navigator.clipboard.writeText(RESPONSIVE_HYBRID_BRIDGE_V1_8_1.trim());
     setHasCopied(true);
     setTimeout(() => setHasCopied(false), 2000);
-    toast({ title: "Script v1.8.0 Tersalin!", variant: "success" });
+    toast({ title: "Script v1.8.1 Tersalin!", variant: "success" });
   };
 
   return (
@@ -255,7 +260,7 @@ export default function MasterPanduanPage() {
       <header className="space-y-2">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary mb-2">
             <ShieldCheck className="size-3.5" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em]">XenonPlay Nexus Enterprise v1.8.0 "Direct Flow"</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em]">XenonPlay Nexus Enterprise v1.8.1 "Direct Flow"</span>
         </div>
         <h1 className="text-4xl font-black tracking-tighter uppercase leading-none">Panduan <span className="text-primary">Master Terintegrasi</span></h1>
         <p className="text-muted-foreground text-sm max-w-3xl font-medium">
@@ -408,10 +413,10 @@ export default function MasterPanduanPage() {
                             <CodeBlock language="iss" code={`
 [Setup]
 AppName=XenonPlay Bridge
-AppVersion=1.8.0
+AppVersion=1.8.1
 DefaultDirName={autopf}\\XenonPlayBridge
 OutputDir=.
-OutputBaseFilename=XenonBridge_Setup_v18
+OutputBaseFilename=XenonBridge_Setup_v181
 SetupIconFile=assets\\app-icon.ico
 SolidCompression=yes
 
@@ -511,37 +516,47 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
         <TabsContent value="bridge" className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
             <div className="flex items-center gap-4">
                 <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center font-black shadow-xl shadow-primary/20 text-lg">3</div>
-                <h3 className="text-2xl font-black uppercase tracking-tight">Logika Alur v1.8.0</h3>
+                <h3 className="text-2xl font-black uppercase tracking-tight">Logika Alur v1.8.1</h3>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Card className="bg-primary/5 border-primary/20 relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-1.5 h-full bg-primary" />
-                    <CardHeader>
-                        <CardTitle className="text-sm font-black uppercase tracking-widest">Tombol WAKE</CardTitle>
+                    <CardHeader className="p-4">
+                        <CardTitle className="text-[10px] font-black uppercase tracking-widest">Tombol WAKE</CardTitle>
                     </CardHeader>
-                    <CardContent className="text-[11px] text-muted-foreground leading-relaxed">
-                        Urutan: <b>Wakeup (224)</b> &rarr; <b>Welcome Screen</b>. Hanya sampai inisialisasi visual.
+                    <CardContent className="p-4 pt-0 text-[10px] text-muted-foreground leading-relaxed">
+                        Urutan: <b>Wakeup (224)</b> &rarr; <b>Welcome Screen</b>. Hanya inisialisasi visual.
                     </CardContent>
                 </Card>
 
                 <Card className="bg-amber-500/5 border-amber-500/20 relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-1.5 h-full bg-amber-500" />
-                    <CardHeader>
-                        <CardTitle className="text-sm font-black uppercase tracking-widest">Tombol HDMI</CardTitle>
+                    <CardHeader className="p-4">
+                        <CardTitle className="text-[10px] font-black uppercase tracking-widest">Tombol HDMI</CardTitle>
                     </CardHeader>
-                    <CardContent className="text-[11px] text-muted-foreground leading-relaxed">
-                        Urutan: <b>Home (3)</b> &rarr; <b>Wait 600ms</b> &rarr; <b>HDMI Intent</b>. Memaksa memutus Tuner Live TV.
+                    <CardContent className="p-4 pt-0 text-[10px] text-muted-foreground leading-relaxed">
+                        Urutan: <b>Home (3)</b> &rarr; <b>Wait 600ms</b> &rarr; <b>HDMI Intent</b>. Memaksa pindah input.
                     </CardContent>
                 </Card>
 
                 <Card className="bg-emerald-500/5 border-emerald-500/20 relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500" />
-                    <CardHeader>
-                        <CardTitle className="text-sm font-black uppercase tracking-widest">Tombol START</CardTitle>
+                    <CardHeader className="p-4">
+                        <CardTitle className="text-[10px] font-black uppercase tracking-widest">Tombol START</CardTitle>
                     </CardHeader>
-                    <CardContent className="text-[11px] text-muted-foreground leading-relaxed">
-                        Urutan: <b>Welcome Screen</b> &rarr; <b>Wait 2.5s</b> &rarr; <b>HDMI Intent</b>. Transisi visual sultan.
+                    <CardContent className="p-4 pt-0 text-[10px] text-muted-foreground leading-relaxed">
+                        Urutan: <b>Welcome Screen</b> &rarr; <b>Wait 2.5s</b> &rarr; <b>HDMI Intent</b>. Transisi visual.
+                    </CardContent>
+                </Card>
+
+                <Card className="bg-red-500/5 border-red-500/20 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-1.5 h-full bg-red-500" />
+                    <CardHeader className="p-4">
+                        <CardTitle className="text-[10px] font-black uppercase tracking-widest">Tombol SLEEP</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0 text-[10px] text-muted-foreground leading-relaxed">
+                        Urutan: <b>Sleep (223)</b> secara langsung. TV langsung mati tanpa mampir ke Home.
                     </CardContent>
                 </Card>
             </div>
@@ -552,10 +567,10 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
                 </div>
                 
                 <div className="space-y-2 relative z-10">
-                    <Badge variant="outline" className="border-primary/50 text-primary bg-primary/5 px-4 h-6 font-black uppercase text-[10px] tracking-widest">Script v1.8.0 "Direct Flow"</Badge>
+                    <Badge variant="outline" className="border-primary/50 text-primary bg-primary/5 px-4 h-6 font-black uppercase text-[10px] tracking-widest">Script v1.8.1 "Direct Flow"</Badge>
                     <h3 className="text-3xl font-black uppercase tracking-tighter text-white">Dapatkan Kode Bridge Terbaru</h3>
                     <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
-                        Fitur otomatisasi yang tidak stabil telah dihapus. Menggunakan alur statis yang 100% diprediksi oleh sistem.
+                        Pembaruan v1.8.1: Aksi SLEEP kini bersifat instan. Memisahkan alur pembersihan 'Home' dari perintah mematikan daya.
                     </p>
                 </div>
 
@@ -568,7 +583,7 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
                     )}
                 >
                     {hasCopied ? <Check className="size-5" /> : <Terminal className="size-5" />}
-                    {hasCopied ? "Script v1.8.0 Tersalin!" : "Ambil Script v1.8.0"}
+                    {hasCopied ? "Script v1.8.1 Tersalin!" : "Ambil Script v1.8.1"}
                 </Button>
             </div>
         </TabsContent>
