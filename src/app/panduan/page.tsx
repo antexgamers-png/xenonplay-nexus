@@ -166,7 +166,7 @@ export default function MasterPanduanPage() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-6 space-y-4">
-                            <p className="text-xs text-muted-foreground leading-relaxed">TV <b>Wajib</b> memiliki alamat IP Statis agar koneksi Bridge tidak terputus saat router dinyalakan ulang. Atur IP Statis di menu <i>Network & Internet > IP Settings > Static</i>.</p>
+                            <p className="text-xs text-muted-foreground leading-relaxed">TV <b>Wajib</b> memiliki alamat IP Statis agar koneksi Bridge tidak terputus saat router dinyalakan ulang. Atur IP Statis di menu <i>Network &amp; Internet &gt; IP Settings &gt; Static</i>.</p>
                         </CardContent>
                     </Card>
                 </div>
