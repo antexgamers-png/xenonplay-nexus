@@ -61,6 +61,108 @@ const CodeBlock = ({ code, language = "bash" }: { code: string, language?: strin
     );
 };
 
+const HYBRID_BRIDGE_V1_3_3 = `
+/**
+ * XENONPLAY NEXUS - XPBridge V1.3.3 (Ultimate Hybrid)
+ * Arsitektur: Parallel Execution + Local RAM Watchdog
+ * Solusi: Mengatasi TV MediaTek macet & Hemat Kuota Firestore.
+ */
+
+const admin = require('firebase-admin');
+const { exec } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+const util = require('util');
+const execAsync = util.promisify(exec);
+
+// --- 1. KONFIGURASI ---
+const serviceAccount = require('./serviceAccountKey.json');
+const execOptions = { windowsHide: true }; 
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+
+const db = admin.firestore();
+const localSessions = new Map(); 
+
+const adbPath = path.join(__dirname, 'bin', 'adb.exe');
+const adbCmd = fs.existsSync(adbPath) ? \`"\${adbPath}"\` : 'adb';
+
+async function sendStartupNotification() {
+    const msg = "Xenon Bridge V1.3.3 Hybrid telah AKTIF di latar belakang.";
+    const command = \`powershell -Command "(New-Object -ComObject WScript.Shell).Popup('\${msg}', 5, 'XenonPlay Nexus', 64)"\`;
+    try {
+        await execAsync(command, execOptions);
+    } catch (e) {
+        console.log("Startup Alert: " + msg);
+    }
+}
+
+console.log('--------------------------------------------------');
+console.log('🚀 XENON BRIDGE V1.3.3 HYBRID STARTING...');
+console.log('--------------------------------------------------');
+
+sendStartupNotification();
+
+db.collection('stations').onSnapshot(snapshot => {
+  snapshot.docChanges().forEach(change => {
+    const data = change.doc.data();
+    const stationId = change.doc.id;
+
+    if (data.is_active && data.end_time) {
+        localSessions.set(stationId, { name: data.name, endTime: data.end_time, ip: data.ipAddress });
+    } else {
+        localSessions.delete(stationId);
+    }
+
+    if (data.last_action) {
+      console.log(\`[\${new Date().toLocaleTimeString()}] Signal: \${data.last_action.toUpperCase()} -> \${data.name}\`);
+      db.collection('stations').doc(stationId).update({ last_action: null });
+      handleAdbWorkflow(data.ipAddress, data.last_action, data.hdmiIndex || 1, data.name);
+    }
+  });
+});
+
+async function handleAdbWorkflow(ip, action, hdmi, name) {
+    try {
+        await execAsync(\`\${adbCmd} disconnect \${ip}:5555\`, execOptions);
+        const { stdout } = await execAsync(\`\${adbCmd} connect \${ip}:5555\`, execOptions);
+        
+        if (!stdout.includes('connected')) return;
+
+        const hw = 4 + parseInt(hdmi);
+        const intent = \`am start -n com.mediatek.wwtv.tvcenter/com.mediatek.wwtv.tvcenter.nav.TurnkeyUiMainActivity -d content://android.media.tv/passthrough/com.mediatek.tvinput/.hdmi.HDMIInputService/HW\${hw}\`;
+
+        if (action === 'start' || action === 'wake' || action === 'resume' || action === 'hdmi') {
+            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 224"\`, execOptions); 
+            await new Promise(r => setTimeout(r, 800)); 
+            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${intent}"\`, execOptions); 
+        } 
+        else if (action === 'stop' || action === 'sleep' || action === 'pause') {
+            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 3"\`, execOptions); 
+            await new Promise(r => setTimeout(r, 500));
+            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 223"\`, execOptions); 
+        }
+    } catch (err) {}
+}
+
+setInterval(() => {
+    const now = Date.now();
+    localSessions.forEach((session, id) => {
+        if (now >= session.endTime) {
+            db.collection('stations').doc(id).update({
+                is_active: false,
+                end_time: null,
+                last_action: 'stop',
+                last_action_timestamp: now
+            });
+            localSessions.delete(id);
+        }
+    });
+}, 2000);
+`;
+
 export default function MasterPanduanPage() {
   return (
     <div className="flex flex-col gap-8 pb-20 max-w-6xl mx-auto">
@@ -76,12 +178,15 @@ export default function MasterPanduanPage() {
       </header>
 
       <Tabs defaultValue="installer" className="w-full">
-        <TabsList className="bg-muted/50 p-1.5 h-16 rounded-[2rem] mb-12 border flex w-full">
-            <TabsTrigger value="installer" className="rounded-[1.5rem] font-black uppercase text-[11px] tracking-widest flex-1 gap-3 data-[state=active]:bg-primary data-[state=active]:text-white shadow-xl transition-all">
-                <Package className="size-5"/> 1. Membangun Installer (.exe)
+        <TabsList className="bg-muted/50 p-1.5 h-16 rounded-[2rem] mb-12 border flex w-full overflow-x-auto">
+            <TabsTrigger value="installer" className="rounded-[1.5rem] font-black uppercase text-[11px] tracking-widest flex-1 gap-3 data-[state=active]:bg-primary data-[state=active]:text-white shadow-xl transition-all min-w-[200px]">
+                <Package className="size-5"/> 1. Membangun Installer
             </TabsTrigger>
-            <TabsTrigger value="konfigurasi" className="rounded-[1.5rem] font-black uppercase text-[11px] tracking-widest flex-1 gap-3 data-[state=active]:bg-primary data-[state=active]:text-white shadow-xl transition-all">
+            <TabsTrigger value="konfigurasi" className="rounded-[1.5rem] font-black uppercase text-[11px] tracking-widest flex-1 gap-3 data-[state=active]:bg-primary data-[state=active]:text-white shadow-xl transition-all min-w-[200px]">
                 <Settings className="size-5"/> 2. Konfigurasi Laptop & TV
+            </TabsTrigger>
+            <TabsTrigger value="bridge" className="rounded-[1.5rem] font-black uppercase text-[11px] tracking-widest flex-1 gap-3 data-[state=active]:bg-primary data-[state=active]:text-white shadow-xl transition-all min-w-[200px]">
+                <FileCode className="size-5"/> 3. Script Bridge (bridge.js)
             </TabsTrigger>
         </TabsList>
 
@@ -261,7 +366,7 @@ Name: "{userstartup}\\XenonPlay Bridge"; Filename: "{app}\\xenon-bridge.exe"; Ic
 [Run]
 Filename: "{app}\\xenon-bridge.exe"; Description: "Jalankan XenonPlay Bridge"; Flags: nowait postinstall skipifsilent`} />
                         <p className="text-[10px] text-muted-foreground italic">
-                            Simpan, lalu <b>klik kanan setup.iss &gt; Compile</b>. Anda akan mendapatkan file <b>XenonBridge_Pro_Setup.exe</b>.
+                            Simpan, lalu <b>klik kanan setup.iss {'&gt;'} Compile</b>. Anda akan mendapatkan file <b>XenonBridge_Pro_Setup.exe</b>.
                         </p>
                     </div>
                 </div>
@@ -371,6 +476,39 @@ Filename: "{app}\\xenon-bridge.exe"; Description: "Jalankan XenonPlay Bridge"; F
                     </div>
                 </div>
             </section>
+        </TabsContent>
+
+        {/* MODUL 3: SCRIPT BRIDGE */}
+        <TabsContent value="bridge" className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+            <div className="flex items-center gap-4">
+                <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center font-black shadow-xl shadow-primary/20 text-lg">3</div>
+                <h3 className="text-2xl font-black uppercase tracking-tight">Script Inti: bridge.js (v1.3.3)</h3>
+            </div>
+            
+            <Alert className="bg-primary/5 border-primary/20">
+                <Info className="h-4 w-4 text-primary" />
+                <AlertTitle className="text-primary font-black uppercase text-[10px] tracking-widest">Petunjuk Penggunaan</AlertTitle>
+                <AlertDescription className="text-xs text-primary/80 leading-relaxed">
+                    Salin seluruh kode di bawah ini, simpan sebagai file <b>bridge.js</b> di dalam folder <code>XenonSource</code> yang telah Anda siapkan sebelumnya. Pastikan file <code>serviceAccountKey.json</code> berada di folder yang sama.
+                </AlertDescription>
+            </Alert>
+
+            <div className="bg-slate-950 border border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl relative group">
+                <div className="p-4 bg-slate-900/80 backdrop-blur-md border-b border-white/5 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="flex gap-1.5">
+                            <div className="size-3 rounded-full bg-red-500/20" />
+                            <div className="size-3 rounded-full bg-amber-500/20" />
+                            <div className="size-3 rounded-full bg-emerald-500/20" />
+                        </div>
+                        <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">bridge.js - V1.3.3 Hybrid Ultimate</span>
+                    </div>
+                    <Button variant="ghost" size="sm" className="h-8 px-4 text-[10px] font-black uppercase text-primary hover:bg-primary/10" onClick={() => { navigator.clipboard.writeText(HYBRID_BRIDGE_V1_3_3.trim()); }}>
+                        <Copy className="size-3.5 mr-2" /> Salin Kode
+                    </Button>
+                </div>
+                <CodeBlock language="javascript" code={HYBRID_BRIDGE_V1_3_3} />
+            </div>
         </TabsContent>
       </Tabs>
     </div>
