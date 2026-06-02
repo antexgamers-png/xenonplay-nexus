@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { ColumnDef } from '@tanstack/react-table';
@@ -29,7 +30,6 @@ import { deleteStation, triggerADBAction } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
-// Sub-komponen untuk menangani status link yang berdetak (real-time)
 const HardwareLinkStatus = ({ station }: { station: Station }) => {
     const [now, setNow] = useState(Date.now());
 
@@ -38,9 +38,9 @@ const HardwareLinkStatus = ({ station }: { station: Station }) => {
         return () => clearInterval(interval);
     }, []);
 
-    // Konversi heartbeat ke millis dengan toleransi 95 detik (Sync dengan Bridge v1.3.6)
+    // Gunakan toleransi 95 detik untuk mengatasi latensi jaringan dan clock skew
     const hbMillis = station.last_heartbeat?.toMillis ? station.last_heartbeat.toMillis() : (typeof station.last_heartbeat === 'number' ? station.last_heartbeat : 0);
-    const isOnline = hbMillis && (now - hbMillis < 95000);
+    const isOnline = hbMillis && (Math.abs(now - hbMillis) < 95000);
 
     return (
         <div className="flex items-center gap-2">
