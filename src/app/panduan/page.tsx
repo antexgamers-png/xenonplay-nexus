@@ -203,6 +203,9 @@ const PACKAGE_JSON_TEMPLATE = `
 
 const HIDE_VBS_TEMPLATE = `
 Set WshShell = CreateObject("WScript.Shell")
+' Logika Path-Aware: Mendeteksi lokasi file VBS agar tidak terjadi error 80070002
+strPath = CreateObject("Scripting.FileSystemObject").GetParentFolderName(WScript.ScriptFullName)
+WshShell.CurrentDirectory = strPath
 WshShell.Run "xenon-bridge.exe", 0, false
 `;
 
@@ -344,8 +347,8 @@ export default function MasterPanduanPage() {
                             <FileCode className="size-4 text-emerald-500" />
                             <h4 className="text-xs font-black uppercase tracking-widest">3. hide.vbs</h4>
                         </div>
-                        <p className="text-[11px] text-muted-foreground leading-relaxed">
-                            Script sederhana untuk menjalankan Bridge tanpa memunculkan jendela hitam CMD.
+                        <p className="text-[11px] text-muted-foreground leading-relaxed font-bold text-emerald-600">
+                            PENTING: Gunakan versi terbaru di bawah untuk menghindari error "File Not Found".
                         </p>
                         <CodeBlock language="vbscript" code={HIDE_VBS_TEMPLATE} />
                     </div>
@@ -398,11 +401,11 @@ Source: "serviceAccountKey.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "assets\\*"; DestDir: "{app}\\assets"; Flags: ignoreversion
 
 [Icons]
-Name: "{commondesktop}\\XenonPlay Bridge"; Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; IconFilename: "{app}\\assets\\app-icon.ico"
-Name: "{userstartup}\\XenonPlay Bridge"; Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; IconFilename: "{app}\\assets\\app-icon.ico"
+Name: "{commondesktop}\\XenonPlay Bridge"; Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}"; IconFilename: "{app}\\assets\\app-icon.ico"
+Name: "{userstartup}\\XenonPlay Bridge"; Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}"; IconFilename: "{app}\\assets\\app-icon.ico"
 
 [Run]
-Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; Description: "Jalankan XenonPlay Bridge Sekarang"; Flags: nowait postinstall skipifsilent
+Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}"; Description: "Jalankan XenonPlay Bridge Sekarang"; Flags: nowait postinstall skipifsilent
                             `} />
                             <div className="p-3 rounded-xl bg-primary/5 border border-primary/20">
                                 <p className="text-[10px] text-primary font-bold italic leading-relaxed">
@@ -518,7 +521,7 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; Description: "Jalank
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="text-[11px] text-muted-foreground leading-relaxed">
-                        Menggunakan peluncur <code>hide.vbs</code> untuk memastikan tidak ada jendela CMD yang mengganggu aktivitas kasir. Bridge berjalan senyap di sistem tray.
+                        Menggunakan peluncur <code>hide.vbs</code> dengan deteksi path absolut untuk memastikan tidak ada jendela CMD yang mengganggu aktivitas kasir.
                     </CardContent>
                 </Card>
             </div>
