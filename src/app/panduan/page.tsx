@@ -65,10 +65,10 @@ const RESPONSIVE_HYBRID_BRIDGE_V1_8_0 = `
 /**
  * XENONPLAY NEXUS - XPBridge v1.8.0 (Direct Flow Edition)
  * 
- * PERBAIKAN:
- * 1. Menghapus Sinkronisasi Otomatisasi Sesi (Logic Sync).
- * 2. Mengembalikan Alur Statis yang Terverifikasi.
- * 3. HDMI Bounce Fix: Home (3) -> Delay -> HDMI Intent.
+ * ALUR STATIS TERVERIFIKASI:
+ * 1. WAKE: Wakeup (224) -> Welcome Screen.
+ * 2. HDMI: Home (3) -> Jeda 600ms -> HDMI Intent.
+ * 3. START: Welcome Screen -> Jeda 2.5s -> HDMI Intent.
  */
 
 const admin = require('firebase-admin');
@@ -91,7 +91,6 @@ function log(msg) {
 
 log("==================================================");
 log("🚀 XENON BRIDGE V1.8.0 DIRECT-FLOW ACTIVE");
-log("📍 Location: " + baseDir);
 log("==================================================");
 
 const serviceAccountPath = path.join(baseDir, "serviceAccountKey.json");
@@ -108,15 +107,7 @@ admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
 const db = admin.firestore();
 
 const localSessions = new Map();
-const execOptions = { windowsHide: true, timeout: 10000 };
-
-async function sendStartupNotification() {
-    const msg = "Xenon Bridge v1.8.0 AKTIF. Alur Langsung Siap.";
-    const cmd = \`powershell -Command "(New-Object -ComObject WScript.Shell).Popup('\${msg}', 4, 'XenonPlay Nexus', 64)"\`;
-    try { await execAsync(cmd, execOptions); } catch (e) {}
-}
-
-sendStartupNotification();
+const execOptions = { windowsHide: true, timeout: 15000 };
 
 db.collection('stations').onSnapshot(snapshot => {
   snapshot.docChanges().forEach(async change => {
@@ -132,12 +123,12 @@ db.collection('stations').onSnapshot(snapshot => {
     if (data.last_action) {
       log(\`📡 Signal: \${data.last_action.toUpperCase()} -> \${data.name}\`);
       await db.collection('stations').doc(stationId).update({ last_action: null });
-      handleAdbWorkflow(data.ipAddress, data.last_action, data.hdmiIndex || 1, data.name, stationId);
+      handleAdbWorkflow(data.ipAddress, data.last_action, data.hdmiIndex || 1, data.name);
     }
   });
 });
 
-async function handleAdbWorkflow(ip, action, hdmi, name, stationId) {
+async function handleAdbWorkflow(ip, action, hdmi, name) {
     if (!ip) return;
     try {
         await execAsync(\`\${adbCmd} connect \${ip}:5555\`, execOptions);
@@ -337,10 +328,10 @@ export default function MasterPanduanPage() {
                             <p className="flex items-center gap-3"><Box className="size-3 text-primary"/> 📁 <b>XenonSource/</b></p>
                             <p className="flex items-center gap-3 ml-6"><Box className="size-3 text-emerald-500"/> 📁 <b>bin/</b> <span className="text-[9px] text-slate-500">(ADB Files)</span></p>
                             <p className="flex items-center gap-3 ml-6"><Box className="size-3 text-amber-500"/> 📁 <b>assets/</b> <span className="text-[9px] text-slate-500">(app-icon.ico)</span></p>
-                            <p className="flex items-center gap-3 ml-6 text-primary"><FileJson className="size-3"/> 📄 <b>package.json</b></p>
-                            <p className="flex items-center gap-3 ml-6 text-primary"><FileCode className="size-3"/> 📄 <b>bridge.js</b></p>
-                            <p className="flex items-center gap-3 ml-6 text-primary"><FileCode className="size-3"/> 📄 <b>hide.vbs</b></p>
-                            <p className="flex items-center gap-3 ml-6 text-amber-500"><FileJson className="size-3"/> 📄 <b>serviceAccountKey.json</b></p>
+                            <p className="flex items-center gap-3 ml-6 text-primary"><FileJson className="size-3"/> 21 package.json</p>
+                            <p className="flex items-center gap-3 ml-6 text-primary"><FileCode className="size-3"/> 21 bridge.js</p>
+                            <p className="flex items-center gap-3 ml-6 text-primary"><FileCode className="size-3"/> 21 hide.vbs</p>
+                            <p className="flex items-center gap-3 ml-6 text-amber-500"><FileJson className="size-3"/> 21 serviceAccountKey.json</p>
                         </div>
                     </div>
                 </div>
