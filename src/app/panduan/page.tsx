@@ -38,7 +38,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/tabs";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
@@ -61,11 +61,11 @@ const CodeBlock = ({ code, language = "bash" }: { code: string, language?: strin
     );
 };
 
-const RESPONSIVE_HYBRID_BRIDGE_V1_4_4 = `
+const RESPONSIVE_HYBRID_BRIDGE_V1_4_5 = `
 /**
- * XENONPLAY NEXUS - XPBridge v1.4.4 (Home-Clear Edition)
- * Perbaikan: Mengirim perintah HOME sebelum HDMI untuk mencegah TV terpental ke Live TV.
- * Menggunakan jeda stabilitas tinggi untuk TV merek lokal.
+ * XENONPLAY NEXUS - XPBridge v1.4.5 (Triple-Action Edition)
+ * Perbaikan: Alur sekuensial WAKE -> HOME -> HDMI Intent.
+ * Dirancang khusus untuk TV MediaTek yang butuh persiapan sistem sebelum pindah input.
  */
 
 const admin = require('firebase-admin');
@@ -87,7 +87,7 @@ function log(msg) {
 }
 
 log("==================================================");
-log("🚀 XENON BRIDGE V1.4.4 HOME-CLEAR ACTIVE");
+log("🚀 XENON BRIDGE V1.4.5 TRIPLE-ACTION ACTIVE");
 log("📍 Location: " + baseDir);
 log("==================================================");
 
@@ -107,7 +107,7 @@ const localSessions = new Map();
 const execOptions = { windowsHide: true, timeout: 8000 };
 
 async function sendStartupNotification() {
-    const msg = "Xenon Bridge v1.4.4 AKTIF. Sistem Anti-Bounce Siap.";
+    const msg = "Xenon Bridge v1.4.5 AKTIF. Alur Triple-Action Siap.";
     const cmd = \`powershell -Command "(New-Object -ComObject WScript.Shell).Popup('\${msg}', 4, 'XenonPlay Nexus', 64)"\`;
     try { await execAsync(cmd, execOptions); } catch (e) {}
 }
@@ -142,11 +142,15 @@ async function handleAdbWorkflow(ip, action, hdmi, name, stationId) {
         const intent = \`am start -a android.intent.action.VIEW -d content://android.media.tv/passthrough/com.mediatek.tvinput%2F.hdmi.HDMIInputService%2FHW\${hw} -n com.mediatek.wwtv.tvcenter/com.mediatek.wwtv.tvcenter.nav.TurnkeyUiMainActivity -f 0x10000000\`;
 
         if (action === 'start' || action === 'hdmi' || action === 'wake' || action === 'resume') {
-            // STEP 1: Kirim HOME untuk menghentikan paksa aktivitas Live TV yang sedang berjalan
+            // STEP 1: WAKEUP (Pastikan layar menyala & sistem merespon)
+            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 224"\`, execOptions); 
+            await new Promise(r => setTimeout(r, 600)); 
+
+            // STEP 2: HOME (Hentikan paksa Live TV yang mungkin otomatis aktif saat wakeup)
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 3"\`, execOptions); 
             await new Promise(r => setTimeout(r, 600)); 
 
-            // STEP 2: Kirim Intent HDMI (Double Tap untuk mengunci)
+            // STEP 3: HDMI Intent
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${intent}"\`, execOptions); 
             
             if (action === 'start' || action === 'hdmi') {
@@ -211,8 +215,8 @@ setInterval(() => {
 
 const PACKAGE_JSON_TEMPLATE = `
 {
-  "name": "xenon-bridge-hyper-pro",
-  "version": "1.4.4",
+  "name": "xenon-bridge-triple-pro",
+  "version": "1.4.5",
   "main": "bridge.js",
   "bin": "bridge.js",
   "pkg": {
@@ -238,10 +242,10 @@ export default function MasterPanduanPage() {
   const [hasCopied, setHasCopied] = useState(false);
 
   const handleCopyScript = () => {
-    navigator.clipboard.writeText(RESPONSIVE_HYBRID_BRIDGE_V1_4_4.trim());
+    navigator.clipboard.writeText(RESPONSIVE_HYBRID_BRIDGE_V1_4_5.trim());
     setHasCopied(true);
     setTimeout(() => setHasCopied(false), 2000);
-    toast({ title: "Script v1.4.4 Tersalin!", variant: "success" });
+    toast({ title: "Script v1.4.5 Tersalin!", variant: "success" });
   };
 
   return (
@@ -249,11 +253,11 @@ export default function MasterPanduanPage() {
       <header className="space-y-2">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary mb-2">
             <ShieldCheck className="size-3.5" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em]">XenonPlay Nexus Enterprise v1.4.4 "Home-Clear"</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em]">XenonPlay Nexus Enterprise v1.4.5 "Triple-Action"</span>
         </div>
         <h1 className="text-4xl font-black tracking-tighter uppercase leading-none">Panduan <span className="text-primary">Master Terintegrasi</span></h1>
         <p className="text-muted-foreground text-sm max-w-3xl font-medium">
-          Solusi final untuk stabilitas hardware: Teknik membangun software installer dan konfigurasi HDMI precision.
+          Solusi final stabilitas hardware: Alur sekuensial Wake-Home-Intent untuk kompatibilitas mutlak.
         </p>
       </header>
 
@@ -407,7 +411,7 @@ export default function MasterPanduanPage() {
                             <CodeBlock language="iss" code={`
 [Setup]
 AppName=XenonPlay Bridge
-AppVersion=1.4.4
+AppVersion=1.4.5
 DefaultDirName={autopf}\\XenonPlayBridge
 OutputDir=.
 OutputBaseFilename=XenonBridge_Pro_Setup
@@ -513,7 +517,7 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
         <TabsContent value="bridge" className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
             <div className="flex items-center gap-4">
                 <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center font-black shadow-xl shadow-primary/20 text-lg">3</div>
-                <h3 className="text-2xl font-black uppercase tracking-tight">Fitur Home-Clear v1.4.4</h3>
+                <h3 className="text-2xl font-black uppercase tracking-tight">Fitur Triple-Action v1.4.5</h3>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -521,11 +525,11 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
                     <div className="absolute top-0 left-0 w-1.5 h-full bg-primary" />
                     <CardHeader>
                         <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-                            <Layers className="size-4 text-primary" /> Anti-Bounce Technology
+                            <Zap className="size-4 text-primary" /> Triple-Action Protocol
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="text-[11px] text-muted-foreground leading-relaxed">
-                        Mencegah TV terpental ke Live TV dengan mengirimkan sinyal "Home" untuk membersihkan memori aktivitas sebelum berpindah ke HDMI. Strategi ini terbukti paling stabil untuk firmware MediaTek merek lokal.
+                        Mengirimkan urutan perintah paling aman: <b>Wakeup</b> (untuk memastikan sistem responsif) → <b>Home</b> (untuk membersihkan stack memori Live TV) → <b>HDMI Intent</b>. Ini menjamin TV tidak "bingung" saat berpindah input.
                     </CardContent>
                 </Card>
 
@@ -548,10 +552,10 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
                 </div>
                 
                 <div className="space-y-2 relative z-10">
-                    <Badge variant="outline" className="border-primary/50 text-primary bg-primary/5 px-4 h-6 font-black uppercase text-[10px] tracking-widest">Script v1.4.4 Final Stable</Badge>
+                    <Badge variant="outline" className="border-primary/50 text-primary bg-primary/5 px-4 h-6 font-black uppercase text-[10px] tracking-widest">Script v1.4.5 Final Stable</Badge>
                     <h3 className="text-3xl font-black uppercase tracking-tighter text-white">Perbarui Kode Bridge Anda</h3>
                     <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
-                        Gunakan versi v1.4.4 untuk memperbaiki masalah "Live TV Bouncing" saat mulai sesi (Start) atau klik HDMI.
+                        Gunakan versi v1.4.5 untuk alur sekuensial <b>Wake-Home-Intent</b> yang menjamin stabilitas perpindahan port HDMI di TV merek lokal.
                     </p>
                 </div>
 
@@ -564,7 +568,7 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
                     )}
                 >
                     {hasCopied ? <Check className="size-5" /> : <Terminal className="size-5" />}
-                    {hasCopied ? "Script v1.4.4 Tersalin!" : "Ambil Script v1.4.4"}
+                    {hasCopied ? "Script v1.4.5 Tersalin!" : "Ambil Script v1.4.5"}
                 </Button>
             </div>
         </TabsContent>
