@@ -19,7 +19,9 @@ import {
     Terminal,
     Copy,
     RefreshCw,
-    Activity
+    Activity,
+    Clock,
+    Play
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -164,13 +166,48 @@ setInterval(() => {
       if (!firestore) return;
       if (!checkShift()) return;
       try {
-          await updateDoc(doc(firestore, 'stations', stationId), {
+          const updates: any = {
               last_action: action,
               last_action_timestamp: Date.now()
-          });
+          };
+          
+          // Jika action stop, pastikan is_active diset false di sini juga
+          if (action === 'stop' || action === 'sleep') {
+              updates.is_active = false;
+              updates.end_time = null;
+          }
+
+          await updateDoc(doc(firestore, 'stations', stationId), updates);
           toast({ title: `Sinyal ${action.toUpperCase()} dikirim`, variant: "success" });
       } catch (err: any) {
           toast({ title: "Gagal", description: err.message, variant: "destructive" });
+      }
+  };
+
+  const handleSimulateTime = async (stationId: string, minutes: number) => {
+      if (!firestore) return;
+      if (!checkShift()) return;
+      try {
+          const nowMs = Date.now();
+          const endTime = nowMs + minutes * 60 * 1000;
+          
+          await updateDoc(doc(firestore, 'stations', stationId), {
+              is_active: true,
+              is_paused: false,
+              start_time: nowMs,
+              end_time: endTime,
+              last_action: 'start',
+              last_action_timestamp: nowMs,
+              current_transaction_id: 'SIMULASI_LOSS_' + Math.random().toString(36).substring(2, 7).toUpperCase()
+          });
+          
+          toast({ 
+              title: `Simulasi ${minutes}m Dimulai`, 
+              description: "Status unit aktif tanpa catatan transaksi (Loss).",
+              variant: "success" 
+          });
+      } catch (err: any) {
+          toast({ title: "Gagal Simulasi", description: err.message, variant: "destructive" });
       }
   };
 
@@ -185,7 +222,7 @@ setInterval(() => {
                 <span className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-600">Stable Legacy v1.3.0</span>
             </div>
             <h1 className="text-4xl font-black uppercase tracking-tight">Simulator <span className="text-primary">Master</span></h1>
-            <p className="text-muted-foreground text-sm font-medium">Mode terminal Node.js yang paling tangguh untuk operasional harian.</p>
+            <p className="text-muted-foreground text-sm font-medium">Uji coba hardware secara langsung dan simulasi waktu tanpa transaksi.</p>
         </div>
         <div className="flex flex-wrap gap-2 justify-end">
             <Link href="/panduan">
@@ -235,6 +272,41 @@ setInterval(() => {
                                   <Button variant="outline" size="sm" className="h-10 flex flex-col gap-1" onClick={() => handleAction(station.id, 'home')}><Home className="size-3.5" /><span className="text-[8px] font-black">HOME</span></Button>
                                   <Button variant="outline" size="sm" className="h-10 flex flex-col gap-1" onClick={() => handleAction(station.id, 'hdmi')}><Zap className="size-3.5" /><span className="text-[8px] font-black">HDMI</span></Button>
                               </div>
+
+                              <div className="pt-4 border-t border-dashed space-y-3">
+                                  <p className="text-[9px] font-black uppercase text-muted-foreground tracking-[0.2em] ml-1">Simulasi Timer (No Transaksi)</p>
+                                  <div className="flex gap-2">
+                                      <Button 
+                                          variant="outline" 
+                                          size="sm" 
+                                          className="flex-1 h-9 rounded-xl font-black uppercase text-[9px] gap-2 border-primary/20 text-primary hover:bg-primary/5"
+                                          onClick={() => handleSimulateTime(station.id, 60)}
+                                          disabled={station.is_active}
+                                      >
+                                          <Play className="size-3 fill-current" /> 1 Jam
+                                      </Button>
+                                      <Button 
+                                          variant="outline" 
+                                          size="sm" 
+                                          className="flex-1 h-9 rounded-xl font-black uppercase text-[9px] gap-2 border-primary/20 text-primary hover:bg-primary/5"
+                                          onClick={() => handleSimulateTime(station.id, 120)}
+                                          disabled={station.is_active}
+                                      >
+                                          <Clock className="size-3" /> 2 Jam
+                                      </Button>
+                                      {station.is_active && (
+                                          <Button 
+                                              variant="destructive" 
+                                              size="sm" 
+                                              className="h-9 w-9 rounded-xl p-0"
+                                              onClick={() => handleAction(station.id, 'stop')}
+                                              title="Stop Simulasi"
+                                          >
+                                              <Power className="size-3.5" />
+                                          </Button>
+                                      )}
+                                  </div>
+                              </div>
                           </CardContent>
                       </Card>
                   )
@@ -270,10 +342,10 @@ setInterval(() => {
               <div className="p-6 rounded-3xl bg-amber-500/5 border border-amber-500/20 space-y-3">
                   <div className="flex items-center gap-2 text-amber-600">
                       <Zap className="size-4" />
-                      <h4 className="text-xs font-black uppercase tracking-widest">Saran Operasional</h4>
+                      <h4 className="text-xs font-black uppercase tracking-widest">Peringatan Simulasi</h4>
                   </div>
                   <p className="text-[11px] text-muted-foreground leading-relaxed italic">
-                      "Versi ini adalah yang paling aman. Jika Anda menemui kendala koneksi, cukup matikan (Ctrl+C) dan jalankan ulang perintah 'node bridge.js' di terminal laptop Anda."
+                      "Gunakan tombol simulasi hanya untuk pengujian hardware. Karena tidak mencatat transaksi, omzet pada laporan keuangan tidak akan bertambah."
                   </p>
               </div>
           </div>
