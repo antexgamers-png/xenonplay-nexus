@@ -16,8 +16,8 @@ import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
 /**
- * XENONPLAY CINEMATIC WELCOME SIGNAGE v2.1 - DUMMY PREVIEW
- * Fitur: Video Intro Autoplay -> Smooth Transition -> Dashboard Status.
+ * XENONPLAY CINEMATIC WELCOME SIGNAGE v2.2 - LOCAL ASSET EDITION
+ * Fitur: Video Intro Autoplay (Local) -> Smooth Transition -> Dashboard Status.
  */
 
 export default function WelcomePage() {
@@ -27,8 +27,8 @@ export default function WelcomePage() {
     const [introEnded, setIntroEnded] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
 
-    // VIDEO DUMMY: Futuristik Azure (Mixkit Free Asset)
-    const videoUrl = "https://assets.mixkit.co/videos/preview/mixkit-abstract-moving-blue-lines-2070-large.mp4";
+    // PATH KE FILE LOKAL: Pastikan file ditaruh di folder 'public' dengan nama 'intro.mp4'
+    const videoUrl = "/intro.mp4";
 
     useEffect(() => {
         setMounted(true);
@@ -40,10 +40,10 @@ export default function WelcomePage() {
         update();
         const timer = setInterval(update, 1000);
 
-        // Backup: Otomatis masuk ke dashboard jika video macet setelah 10 detik
+        // Backup: Otomatis masuk ke dashboard jika video macet atau tidak ditemukan setelah 12 detik
         const safetyTimer = setTimeout(() => {
             setIntroEnded(true);
-        }, 10000);
+        }, 12000);
 
         return () => {
             clearInterval(timer);
