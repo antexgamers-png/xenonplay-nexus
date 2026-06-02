@@ -66,10 +66,10 @@ function MonitorTimer({ endTime, remainingSeconds, isPaused }: MonitorTimerProps
   );
 }
 
-export default function PublicDisplayPage() {
+export function PublicDisplayPage() {
   const firestore = useFirestore();
   const [activeSlide, setActiveSlide] = useState(0); 
-  const [now, setNow] = useState<Date | null>(null);
+  const [now, setNow] = useState<number>(Date.now());
   
   const stationsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'stations') : null, [firestore]);
   const pricingQuery = useMemoFirebase(() => firestore ? collection(firestore, 'pricingRules') : null, [firestore]);
@@ -77,14 +77,13 @@ export default function PublicDisplayPage() {
   const { data: stations } = useCollection<Station>(stationsQuery);
   const { data: pricingRules } = useCollection<PricingRule>(pricingQuery);
 
-  // Clock Interval (Hanya Client)
+  // Clock & Online Status Pulse (Forcing re-calculation of isOnline)
   useEffect(() => {
-    setNow(new Date());
-    const clock = setInterval(() => setNow(new Date()), 1000);
+    const clock = setInterval(() => setNow(Date.now()), 10000);
     return () => clearInterval(clock);
   }, []);
 
-  // Slider Interval (Hanya Client)
+  // Slider Interval
   useEffect(() => {
     const slider = setInterval(() => {
         setActiveSlide(prev => prev === 0 ? 1 : 0);
@@ -128,10 +127,10 @@ export default function PublicDisplayPage() {
         
         <div className="text-right border-l pl-[3vw] border-border">
           <div className="text-[6vh] font-black font-mono tracking-widest text-primary leading-none">
-            {now ? now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '--:--:--'}
+            {new Date(now).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
           </div>
           <div className="text-[1.3vh] font-black text-muted-foreground uppercase tracking-[0.6em] mt-[1vh]">
-            {now ? now.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' }) : '---'}
+            {new Date(now).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}
           </div>
         </div>
       </header>
@@ -151,7 +150,8 @@ export default function PublicDisplayPage() {
               <div className={cn("grid gap-[2.5vh] h-full", gridCols)}>
                 {sortedStations.map(s => {
                   const hbMillis = s.last_heartbeat?.toMillis ? s.last_heartbeat.toMillis() : (typeof s.last_heartbeat === 'number' ? s.last_heartbeat : 0);
-                  const isOnline = hbMillis && (Date.now() - hbMillis < 45000);
+                  // 95s tolerance for 60s ping
+                  const isOnline = hbMillis && (now - hbMillis < 95000);
 
                   return (
                     <div 
@@ -165,7 +165,6 @@ export default function PublicDisplayPage() {
                           : "bg-muted/20 border-border opacity-80"
                       )}
                     >
-                      {/* Watermark Logo */}
                       <div className="absolute -bottom-10 -right-10 size-[30vh] opacity-[0.03] pointer-events-none grayscale group-hover:scale-110 transition-transform duration-1000">
                           <Image src="/xenonplay-logo.png" alt="Watermark" fill className="object-contain" />
                       </div>
@@ -264,7 +263,6 @@ export default function PublicDisplayPage() {
         </AnimatePresence>
       </main>
 
-      {/* FOOTER MARQUEE (8vh) */}
       <footer className="h-[8vh] bg-primary flex items-center overflow-hidden shrink-0 z-30 shadow-[0_-10px_40px_rgba(0,0,0,0.3)] border-t border-white/10">
         <div className="animate-marquee-css">
             <span className="text-primary-foreground font-black text-[3.2vh] tracking-[0.6em] uppercase mx-[6vw] whitespace-nowrap">

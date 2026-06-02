@@ -39,9 +39,9 @@ const HardwareLinkStatus = ({ station }: { station: Station }) => {
         return () => clearInterval(interval);
     }, []);
 
-    // Konversi heartbeat ke millis untuk perbandingan yang aman
-    const hbMillis = station.last_heartbeat?.toMillis ? station.last_heartbeat.toMillis() : station.last_heartbeat || 0;
-    const isOnline = hbMillis && (now - hbMillis < 45000);
+    // Konversi heartbeat ke millis dengan toleransi 90 detik
+    const hbMillis = station.last_heartbeat?.toMillis ? station.last_heartbeat.toMillis() : (typeof station.last_heartbeat === 'number' ? station.last_heartbeat : 0);
+    const isOnline = hbMillis && (now - hbMillis < 95000);
 
     return (
         <div className="flex items-center gap-2">

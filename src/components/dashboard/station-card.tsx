@@ -188,8 +188,9 @@ export function StationCard({
   const outstanding = currentTransaction ? (currentTransaction.amount || 0) - (currentTransaction.discount || 0) - (currentTransaction.paidAmount || 0) : 0;
   const isPaid = currentTransaction?.status === 'paid';
   
+  // PARSING HEARTBEAT ROBUST (90s Tolerance for 60s bridge interval)
   const hbMillis = last_heartbeat?.toMillis ? last_heartbeat.toMillis() : (typeof last_heartbeat === 'number' ? last_heartbeat : 0);
-  const isOnline = hbMillis && (now - hbMillis < 45000);
+  const isOnline = hbMillis && (now - hbMillis < 95000);
 
   const checkShift = () => {
     if (!activeShift) {
