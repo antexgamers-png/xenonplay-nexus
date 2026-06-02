@@ -20,22 +20,18 @@ import {
     BellRing, 
     FolderTree, 
     Info, 
-    MousePointer2, 
     ExternalLink, 
-    AlertCircle, 
     RefreshCw, 
-    Command, 
     ShieldAlert, 
-    FileArchive, 
-    FolderOpen,
-    Wifi,
     Box,
-    FileText,
-    Play,
+    Layers,
     Plus,
     FolderPlus,
-    FilePlus,
-    Layers
+    MonitorPlay,
+    Wifi,
+    MousePointer2,
+    Command,
+    Keyboard
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -44,7 +40,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 const CodeBlock = ({ code, language = "bash" }: { code: string, language?: string }) => {
     const { toast } = useToast();
@@ -67,95 +62,107 @@ const CodeBlock = ({ code, language = "bash" }: { code: string, language?: strin
 
 export default function MasterPanduanPage() {
   return (
-    <div className="flex flex-col gap-8 pb-20 max-w-5xl mx-auto">
+    <div className="flex flex-col gap-8 pb-20 max-w-6xl mx-auto">
       <header className="space-y-2">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 mb-2">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary mb-2">
             <ShieldCheck className="size-3.5" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em]">XenonBridge Pro v1.3.3 Hybrid</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em]">XenonPlay Nexus Enterprise v1.3.3</span>
         </div>
-        <h1 className="text-4xl font-black tracking-tighter uppercase leading-none">Panduan <span className="text-primary">Membangun Installer</span></h1>
-        <p className="text-muted-foreground text-sm max-w-2xl font-medium">
-          Langkah teknis mendalam untuk merakit sistem otomatisasi hardware dari nol hingga menjadi file setup profesional.
+        <h1 className="text-4xl font-black tracking-tighter uppercase leading-none">Panduan <span className="text-primary">Master Terintegrasi</span></h1>
+        <p className="text-muted-foreground text-sm max-w-3xl font-medium">
+          Dua pilar utama untuk menjaga stabilitas operasional: Teknik membangun software installer dan konfigurasi hardware yang presisi.
         </p>
       </header>
 
-      <Tabs defaultValue="tahap-0" className="w-full">
-        <TabsList className="bg-muted/50 p-1 h-14 rounded-2xl mb-8 border flex w-full overflow-x-auto scrollbar-hide">
-            <TabsTrigger value="tahap-0" className="rounded-xl font-black uppercase text-[9px] tracking-widest px-6 flex-1 gap-2"><Cpu className="size-3.5"/> 0. Alat</TabsTrigger>
-            <TabsTrigger value="tahap-1" className="rounded-xl font-black uppercase text-[9px] tracking-widest px-6 flex-1 gap-2"><FolderPlus className="size-3.5"/> 1. Siapkan Folder</TabsTrigger>
-            <TabsTrigger value="build-exe" className="rounded-xl font-black uppercase text-[9px] tracking-widest px-6 flex-1 gap-2 text-primary border-primary/20"><Package className="size-3.5"/> 2. Build EXE</TabsTrigger>
-            <TabsTrigger value="trouble" className="rounded-xl font-black uppercase text-[9px] tracking-widest px-6 flex-1 gap-2 text-red-500"><ShieldAlert className="size-3.5"/> 3. Error</TabsTrigger>
+      <Tabs defaultValue="installer" className="w-full">
+        <TabsList className="bg-muted/50 p-1.5 h-16 rounded-[2rem] mb-12 border flex w-full">
+            <TabsTrigger value="installer" className="rounded-[1.5rem] font-black uppercase text-[11px] tracking-widest flex-1 gap-3 data-[state=active]:bg-primary data-[state=active]:text-white shadow-xl transition-all">
+                <Package className="size-5"/> 1. Membangun Installer (.exe)
+            </TabsTrigger>
+            <TabsTrigger value="konfigurasi" className="rounded-[1.5rem] font-black uppercase text-[11px] tracking-widest flex-1 gap-3 data-[state=active]:bg-primary data-[state=active]:text-white shadow-xl transition-all">
+                <Settings className="size-5"/> 2. Konfigurasi Laptop & TV
+            </TabsTrigger>
         </TabsList>
 
-        {/* TAHAP 0: ALAT & DOWNLOAD */}
-        <TabsContent value="tahap-0" className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
-            <Card className="border-border bg-card">
-                <CardHeader className="pb-3 border-b bg-muted/20">
-                    <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
-                        <Download className="size-4 text-primary" /> Software Pembangun (Build)
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6">
-                    <div className="grid gap-6 md:grid-cols-3">
-                        <div className="space-y-3">
-                            <p className="text-sm font-bold uppercase">1. Node.js LTS</p>
-                            <p className="text-[10px] text-muted-foreground mb-3">Mesin utama untuk menjalankan skrip JavaScript.</p>
-                            <Button variant="outline" size="sm" className="w-full h-8 text-[10px] font-black uppercase" asChild>
-                                <a href="https://nodejs.org/" target="_blank"><ExternalLink className="size-3 mr-2" /> Download</a>
+        {/* MODUL 1: MEMBANGUN INSTALLER */}
+        <TabsContent value="installer" className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* TAHAP 0: ALAT */}
+            <section className="space-y-6">
+                <div className="flex items-center gap-4">
+                    <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center font-black shadow-xl shadow-primary/20 text-lg">0</div>
+                    <h3 className="text-2xl font-black uppercase tracking-tight">Persiapan Alat (Build Tools)</h3>
+                </div>
+                <div className="grid gap-6 md:grid-cols-3">
+                    <Card className="border-border hover:border-primary/30 transition-colors">
+                        <CardHeader className="pb-3 border-b bg-muted/20">
+                            <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                                <Cpu className="size-4 text-primary" /> 1. Node.js LTS
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-6">
+                            <p className="text-[11px] text-muted-foreground mb-4 leading-relaxed">Mesin utama untuk menjalankan skrip JavaScript dan melakukan kompilasi.</p>
+                            <Button variant="outline" size="sm" className="w-full h-9 text-[10px] font-black uppercase" asChild>
+                                <a href="https://nodejs.org/" target="_blank"><ExternalLink className="size-3 mr-2" /> Download Node.js</a>
                             </Button>
-                        </div>
-                        <div className="space-y-3">
-                            <p className="text-sm font-bold uppercase">2. Inno Setup</p>
-                            <p className="text-[10px] text-muted-foreground mb-3">Untuk membungkus file menjadi installer (Setup.exe).</p>
-                            <Button variant="outline" size="sm" className="w-full h-8 text-[10px] font-black uppercase" asChild>
-                                <a href="https://jrsoftware.org/isdl.php" target="_blank"><ExternalLink className="size-3 mr-2" /> Download</a>
-                            </Button>
-                        </div>
-                        <div className="space-y-3">
-                            <p className="text-sm font-bold uppercase">3. ADB Binary</p>
-                            <p className="text-[10px] text-muted-foreground mb-3">Alat komunikasi antara laptop dan Smart TV.</p>
-                            <Button variant="outline" size="sm" className="w-full h-8 text-[10px] font-black uppercase" asChild>
-                                <a href="https://developer.android.com/tools/releases/platform-tools" target="_blank"><ExternalLink className="size-3 mr-2" /> Download</a>
-                            </Button>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-        </TabsContent>
+                        </CardContent>
+                    </Card>
 
-        {/* TAHAP 1: SIAPKAN FOLDER */}
-        <TabsContent value="tahap-1" className="space-y-8 animate-in fade-in slide-in-from-left-4">
+                    <Card className="border-border hover:border-primary/30 transition-colors">
+                        <CardHeader className="pb-3 border-b bg-muted/20">
+                            <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                                <Terminal className="size-4 text-primary" /> 2. ADB Tools
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-6">
+                            <p className="text-[11px] text-muted-foreground mb-4 leading-relaxed">File binary adb.exe, AdbWinApi.dll, dan AdbWinUsbApi.dll untuk kontrol TV.</p>
+                            <Button variant="outline" size="sm" className="w-full h-9 text-[10px] font-black uppercase" asChild>
+                                <a href="https://developer.android.com/tools/releases/platform-tools" target="_blank"><ExternalLink className="size-3 mr-2" /> Download ADB</a>
+                            </Button>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-border hover:border-primary/30 transition-colors">
+                        <CardHeader className="pb-3 border-b bg-muted/20">
+                            <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                                <Layers className="size-4 text-primary" /> 3. Inno Setup
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-6">
+                            <p className="text-[11px] text-muted-foreground mb-4 leading-relaxed">Software untuk membungkus seluruh file sistem menjadi satu file Installer tunggal.</p>
+                            <Button variant="outline" size="sm" className="w-full h-9 text-[10px] font-black uppercase" asChild>
+                                <a href="https://jrsoftware.org/isdl.php" target="_blank"><ExternalLink className="size-3 mr-2" /> Download Inno</a>
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </div>
+            </section>
+
+            {/* TAHAP 1: STRUKTUR FOLDER */}
             <section className="space-y-6">
                 <div className="flex items-center gap-4">
                     <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center font-black shadow-xl shadow-primary/20 text-lg">1</div>
-                    <h3 className="text-2xl font-black uppercase tracking-tight">Membuat Struktur Proyek</h3>
+                    <h3 className="text-2xl font-black uppercase tracking-tight">Menyiapkan Folder XenonSource</h3>
                 </div>
-
-                <div className="grid gap-6 md:grid-cols-2">
+                <div className="grid gap-8 md:grid-cols-2">
                     <div className="space-y-4">
-                        <div className="p-4 rounded-xl bg-muted/30 border border-border">
-                            <h4 className="text-xs font-black uppercase mb-3 flex items-center gap-2 text-primary">
-                                <Plus className="size-3" /> Langkah A: Buat Folder Utama
-                            </h4>
-                            <p className="text-xs text-muted-foreground leading-relaxed">
-                                Buat sebuah folder baru di komputer Anda dengan nama <b>XenonSource</b>. Lokasi bebas, tapi disarankan di <code>C:\XenonSource</code>.
-                            </p>
-                        </div>
-                        <div className="p-4 rounded-xl bg-muted/30 border border-border">
-                            <h4 className="text-xs font-black uppercase mb-3 flex items-center gap-2 text-primary">
-                                <FolderPlus className="size-3" /> Langkah B: Buat Sub-Folder
-                            </h4>
-                            <p className="text-xs text-muted-foreground leading-relaxed">
-                                Di dalam folder <b>XenonSource</b>, buatlah dua folder baru lagi:
-                            </p>
-                            <ul className="text-xs font-mono mt-2 space-y-1 pl-4">
-                                <li>📁 <b>bin/</b></li>
-                                <li>📁 <b>assets/</b></li>
-                            </ul>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                            Buat folder baru bernama <b>XenonSource</b> di Desktop atau C:\. Folder ini akan menjadi pusat produksi Anda.
+                        </p>
+                        <div className="p-4 rounded-xl bg-muted/30 border border-border space-y-4">
+                            <div className="flex items-center gap-3">
+                                <div className="size-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-black">A</div>
+                                <p className="text-xs font-bold uppercase">Buat Sub-Folder "bin/"</p>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground pl-9">Pindahkan isi dari <code>platform-tools</code> (adb.exe, dll) ke dalam folder <b>bin/</b> ini.</p>
+                            
+                            <div className="flex items-center gap-3">
+                                <div className="size-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-black">B</div>
+                                <p className="text-xs font-bold uppercase">Buat Sub-Folder "assets/"</p>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground pl-9">Gunakan folder ini untuk menyimpan ikon aplikasi (.ico) atau logo Xenon.</p>
                         </div>
                     </div>
-
-                    <div className="p-6 rounded-[2.5rem] bg-slate-950 border border-white/5 shadow-2xl relative overflow-hidden h-full flex flex-col justify-center">
+                    <div className="p-6 rounded-[2.5rem] bg-slate-950 border border-white/5 shadow-2xl relative overflow-hidden flex flex-col justify-center">
                         <div className="absolute top-0 right-0 p-8 opacity-5">
                             <FolderTree className="size-32 text-white" />
                         </div>
@@ -163,134 +170,175 @@ export default function MasterPanduanPage() {
                         <div className="font-mono text-xs text-slate-300 space-y-3">
                             <p className="flex items-center gap-3"><Box className="size-3 text-primary"/> 📁 <b>XenonSource/</b></p>
                             <p className="flex items-center gap-3 ml-6"><Box className="size-3 text-slate-600"/> 📁 <b>assets/</b> <span className="text-slate-600 ml-2">// (Logo, Ikon)</span></p>
-                            <p className="flex items-center gap-3 ml-6"><Box className="size-3 text-emerald-500"/> 📁 <b>bin/</b> <span className="text-slate-500 ml-2">// (Isi ADB Tools ke sini)</span></p>
+                            <p className="flex items-center gap-3 ml-6"><Box className="size-3 text-emerald-500"/> 📁 <b>bin/</b> <span className="text-slate-500 ml-2">// (Isi ADB Tools di sini)</span></p>
                             <p className="flex items-center gap-3 ml-6 text-emerald-400"><FileCode className="size-3"/> 📄 <b>bridge.js</b></p>
                             <p className="flex items-center gap-3 ml-6 text-emerald-400"><FileJson className="size-3"/> 📄 <b>package.json</b></p>
                             <p className="flex items-center gap-3 ml-6 text-amber-500"><FileJson className="size-3"/> 📄 <b>serviceAccountKey.json</b></p>
                         </div>
                     </div>
                 </div>
-
-                <Alert className="bg-primary/5 border-primary/20">
-                    <Info className="size-4 text-primary" />
-                    <AlertTitle className="text-primary font-black uppercase text-[10px] tracking-widest">PENTING!</AlertTitle>
-                    <AlertDescription className="text-xs text-primary/80">
-                        Pastikan isi dari folder <b>platform-tools</b> (adb.exe, AdbWinApi.dll, dll) sudah dipindahkan semua ke dalam folder <b>bin/</b> yang baru Anda buat.
-                    </AlertDescription>
-                </Alert>
             </section>
-        </TabsContent>
 
-        {/* TAHAP 2: BUILD EXE */}
-        <TabsContent value="build-exe" className="space-y-10 animate-in fade-in slide-in-from-bottom-6">
+            {/* TAHAP 2: KONFIGURASI FILE */}
             <section className="space-y-6">
                 <div className="flex items-center gap-4">
                     <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center font-black shadow-xl shadow-primary/20 text-lg">2</div>
-                    <h3 className="text-2xl font-black uppercase tracking-tight">Proses Kompilasi Binary</h3>
+                    <h3 className="text-2xl font-black uppercase tracking-tight">Membuat File Konfigurasi</h3>
                 </div>
-
-                <div className="grid gap-8">
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-3">
-                            <div className="size-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-black">A</div>
-                            <h4 className="font-bold text-sm uppercase">Membuat File Konfigurasi</h4>
-                        </div>
-                        <p className="text-xs text-muted-foreground">Buka folder <code>XenonSource</code>, buat file bernama <code>package.json</code> dan isi dengan kode ini:</p>
-                        <CodeBlock language="json" code={`{
+                <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                        Di dalam folder <b>XenonSource</b>, buat file baru bernama <b><code>package.json</code></b> dan masukkan kode berikut agar seluruh aset ikut terbungkus saat di-compile:
+                    </p>
+                    <CodeBlock language="json" code={`{
   "name": "xenon-bridge-hybrid",
   "version": "1.3.3",
   "main": "bridge.js",
   "bin": "bridge.js",
   "pkg": {
-    "assets": [
-      "bin/**/*",
-      "serviceAccountKey.json"
-    ]
+    "assets": ["bin/**/*", "serviceAccountKey.json"]
   },
   "dependencies": {
     "firebase-admin": "^12.0.0"
   }
 }`} />
-                    </div>
+                </div>
+            </section>
 
+            {/* TAHAP 3: COMPILE & BUILD */}
+            <section className="space-y-6">
+                <div className="flex items-center gap-4">
+                    <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center font-black shadow-xl shadow-primary/20 text-lg">3</div>
+                    <h3 className="text-2xl font-black uppercase tracking-tight">Proses Kompilasi Binary</h3>
+                </div>
+                <div className="grid gap-6 md:grid-cols-2 items-start">
                     <div className="space-y-4">
-                        <div className="flex items-center gap-3">
-                            <div className="size-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-black">B</div>
-                            <h4 className="font-bold text-sm uppercase">Install & Compile</h4>
-                        </div>
-                        <p className="text-xs text-muted-foreground">Buka Terminal/CMD di dalam folder <code>XenonSource</code> tersebut, jalankan perintah ini satu per satu:</p>
-                        <CodeBlock code={`npm install -g pkg\nnpm install\npkg . --targets node18-win-x64 --output xenon-bridge.exe`} />
-                        <p className="text-[10px] text-amber-600 font-medium italic">*Jika berhasil, file <b>xenon-bridge.exe</b> akan muncul di dalam folder.</p>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                            Buka CMD di dalam folder <b>XenonSource</b> dan jalankan perintah kompilasi ini satu per satu:
+                        </p>
+                        <CodeBlock code={`npm install\nnpm install -g pkg\npkg . --targets node18-win-x64 --output xenon-bridge.exe`} />
+                        <Alert className="bg-emerald-500/5 border-emerald-500/20">
+                            <CheckCircle2 className="size-4 text-emerald-600" />
+                            <AlertTitle className="text-emerald-700 font-bold uppercase text-[10px]">Sukses!</AlertTitle>
+                            <AlertDescription className="text-[10px] text-emerald-600">File <b>xenon-bridge.exe</b> akan muncul di folder Anda.</AlertDescription>
+                        </Alert>
                     </div>
-
-                    <div className="space-y-6 pt-6 border-t">
-                        <div className="flex items-center gap-4">
-                            <div className="size-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-black shadow-lg shadow-emerald-500/20">
-                                <Layers className="size-5" />
-                            </div>
-                            <h3 className="text-xl font-black uppercase tracking-tight">Membangun Installer (Inno Setup)</h3>
-                        </div>
-                        <div className="p-6 rounded-[2.5rem] bg-card border border-border space-y-4 shadow-sm">
-                            <p className="text-xs text-muted-foreground leading-relaxed">
-                                Untuk membuat file <b>XenonBridge_Pro_Setup.exe</b> seperti di gambar referensi:
-                            </p>
-                            <ol className="text-xs space-y-4 pl-4">
-                                <li className="flex gap-4"><Badge className="h-5 rounded-md px-1.5 bg-primary text-white">1</Badge> <span>Buka <b>Inno Setup Compiler</b>, klik <i>File &gt; New</i>.</span></li>
-                                <li className="flex gap-4"><Badge className="h-5 rounded-md px-1.5 bg-primary text-white">2</Badge> <span>Pada <b>Application Main Executable</b>, pilih file <code>xenon-bridge.exe</code> yang tadi di-build.</span></li>
-                                <li className="flex gap-4"><Badge className="h-5 rounded-md px-1.5 bg-primary text-white">3</Badge> <span>Pada <b>Other Application Files</b>, tambahkan seluruh folder <b>bin/</b> dan file <b>serviceAccountKey.json</b>.</span></li>
-                                <li className="flex gap-4"><Badge className="h-5 rounded-md px-1.5 bg-primary text-white">4</Badge> <span>Gunakan skrip <code>hide.vbs</code> untuk menjalankan aplikasi secara tersembunyi.</span></li>
-                                <li className="flex gap-4"><Badge className="h-5 rounded-md px-1.5 bg-primary text-white">5</Badge> <span>Klik <b>Compile</b>. Selamat! Installer Anda sudah siap didistribusikan ke laptop kasir.</span></li>
-                            </ol>
-                        </div>
+                    <div className="p-6 rounded-[2.5rem] bg-card border border-border space-y-4">
+                        <h4 className="font-bold text-sm uppercase flex items-center gap-2">
+                            <Layers className="size-4 text-primary" /> Final: Membungkus dengan Inno Setup
+                        </h4>
+                        <ol className="text-xs space-y-4 text-muted-foreground list-decimal list-inside">
+                            <li>Buka <b>Inno Setup Compiler</b>, pilih <i>File &gt; New</i>.</li>
+                            <li>Tentukan nama aplikasi: <b>XenonPlay Bridge</b>.</li>
+                            <li>Pada bagian <b>Files</b>, masukkan <code>xenon-bridge.exe</code> sebagai file utama.</li>
+                            <li>Klik <b>Add Folder</b> dan pilih folder <code>bin/</code> agar ADB ikut terinstal.</li>
+                            <li>Masukkan <code>serviceAccountKey.json</code> ke daftar file tambahan.</li>
+                            <li>Klik <b>Compile</b> untuk menghasilkan file <b><code>XenonBridge_Setup.exe</code></b>.</li>
+                        </ol>
                     </div>
                 </div>
             </section>
         </TabsContent>
 
-        {/* TAHAP 3: TROUBLESHOOTING */}
-        <TabsContent value="trouble" className="space-y-8 animate-in fade-in zoom-in-95">
-            <header className="flex items-center gap-4 text-red-500">
-                <div className="size-12 rounded-2xl bg-red-500 text-white flex items-center justify-center font-black shadow-xl shadow-red-500/20 text-lg">!</div>
-                <h3 className="text-2xl font-black uppercase tracking-tight">Solusi Kendala Lapangan</h3>
-            </header>
+        {/* MODUL 2: KONFIGURASI LAPTOP & TV */}
+        <TabsContent value="konfigurasi" className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* SETTING TV */}
+            <section className="space-y-6">
+                <div className="flex items-center gap-4">
+                    <div className="size-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center font-black shadow-xl shadow-amber-500/20 text-lg">1</div>
+                    <h3 className="text-2xl font-black uppercase tracking-tight">Konfigurasi Smart TV (MediaTek)</h3>
+                </div>
+                <div className="grid gap-6 md:grid-cols-2">
+                    <Card className="border-border">
+                        <CardHeader className="pb-3 border-b bg-muted/20">
+                            <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                                <Zap className="size-4 text-amber-500" /> Tahap A: Aktifkan Developer
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-6 space-y-4">
+                            <ol className="text-xs space-y-3 text-muted-foreground list-decimal list-inside">
+                                <li>Buka <i>Settings &gt; Device Preferences &gt; About</i>.</li>
+                                <li>Klik baris <b>Build Number</b> sebanyak 7 kali hingga muncul pesan "You are now a developer".</li>
+                                <li>Kembali, masuk ke menu <b>Developer Options</b> yang baru muncul.</li>
+                                <li>Aktifkan <b>USB Debugging</b> dan <b>Wireless Debugging</b>.</li>
+                            </ol>
+                        </CardContent>
+                    </Card>
+                    <Card className="border-border">
+                        <CardHeader className="pb-3 border-b bg-muted/20">
+                            <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                                <Wifi className="size-4 text-amber-500" /> Tahap B: Kunci IP Statis
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-6 space-y-4">
+                            <p className="text-xs text-muted-foreground leading-relaxed">
+                                Agar koneksi tidak terputus saat router restart, Anda <b>WAJIB</b> menyetel IP Statis di menu:
+                                <br/><code className="bg-muted px-2 py-1 rounded block mt-2 text-[10px]">Network & Internet &gt; [Nama WiFi] &gt; IP Settings &gt; Static</code>
+                            </p>
+                            <Alert className="bg-amber-500/5 border-amber-500/20 p-3 mt-2">
+                                <Info className="size-3.5 text-amber-600" />
+                                <AlertDescription className="text-[10px] text-amber-700">Contoh IP stabil: 192.168.1.101, 192.168.1.102, dst.</AlertDescription>
+                            </Alert>
+                        </CardContent>
+                    </Card>
+                </div>
+            </section>
 
-            <div className="grid gap-6">
-                <Card className="border-red-500/20 bg-red-500/[0.02]">
-                    <CardHeader className="border-b border-red-500/10">
-                        <CardTitle className="text-xs font-black uppercase text-red-700 flex items-center gap-2">
-                            <ShieldAlert className="size-4" /> Analisis Kegagalan Build
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-6 space-y-6">
-                        <div className="space-y-2">
-                            <Badge className="bg-red-500 text-white text-[8px] font-black uppercase">Masalah 1</Badge>
-                            <h4 className="text-sm font-bold uppercase">File 'bin/adb.exe' tidak ditemukan saat dijalankan</h4>
-                            <p className="text-[10px] text-muted-foreground leading-relaxed">
-                                <b>Penyebab:</b> Lupa memasukkan folder bin ke dalam aset di <code>package.json</code> atau Inno Setup.
-                                <br/><b>Solusi:</b> Pastikan struktur folder saat build harus sama persis dengan saat instalasi.
-                            </p>
+            {/* SETTING LAPTOP */}
+            <section className="space-y-6">
+                <div className="flex items-center gap-4">
+                    <div className="size-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center font-black shadow-xl shadow-amber-500/20 text-lg">2</div>
+                    <h3 className="text-2xl font-black uppercase tracking-tight">Konfigurasi Laptop Kasir</h3>
+                </div>
+                <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                        Instal file <b>XenonBridge_Setup.exe</b> yang telah Anda buat di Modul 1. Setelah terinstal, lakukan langkah sinkronisasi pertama:
+                    </p>
+                    <div className="grid gap-6 md:grid-cols-2">
+                        <div className="p-6 rounded-[2.5rem] bg-slate-900 border border-white/5 space-y-4">
+                            <div className="flex items-center gap-3 text-amber-500">
+                                <Keyboard className="size-5" />
+                                <h4 className="font-bold text-xs uppercase tracking-widest">Handshake ADB Manual</h4>
+                            </div>
+                            <p className="text-[11px] text-slate-400">Gunakan perintah ini di CMD laptop untuk mengizinkan akses koneksi permanen dari TV:</p>
+                            <CodeBlock code={`cd "C:\\Program Files (x86)\\XenonPlayBridge\\bin"\nadb connect [ALAMAT_IP_TV]:5555`} />
+                            <p className="text-[10px] text-amber-600 italic">"Cek layar TV, centang 'Always Allow' lalu klik OK saat muncul popup izin."</p>
                         </div>
-                        <Separator />
-                        <div className="space-y-2">
-                            <Badge className="bg-red-500 text-white text-[8px] font-black uppercase">Masalah 2</Badge>
-                            <h4 className="text-sm font-bold uppercase">TV Menolak Koneksi (Target Refused)</h4>
-                            <p className="text-[10px] text-muted-foreground leading-relaxed">
-                                <b>Penyebab:</b> USB Debugging dimatikan oleh sistem TV atau IP TV berubah.
-                                <br/><b>Solusi:</b> Cek kembali Tahap 2 (Setting TV), pastikan IP Statis sudah terkunci.
-                            </p>
+                        <div className="p-6 rounded-[2.5rem] bg-muted/30 border border-border space-y-4">
+                            <div className="flex items-center gap-3 text-primary">
+                                <ShieldAlert className="size-5" />
+                                <h4 className="font-bold text-xs uppercase tracking-widest">Izin PowerShell (Notifikasi)</h4>
+                            </div>
+                            <p className="text-[11px] text-muted-foreground leading-relaxed">Agar notifikasi Windows bisa muncul di pojok kanan bawah, jalankan PowerShell sebagai Admin dan ketik:</p>
+                            <CodeBlock code={`Set-ExecutionPolicy RemoteSigned`} />
                         </div>
-                        <Separator />
-                        <div className="space-y-2">
-                            <Badge className="bg-red-500 text-white text-[8px] font-black uppercase">Masalah 3</Badge>
-                            <h4 className="text-sm font-bold uppercase">Notifikasi Windows Tidak Muncul</h4>
-                            <p className="text-[10px] text-muted-foreground leading-relaxed">
-                                <b>Penyebab:</b> PowerShell Policy di laptop kasir masih 'Restricted'.
-                                <br/><b>Solusi:</b> Jalankan PowerShell sebagai Admin, ketik: <code>Set-ExecutionPolicy RemoteSigned</code>.
-                            </p>
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* TROUBLESHOOTING */}
+            <section className="space-y-6">
+                <header className="flex items-center gap-4 text-red-500">
+                    <div className="size-12 rounded-2xl bg-red-500 text-white flex items-center justify-center font-black shadow-xl shadow-red-500/20 text-lg">!</div>
+                    <h3 className="text-2xl font-black uppercase tracking-tight">Analisis & Solusi Kendala</h3>
+                </header>
+                <div className="grid gap-6 md:grid-cols-3">
+                    <div className="p-5 rounded-2xl bg-red-500/[0.03] border border-red-500/10 space-y-3">
+                        <Badge className="bg-red-500 text-white text-[8px] font-black uppercase">Masalah 1</Badge>
+                        <h4 className="text-xs font-bold uppercase">TV 'Offline' di Dashboard</h4>
+                        <p className="text-[10px] text-muted-foreground leading-relaxed"><b>Solusi:</b> Restart WiFi TV atau jalankan perintah <code>adb connect</code> ulang. Pastikan IP TV tidak berubah.</p>
+                    </div>
+                    <div className="p-5 rounded-2xl bg-red-500/[0.03] border border-red-500/10 space-y-3">
+                        <Badge className="bg-red-500 text-white text-[8px] font-black uppercase">Masalah 2</Badge>
+                        <h4 className="text-xs font-bold uppercase">Target Refused / Unauthorized</h4>
+                        <p className="text-[10px] text-muted-foreground leading-relaxed"><b>Solusi:</b> Matikan lalu nyalakan kembali 'Wireless Debugging' di menu Developer TV.</p>
+                    </div>
+                    <div className="p-5 rounded-2xl bg-red-500/[0.03] border border-red-500/10 space-y-3">
+                        <Badge className="bg-red-500 text-white text-[8px] font-black uppercase">Masalah 3</Badge>
+                        <h4 className="text-xs font-bold uppercase">Bridge Tidak Berjalan</h4>
+                        <p className="text-[10px] text-muted-foreground leading-relaxed"><b>Solusi:</b> Periksa <i>Task Manager</i>, pastikan proses <code>xenon-bridge.exe</code> tidak ada yang dobel.</p>
+                    </div>
+                </div>
+            </section>
         </TabsContent>
       </Tabs>
     </div>
