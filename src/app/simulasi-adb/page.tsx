@@ -14,27 +14,23 @@ import {
     Power, 
     Moon, 
     Home, 
-    Check,
     BookText,
-    Terminal,
-    Copy,
     Activity,
     Play,
     AlertCircle,
-    VolumeX
+    MonitorPlay,
+    Volume2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { useShift } from '@/components/providers/shift-provider';
 import Link from 'next/link';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function AdbSimulatorPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
   const { activeShift, setIsOpeningDialog } = useShift();
-  const [hasCopied, setHasCopied] = useState(false);
   const [now, setNow] = useState<number>(0);
   
   const [customDurations, setCustomDurations] = useState<Record<string, string>>({});
@@ -64,155 +60,6 @@ export default function AdbSimulatorPage() {
       return false;
     }
     return true;
-  };
-
-  const HYBRID_BRIDGE_V1_3_3 = `
-/**
- * XENONPLAY NEXUS - XPBridge V1.3.3 (Ultimate Hybrid)
- * Arsitektur: Parallel Execution + Local RAM Watchdog
- * Solusi: Mengatasi TV MediaTek macet & Hemat Kuota Firestore.
- */
-
-const admin = require('firebase-admin');
-const { exec } = require('child_process');
-const fs = require('fs');
-const path = require('path');
-const util = require('util');
-const execAsync = util.promisify(exec);
-
-// --- 1. KONFIGURASI ---
-// Jika menjalankan via EXE hasil compile 'pkg', pastikan aset terpanggil dengan benar.
-const serviceAccount = require('./serviceAccountKey.json');
-const execOptions = { windowsHide: true }; 
-
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
-
-const db = admin.firestore();
-const localSessions = new Map(); // Penyimpanan sisa waktu di RAM Laptop (Quota Saver)
-
-// Path ADB Otomatis (Mendukung folder bin/ di laptop kasir)
-const adbPath = path.join(__dirname, 'bin', 'adb.exe');
-const adbCmd = fs.existsSync(adbPath) ? \`"\${adbPath}"\` : 'adb';
-
-// --- NOTIFIKASI STARTUP ---
-// Muncul otomatis di pojok kanan bawah Windows saat aplikasi dinyalakan.
-async function sendStartupNotification() {
-    const msg = "Xenon Bridge V1.3.3 Hybrid telah AKTIF di latar belakang.";
-    const command = \`powershell -Command "(New-Object -ComObject WScript.Shell).Popup('\${msg}', 5, 'XenonPlay Nexus', 64)"\`;
-    try {
-        await execAsync(command, execOptions);
-    } catch (e) {
-        console.log("Startup Alert: " + msg);
-    }
-}
-
-console.log('--------------------------------------------------');
-console.log('🚀 XENON BRIDGE V1.3.3 HYBRID STARTING...');
-console.log('🛡️ Status: Parallel Mode & Quota Saver Active');
-console.log('--------------------------------------------------');
-
-sendStartupNotification();
-
-// --- 2. LISTENER PERINTAH (REAL-TIME) ---
-db.collection('stations').onSnapshot(snapshot => {
-  snapshot.docChanges().forEach(change => {
-    const data = change.doc.data();
-    const stationId = change.doc.id;
-
-    // Sinkronisasi RAM Watchdog
-    if (data.is_active && data.end_time) {
-        localSessions.set(stationId, { name: data.name, endTime: data.end_time, ip: data.ipAddress });
-    } else {
-        localSessions.delete(stationId);
-    }
-
-    // Trigger Eksekusi Hardware
-    if (data.last_action) {
-      console.log(\`[\${new Date().toLocaleTimeString()}] Signal: \${data.last_action.toUpperCase()} -> \${data.name}\`);
-      db.collection('stations').doc(stationId).update({ last_action: null });
-      handleAdbWorkflow(data.ipAddress, data.last_action, data.hdmiIndex || 1, data.name);
-    }
-  });
-});
-
-async function handleAdbWorkflow(ip, action, hdmi, name) {
-    try {
-        // Handshake Sequence
-        await execAsync(\`\${adbCmd} disconnect \${ip}:5555\`, execOptions);
-        const { stdout } = await execAsync(\`\${adbCmd} connect \${ip}:5555\`, execOptions);
-        
-        if (!stdout.includes('connected')) {
-            console.log(\`⚠️ \${name} (\${ip}) Gagal Terhubung (Offline/Refused)\`);
-            return;
-        }
-
-        // Target HDMI Intent (MediaTek Optimized)
-        const hw = 4 + parseInt(hdmi);
-        const intent = \`am start -n com.mediatek.wwtv.tvcenter/com.mediatek.wwtv.tvcenter.nav.TurnkeyUiMainActivity -d content://android.media.tv/passthrough/com.mediatek.tvinput/.hdmi.HDMIInputService/HW\${hw}\`;
-
-        if (action === 'start' || action === 'wake' || action === 'resume' || action === 'hdmi') {
-            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 224"\`, execOptions); // Wakeup
-            await new Promise(r => setTimeout(r, 800)); // MediaTek Stability Pause
-            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${intent}"\`, execOptions); // Switch HDMI
-            console.log(\`✅ \${name} Started/Switched Successfully\`);
-        } 
-        else if (action === 'stop' || action === 'sleep' || action === 'pause') {
-            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 3"\`, execOptions); // Home
-            await new Promise(r => setTimeout(r, 500));
-            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 223"\`, execOptions); // Sleep
-            console.log(\`🛑 \${name} Session Ended/Paused\`);
-        }
-        else if (action === 'home') {
-            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 3"\`, execOptions);
-        }
-    } catch (err) {
-        console.log(\`❌ Hardware Error on \${name}: \${err.message}\`);
-    }
-}
-
-// --- 3. LOCAL RAM WATCHDOG (DETIKAN) ---
-// Mematikan TV secara otomatis tanpa menarik data Cloud (Hemat Biaya)
-setInterval(() => {
-    const now = Date.now();
-    localSessions.forEach((session, id) => {
-        if (now >= session.endTime) {
-            console.log(\`⏰ WAKTU HABIS: \${session.name}. Mengirim sinyal stop...\`);
-            db.collection('stations').doc(id).update({
-                is_active: false,
-                end_time: null,
-                last_action: 'stop',
-                last_action_timestamp: now
-            });
-            localSessions.delete(id);
-        }
-    });
-}, 2000);
-
-// --- 4. REAL ADB HEARTBEAT ---
-// Memperbarui indikator Online/Offline di dashboard berdasarkan respon asli hardware.
-setInterval(async () => {
-    const stations = await db.collection('stations').get();
-    stations.forEach(async (doc) => {
-        const s = doc.data();
-        if (s.ipAddress) {
-            try {
-                const { stdout } = await execAsync(\`\${adbCmd} -s \${s.ipAddress}:5555 shell "getprop sys.boot_completed"\`, execOptions);
-                if (stdout.trim() === '1') {
-                    doc.ref.update({ last_heartbeat: Date.now() });
-                }
-            } catch (e) {}
-        }
-    });
-}, 45000);
-  `;
-
-  const handleCopyCode = () => {
-      navigator.clipboard.writeText(HYBRID_BRIDGE_V1_3_3.trim());
-      setHasCopied(true);
-      setTimeout(() => setHasCopied(false), 2000);
-      toast({ title: "XPBridge v1.3.3 Hybrid Tersalin!", variant: "success" });
   };
 
   const handleAction = async (stationId: string, action: string) => {
@@ -267,32 +114,28 @@ setInterval(async () => {
 
   return (
     <div className="flex flex-col gap-8 pb-20">
-      <header className="flex flex-col md:grid md:grid-cols-2 justify-between items-start md:items-end gap-4">
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
             <div className="flex items-center gap-2 mb-2">
                 <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600">
                     <ShieldCheck className="size-4" />
                 </div>
-                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-600">Ultimate Hybrid v1.3.3</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-600">Hardware Command Hub</span>
             </div>
             <h1 className="text-4xl font-black uppercase tracking-tight">Simulator <span className="text-primary">Master</span></h1>
-            <p className="text-muted-foreground text-sm font-medium">Kendali hardware paralel dengan penghematan kuota RAM Watchdog.</p>
+            <p className="text-muted-foreground text-sm font-medium">Panel kontrol darurat untuk memicu perintah hardware secara manual.</p>
         </div>
-        <div className="flex flex-wrap gap-2 justify-end">
+        <div className="flex gap-2">
             <Link href="/panduan">
                 <Button variant="outline" className="font-black uppercase text-[10px] tracking-widest gap-2 h-12 px-6 rounded-xl border-border">
-                    <BookText className="size-4" /> Panduan Build
+                    <BookText className="size-4" /> Buka Panduan & Script
                 </Button>
             </Link>
-            <Button onClick={handleCopyCode} className="font-black uppercase text-[10px] tracking-widest gap-2 h-12 px-6 rounded-xl shadow-xl shadow-primary/30">
-                {hasCopied ? <Check className="size-4" /> : <Terminal className="size-4" />}
-                {hasCopied ? 'Tersalin' : 'Ambil Script v1.3.3'}
-            </Button>
         </div>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-7 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-4">
               {sortedStations?.map(station => {
                   const hbMillis = station.last_heartbeat?.toMillis ? station.last_heartbeat.toMillis() : (typeof station.last_heartbeat === 'number' ? station.last_heartbeat : 0);
                   const isOnline = hbMillis > 0 && (now - hbMillis < 60000);
@@ -316,7 +159,7 @@ setInterval(async () => {
                                   <div className={cn(
                                       "size-2.5 rounded-full",
                                       isOnline ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" : "bg-red-500 animate-pulse"
-                                  )} title={isOnline ? 'Verified Link' : 'No Response'} />
+                                  )} title={isOnline ? 'Bridge Connection OK' : 'No Response'} />
                               </div>
                           </CardHeader>
                           <CardContent className="p-5 space-y-4">
@@ -328,7 +171,10 @@ setInterval(async () => {
                               </div>
 
                               <div className="pt-4 border-t border-dashed space-y-3">
-                                  <p className="text-[9px] font-black uppercase text-muted-foreground tracking-[0.2em] ml-1">Simulasi Loss (Tanpa Invoice)</p>
+                                  <div className="flex items-center justify-between px-1">
+                                      <p className="text-[9px] font-black uppercase text-muted-foreground tracking-[0.2em]">Simulasi Injeksi Waktu</p>
+                                      <Badge variant="secondary" className="text-[7px] font-black h-4 px-1.5 border-none bg-muted/50">TEST MODE</Badge>
+                                  </div>
                                   <div className="flex gap-2">
                                       <div className="relative flex-1">
                                           <Input 
@@ -366,36 +212,62 @@ setInterval(async () => {
               })}
           </div>
 
-          <div className="lg:col-span-5 space-y-6">
-              <div className="p-6 rounded-3xl bg-blue-500/5 border border-blue-500/20 space-y-3">
-                  <div className="flex items-center gap-2 text-blue-600">
-                      <AlertCircle className="size-4" />
-                      <h4 className="text-xs font-black uppercase tracking-widest">Kecanggihan Hybrid V1.3.3</h4>
+          <div className="lg:col-span-4 space-y-6">
+              <div className="p-6 rounded-3xl bg-blue-500/5 border border-blue-500/20 space-y-4">
+                  <div className="flex items-center gap-3 text-blue-600">
+                      <div className="p-2 rounded-xl bg-blue-600 text-white">
+                        <MonitorPlay className="size-5" />
+                      </div>
+                      <h4 className="text-sm font-black uppercase tracking-tight">Fungsi Simulator</h4>
                   </div>
-                  <ul className="space-y-2 text-[10px] text-muted-foreground">
-                      <li>• <b>Parallel Core</b>: Setiap TV memiliki jalur komunikasinya sendiri. Jika TV 1 macet, TV lain tidak ikut membeku.</li>
-                      <li>• <b>RAM Watchdog</b>: Pengecekan sisa waktu dilakukan di memori laptop. Ini menghemat ribuan kuota Firestore harian.</li>
-                      <li>• <b>Startup Alert</b>: Memberikan konfirmasi visual kepada kasir saat aplikasi bridge berhasil aktif di latar belakang.</li>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                      Gunakan panel ini untuk menguji apakah **Xenon Bridge** di laptop Anda sudah merespons sinyal dari Cloud dengan benar tanpa harus membuat transaksi asli.
+                  </p>
+                  <ul className="space-y-3 text-[10px] text-muted-foreground border-t border-blue-500/10 pt-4">
+                      <li className="flex items-start gap-2">
+                          <Zap className="size-3 text-blue-500 shrink-0 mt-0.5" />
+                          <span>**Wake & Sleep**: Mengirim perintah power asli ke Smart TV via ADB.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                          <Home className="size-3 text-blue-500 shrink-0 mt-0.5" />
+                          <span>**Home & HDMI**: Memaksa TV berpindah input secara instan.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                          <Activity className="size-3 text-blue-500 shrink-0 mt-0.5" />
+                          <span>**Play Simulation**: Memulai timer dummy untuk mengetes fitur **RAM Watchdog** pada bridge.</span>
+                      </li>
                   </ul>
               </div>
 
-              <Card className="bg-slate-950 border-slate-800 shadow-2xl overflow-hidden rounded-3xl">
-                  <div className="p-4 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                          <div className="size-2 rounded-full bg-red-500" />
-                          <div className="size-2 rounded-full bg-amber-500" />
-                          <div className="size-2 rounded-full bg-emerald-500" />
-                          <span className="ml-2 text-[10px] font-black uppercase text-slate-500 tracking-widest">bridge.js (V1.3.3 Hybrid)</span>
-                      </div>
-                      <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-500" onClick={handleCopyCode}>
-                          <Copy className="size-3" />
-                      </Button>
+              <div className="p-6 rounded-3xl bg-amber-500/5 border border-amber-500/20 space-y-3">
+                  <div className="flex items-center gap-2 text-amber-600">
+                      <AlertCircle className="size-4" />
+                      <h4 className="text-xs font-black uppercase tracking-widest">Peringatan Audit</h4>
                   </div>
-                  <ScrollArea className="h-[400px]">
-                      <pre className="p-6 text-[11px] font-mono text-emerald-400 leading-relaxed">
-                          <code>{HYBRID_BRIDGE_V1_3_3.trim()}</code>
-                      </pre>
-                  </ScrollArea>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed">
+                      Seluruh aktivitas di halaman simulator ini **tidak masuk dalam laporan keuangan**, namun tetap tercatat dalam log audit sistem untuk keamanan.
+                  </p>
+              </div>
+
+              <Card className="bg-card border-border p-6 rounded-3xl">
+                  <div className="flex items-center gap-3 mb-4">
+                      <Volume2 className="size-4 text-primary" />
+                      <h4 className="text-xs font-black uppercase tracking-widest">Status Hardware</h4>
+                  </div>
+                  <div className="space-y-3">
+                      <div className="flex justify-between items-center text-[10px]">
+                          <span className="text-muted-foreground uppercase">Protokol Kendali</span>
+                          <span className="font-bold text-primary">ADB WIRELESS</span>
+                      </div>
+                      <div className="flex justify-between items-center text-[10px]">
+                          <span className="text-muted-foreground uppercase">Sync Latency</span>
+                          <span className="font-bold text-emerald-600">&lt; 500MS</span>
+                      </div>
+                      <div className="flex justify-between items-center text-[10px]">
+                          <span className="text-muted-foreground uppercase">Fail-Safe Mode</span>
+                          <span className="font-bold text-blue-600">ACTIVE</span>
+                      </div>
+                  </div>
               </Card>
           </div>
       </div>
