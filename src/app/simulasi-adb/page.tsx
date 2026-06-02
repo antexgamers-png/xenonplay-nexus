@@ -141,7 +141,7 @@ export default function AdbSimulatorPage() {
           <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-4">
               {sortedStations?.map(station => {
                   const hbMillis = station.last_heartbeat?.toMillis ? station.last_heartbeat.toMillis() : (typeof station.last_heartbeat === 'number' ? station.last_heartbeat : 0);
-                  const isOnline = hbMillis > 0 && (now - hbMillis < 95000);
+                  const isOnline = hbMillis > 0 && (now - hbMillis < 95000); // Threshold 95s
                   
                   return (
                       <Card key={station.id} className="border-border bg-card shadow-sm overflow-hidden rounded-2xl">
@@ -239,7 +239,7 @@ export default function AdbSimulatorPage() {
                       </li>
                       <li className="flex items-start gap-2">
                           <Volume2 className="size-3 text-blue-500 shrink-0 mt-0.5" />
-                          <span>**Audio Control**: Mengatur suara TV (v1.3.9+) dari jarak jauh.</span>
+                          <span>**Audio Control**: Mengatur suara TV (v1.4.2+) dari jarak jauh.</span>
                       </li>
                       <li className="flex items-start gap-2">
                           <Activity className="size-3 text-blue-500 shrink-0 mt-0.5" />
