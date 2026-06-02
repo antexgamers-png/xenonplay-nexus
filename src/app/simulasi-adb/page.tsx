@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -21,7 +20,8 @@ import {
     Copy,
     Activity,
     Play,
-    AlertCircle
+    AlertCircle,
+    VolumeX
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -81,38 +81,38 @@ const util = require('util');
 const execAsync = util.promisify(exec);
 
 // --- 1. KONFIGURASI ---
+// Jika menjalankan via EXE hasil compile 'pkg', pastikan aset terpanggil dengan benar.
 const serviceAccount = require('./serviceAccountKey.json');
-const execOptions = { windowsHide: true }; // Mencegah kedipan CMD di Windows
+const execOptions = { windowsHide: true }; 
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
 
 const db = admin.firestore();
-const localSessions = new Map(); // Simpan waktu di RAM
+const localSessions = new Map(); // Penyimpanan sisa waktu di RAM Laptop (Quota Saver)
 
-// Path ADB
+// Path ADB Otomatis (Mendukung folder bin/ di laptop kasir)
 const adbPath = path.join(__dirname, 'bin', 'adb.exe');
 const adbCmd = fs.existsSync(adbPath) ? \`"\${adbPath}"\` : 'adb';
 
 // --- NOTIFIKASI STARTUP ---
+// Muncul otomatis di pojok kanan bawah Windows saat aplikasi dinyalakan.
 async function sendStartupNotification() {
     const msg = "Xenon Bridge V1.3.3 Hybrid telah AKTIF di latar belakang.";
-    // Menggunakan PowerShell Popup agar muncul di pojok layar Windows
     const command = \`powershell -Command "(New-Object -ComObject WScript.Shell).Popup('\${msg}', 5, 'XenonPlay Nexus', 64)"\`;
     try {
         await execAsync(command, execOptions);
     } catch (e) {
-        console.log("Startup: " + msg);
+        console.log("Startup Alert: " + msg);
     }
 }
 
 console.log('--------------------------------------------------');
 console.log('🚀 XENON BRIDGE V1.3.3 HYBRID STARTING...');
-console.log('🛡️ Status: Parallel Mode & windowsHide Active');
+console.log('🛡️ Status: Parallel Mode & Quota Saver Active');
 console.log('--------------------------------------------------');
 
-// Jalankan notifikasi saat startup
 sendStartupNotification();
 
 // --- 2. LISTENER PERINTAH (REAL-TIME) ---
@@ -121,12 +121,14 @@ db.collection('stations').onSnapshot(snapshot => {
     const data = change.doc.data();
     const stationId = change.doc.id;
 
+    // Sinkronisasi RAM Watchdog
     if (data.is_active && data.end_time) {
         localSessions.set(stationId, { name: data.name, endTime: data.end_time, ip: data.ipAddress });
     } else {
         localSessions.delete(stationId);
     }
 
+    // Trigger Eksekusi Hardware
     if (data.last_action) {
       console.log(\`[\${new Date().toLocaleTimeString()}] Signal: \${data.last_action.toUpperCase()} -> \${data.name}\`);
       db.collection('stations').doc(stationId).update({ last_action: null });
@@ -137,40 +139,46 @@ db.collection('stations').onSnapshot(snapshot => {
 
 async function handleAdbWorkflow(ip, action, hdmi, name) {
     try {
+        // Handshake Sequence
         await execAsync(\`\${adbCmd} disconnect \${ip}:5555\`, execOptions);
         const { stdout } = await execAsync(\`\${adbCmd} connect \${ip}:5555\`, execOptions);
         
         if (!stdout.includes('connected')) {
-            console.log(\`⚠️ \${name} (\${ip}) Offline atau Refused\`);
+            console.log(\`⚠️ \${name} (\${ip}) Gagal Terhubung (Offline/Refused)\`);
             return;
         }
 
+        // Target HDMI Intent (MediaTek Optimized)
         const hw = 4 + parseInt(hdmi);
         const intent = \`am start -n com.mediatek.wwtv.tvcenter/com.mediatek.wwtv.tvcenter.nav.TurnkeyUiMainActivity -d content://android.media.tv/passthrough/com.mediatek.tvinput/.hdmi.HDMIInputService/HW\${hw}\`;
 
-        if (action === 'start' || action === 'wake' || action === 'resume') {
-            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 224"\`, execOptions);
-            await new Promise(r => setTimeout(r, 800));
-            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${intent}"\`, execOptions);
-            console.log(\`✅ \${name} Started Successfully\`);
+        if (action === 'start' || action === 'wake' || action === 'resume' || action === 'hdmi') {
+            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 224"\`, execOptions); // Wakeup
+            await new Promise(r => setTimeout(r, 800)); // MediaTek Stability Pause
+            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${intent}"\`, execOptions); // Switch HDMI
+            console.log(\`✅ \${name} Started/Switched Successfully\`);
         } 
         else if (action === 'stop' || action === 'sleep' || action === 'pause') {
-            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 3"\`, execOptions);
+            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 3"\`, execOptions); // Home
             await new Promise(r => setTimeout(r, 500));
-            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 223"\`, execOptions);
-            console.log(\`🛑 \${name} Stopped/Paused\`);
+            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 223"\`, execOptions); // Sleep
+            console.log(\`🛑 \${name} Session Ended/Paused\`);
+        }
+        else if (action === 'home') {
+            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 3"\`, execOptions);
         }
     } catch (err) {
-        console.log(\`❌ Error on \${name}: \${err.message}\`);
+        console.log(\`❌ Hardware Error on \${name}: \${err.message}\`);
     }
 }
 
-// --- 3. LOCAL WATCHDOG ---
+// --- 3. LOCAL RAM WATCHDOG (DETIKAN) ---
+// Mematikan TV secara otomatis tanpa menarik data Cloud (Hemat Biaya)
 setInterval(() => {
     const now = Date.now();
     localSessions.forEach((session, id) => {
         if (now >= session.endTime) {
-            console.log(\`⏰ TIME UP: \${session.name}. Sending Auto-Stop...\`);
+            console.log(\`⏰ WAKTU HABIS: \${session.name}. Mengirim sinyal stop...\`);
             db.collection('stations').doc(id).update({
                 is_active: false,
                 end_time: null,
@@ -182,7 +190,8 @@ setInterval(() => {
     });
 }, 2000);
 
-// --- 4. REAL HEARTBEAT ---
+// --- 4. REAL ADB HEARTBEAT ---
+// Memperbarui indikator Online/Offline di dashboard berdasarkan respon asli hardware.
 setInterval(async () => {
     const stations = await db.collection('stations').get();
     stations.forEach(async (doc) => {
@@ -267,12 +276,12 @@ setInterval(async () => {
                 <span className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-600">Ultimate Hybrid v1.3.3</span>
             </div>
             <h1 className="text-4xl font-black uppercase tracking-tight">Simulator <span className="text-primary">Master</span></h1>
-            <p className="text-muted-foreground text-sm font-medium">Pengendalian hardware sekuat v1.2.8 dengan efisiensi kuota v1.3.2.</p>
+            <p className="text-muted-foreground text-sm font-medium">Kendali hardware paralel dengan penghematan kuota RAM Watchdog.</p>
         </div>
         <div className="flex flex-wrap gap-2 justify-end">
             <Link href="/panduan">
                 <Button variant="outline" className="font-black uppercase text-[10px] tracking-widest gap-2 h-12 px-6 rounded-xl border-border">
-                    <BookText className="size-4" /> Panduan
+                    <BookText className="size-4" /> Panduan Build
                 </Button>
             </Link>
             <Button onClick={handleCopyCode} className="font-black uppercase text-[10px] tracking-widest gap-2 h-12 px-6 rounded-xl shadow-xl shadow-primary/30">
@@ -361,12 +370,12 @@ setInterval(async () => {
               <div className="p-6 rounded-3xl bg-blue-500/5 border border-blue-500/20 space-y-3">
                   <div className="flex items-center gap-2 text-blue-600">
                       <AlertCircle className="size-4" />
-                      <h4 className="text-xs font-black uppercase tracking-widest">Apa itu Hybrid V1.3.3?</h4>
+                      <h4 className="text-xs font-black uppercase tracking-widest">Kecanggihan Hybrid V1.3.3</h4>
                   </div>
                   <ul className="space-y-2 text-[10px] text-muted-foreground">
-                      <li>• <b>Parallel Sync</b>: TV 1 macet? TV 2 & 3 tetap jalan lancar. Tidak ada antrean tunggal yang membeku.</li>
-                      <li>• <b>Separated Commands</b>: Perintah tidur & bangun dikirim per baris (Tanpa &&), dijamin tembus di TV MediaTek.</li>
-                      <li>• <b>RAM Watchdog</b>: Penghematan kuota Firestore. Sisa waktu dicek di memori laptop, bukan di server Cloud.</li>
+                      <li>• <b>Parallel Core</b>: Setiap TV memiliki jalur komunikasinya sendiri. Jika TV 1 macet, TV lain tidak ikut membeku.</li>
+                      <li>• <b>RAM Watchdog</b>: Pengecekan sisa waktu dilakukan di memori laptop. Ini menghemat ribuan kuota Firestore harian.</li>
+                      <li>• <b>Startup Alert</b>: Memberikan konfirmasi visual kepada kasir saat aplikasi bridge berhasil aktif di latar belakang.</li>
                   </ul>
               </div>
 
