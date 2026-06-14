@@ -1,11 +1,10 @@
-
 'use client';
 
 import type { Transaction, FnbItem, Station, Expense } from '@/lib/types';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { DateRangePicker } from './date-range-picker';
-import { format, startOfDay, endOfDay, subDays } from 'date-fns';
+import { format, startOfDay, endOfDay, subDays, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RentalReport } from './rental-report';
@@ -20,8 +19,10 @@ import {
 } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { FileSpreadsheet } from 'lucide-react';
+import { FileSpreadsheet, CalendarDays, History, Zap } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { useShift } from '@/components/providers/shift-provider';
+import { cn } from '@/lib/utils';
 
 interface ReportsClientProps {
   transactions: Transaction[];
@@ -31,6 +32,7 @@ interface ReportsClientProps {
 }
 
 export function ReportsClient({ transactions, fnbItems, stations, expenses }: ReportsClientProps) {
+  const { activeShift } = useShift();
   const [rangeType, setRangeType] = useState<string>('today');
   const [date, setDate] = useState<DateRange | undefined>({
     from: startOfDay(new Date()),
@@ -45,11 +47,30 @@ export function ReportsClient({ transactions, fnbItems, stations, expenses }: Re
       case 'today':
         setDate({ from: startOfDay(now), to: endOfDay(now) });
         break;
+      case 'yesterday':
+        const yesterday = subDays(now, 1);
+        setDate({ from: startOfDay(yesterday), to: endOfDay(yesterday) });
+        break;
+      case 'activeShift':
+        if (activeShift) {
+            setDate({ from: new Date(activeShift.openedAt), to: endOfDay(now) });
+        }
+        break;
       case '3days':
         setDate({ from: startOfDay(subDays(now, 2)), to: endOfDay(now) });
         break;
       case '7days':
         setDate({ from: startOfDay(subDays(now, 6)), to: endOfDay(now) });
+        break;
+      case '30days':
+        setDate({ from: startOfDay(subDays(now, 29)), to: endOfDay(now) });
+        break;
+      case 'thisMonth':
+        setDate({ from: startOfMonth(now), to: endOfMonth(now) });
+        break;
+      case 'lastMonth':
+        const prevMonth = subMonths(now, 1);
+        setDate({ from: startOfMonth(prevMonth), to: endOfMonth(prevMonth) });
         break;
       case 'custom':
         break;
@@ -58,8 +79,8 @@ export function ReportsClient({ transactions, fnbItems, stations, expenses }: Re
 
   const filteredTransactions = useMemo(() => {
     if (!date?.from) return transactions;
-    const fromTime = startOfDay(date.from).getTime();
-    const toTime = date.to ? endOfDay(date.to).getTime() : endOfDay(date.from).getTime();
+    const fromTime = date.from.getTime();
+    const toTime = date.to ? date.to.getTime() : endOfDay(date.from).getTime();
 
     return transactions.filter(t => t.timestamp >= fromTime && t.timestamp <= toTime)
       .sort((a, b) => b.timestamp - a.timestamp);
@@ -67,8 +88,8 @@ export function ReportsClient({ transactions, fnbItems, stations, expenses }: Re
 
   const filteredExpenses = useMemo(() => {
     if (!date?.from) return expenses;
-    const fromTime = startOfDay(date.from).getTime();
-    const toTime = date.to ? endOfDay(date.to).getTime() : endOfDay(date.from).getTime();
+    const fromTime = date.from.getTime();
+    const toTime = date.to ? date.to.getTime() : endOfDay(date.from).getTime();
 
     return expenses.filter(e => e.timestamp >= fromTime && e.timestamp <= toTime);
   }, [expenses, date]);
@@ -76,7 +97,6 @@ export function ReportsClient({ transactions, fnbItems, stations, expenses }: Re
   const exportToExcel = () => {
     if (!filteredTransactions.length) return;
 
-    // Siapkan data untuk Excel tanpa kolom ID
     const excelData = filteredTransactions.map((t, index) => {
         const bruto = t.amount || 0;
         const diskon = t.discount || 0;
@@ -96,18 +116,9 @@ export function ReportsClient({ transactions, fnbItems, stations, expenses }: Re
     });
 
     const worksheet = XLSX.utils.json_to_sheet(excelData);
-    
-    // Atur lebar kolom (Auto-width simulation)
     const colWidths = [
-        { wch: 5 },   // No
-        { wch: 15 },  // Tanggal
-        { wch: 10 },  // Jam
-        { wch: 25 },  // Stasiun
-        { wch: 15 },  // Durasi
-        { wch: 18 },  // Bruto
-        { wch: 18 },  // Diskon
-        { wch: 18 },  // Netto
-        { wch: 20 }   // Status
+        { wch: 5 }, { wch: 15 }, { wch: 10 }, { wch: 25 }, { wch: 15 }, 
+        { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 20 }
     ];
     worksheet['!cols'] = colWidths;
 
@@ -120,57 +131,81 @@ export function ReportsClient({ transactions, fnbItems, stations, expenses }: Re
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row gap-6 justify-between items-end bg-card p-6 rounded-xl border shadow-sm">
-        <div className="flex flex-wrap gap-4 items-end">
-            <div className="space-y-1.5">
-                <Label className="text-xs font-bold uppercase text-muted-foreground tracking-wider">Periode Laporan</Label>
+      <div className="sticky top-0 z-20 flex flex-col sm:flex-row gap-4 justify-between items-end bg-card/80 backdrop-blur-md p-5 rounded-2xl border shadow-lg transition-all duration-300">
+        <div className="flex flex-wrap gap-4 items-end w-full sm:w-auto">
+            <div className="space-y-1.5 flex-1 sm:flex-initial">
+                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-1 flex items-center gap-1.5">
+                    <History className="size-3" /> Periode Audit
+                </Label>
                 <Select value={rangeType} onValueChange={handleRangeChange}>
-                    <SelectTrigger className="w-[200px] h-10 bg-background">
+                    <SelectTrigger className="w-full sm:w-[220px] h-10 bg-background font-bold text-xs rounded-xl border-border/60">
                         <SelectValue placeholder="Pilih rentang" />
                     </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="today">Hari Ini</SelectItem>
-                        <SelectItem value="3days">3 Hari Terakhir</SelectItem>
-                        <SelectItem value="7days">7 Hari Terakhir</SelectItem>
-                        <SelectItem value="custom">Pilih Rentang Waktu</SelectItem>
+                    <SelectContent className="rounded-xl shadow-2xl">
+                        <SelectItem value="today" className="text-xs font-bold uppercase">Hari Ini</SelectItem>
+                        <SelectItem value="yesterday" className="text-xs font-bold uppercase">Kemarin</SelectItem>
+                        <SelectItem value="activeShift" disabled={!activeShift} className="text-xs font-bold uppercase text-primary">
+                            <div className="flex items-center gap-2">
+                                <Zap className="size-3 fill-current" /> Sejak Shift Buka
+                            </div>
+                        </SelectItem>
+                        <Separator className="my-1" />
+                        <SelectItem value="3days" className="text-xs font-bold uppercase">3 Hari Terakhir</SelectItem>
+                        <SelectItem value="7days" className="text-xs font-bold uppercase">7 Hari Terakhir</SelectItem>
+                        <SelectItem value="30days" className="text-xs font-bold uppercase">30 Hari Terakhir</SelectItem>
+                        <Separator className="my-1" />
+                        <SelectItem value="thisMonth" className="text-xs font-bold uppercase">Bulan Ini</SelectItem>
+                        <SelectItem value="lastMonth" className="text-xs font-bold uppercase">Bulan Lalu</SelectItem>
+                        <Separator className="my-1" />
+                        <SelectItem value="custom" className="text-xs font-bold uppercase">Pilih Manual...</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
 
             {rangeType === 'custom' && (
                 <div className="space-y-1.5 animate-in fade-in slide-in-from-left-2 duration-300">
-                    <Label className="text-xs font-bold uppercase text-muted-foreground tracking-wider">Pilih Tanggal</Label>
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-1 flex items-center gap-1.5">
+                        <CalendarDays className="size-3" /> Rentang Tanggal
+                    </Label>
                     <DateRangePicker date={date} setDate={setDate} />
                 </div>
             )}
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <Button 
             variant="outline" 
-            className="gap-2 h-10 font-black uppercase text-[10px] tracking-widest border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10 shadow-sm" 
+            className="flex-1 sm:flex-initial gap-2 h-10 font-black uppercase text-[10px] tracking-widest border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10 shadow-sm rounded-xl" 
             onClick={exportToExcel}
             disabled={filteredTransactions.length === 0}
           >
-            <FileSpreadsheet className="size-4" /> Ekspor Excel (.xlsx)
+            <FileSpreadsheet className="size-4" /> Ekspor Excel
           </Button>
-          <div className="text-right hidden sm:block border-l pl-6 ml-2">
-            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Update Terakhir</p>
-            <p className="text-xs font-mono text-emerald-500 flex items-center justify-end gap-1.5 mt-1">
-                {format(new Date(), 'HH:mm')} WIB
-            </p>
+          <div className="hidden lg:flex flex-col text-right border-l border-border/50 pl-4 h-9 justify-center">
+            <p className="text-[8px] uppercase font-black text-muted-foreground tracking-[0.2em] leading-none">Status Data</p>
+            <p className="text-[10px] font-mono text-emerald-500 font-bold mt-1 uppercase">Live Updated</p>
           </div>
         </div>
       </div>
 
+      {date?.from && (
+          <div className="px-4 py-2 bg-muted/30 border border-dashed rounded-lg inline-flex items-center gap-2 animate-in fade-in duration-500">
+              <CalendarDays className="size-3 text-muted-foreground" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                  Menampilkan data: {format(date.from, 'dd MMM yyyy', { locale: idLocale })} 
+                  {date.to && date.to.getTime() !== date.from.getTime() ? ` - ${format(date.to, 'dd MMM yyyy', { locale: idLocale })}` : ''}
+              </span>
+          </div>
+      )}
+
       <Tabs defaultValue="summary" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-8 h-12 bg-muted/50 p-1 rounded-xl">
-          <TabsTrigger value="summary" className="rounded-lg font-bold uppercase text-[10px] tracking-widest">Summary & Profit</TabsTrigger>
-          <TabsTrigger value="rental" className="rounded-lg font-bold uppercase text-[10px] tracking-widest">Statistik Rental</TabsTrigger>
-          <TabsTrigger value="fnb" className="rounded-lg font-bold uppercase text-[10px] tracking-widest">Statistik FnB</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3 mb-8 h-12 bg-muted/50 p-1 rounded-xl border border-border/50 shadow-inner">
+          <TabsTrigger value="summary" className="rounded-lg font-black uppercase text-[10px] tracking-widest data-[state=active]:shadow-lg">Summary & Profit</TabsTrigger>
+          <TabsTrigger value="rental" className="rounded-lg font-black uppercase text-[10px] tracking-widest data-[state=active]:shadow-lg">Statistik Rental</TabsTrigger>
+          <TabsTrigger value="fnb" className="rounded-lg font-black uppercase text-[10px] tracking-widest data-[state=active]:shadow-lg">Statistik FnB</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="summary" className="outline-none">
+        <TabsContent value="summary" className="outline-none space-y-6">
           <SummaryReport 
             transactions={filteredTransactions} 
             fnbItems={fnbItems} 
@@ -179,11 +214,11 @@ export function ReportsClient({ transactions, fnbItems, stations, expenses }: Re
           />
         </TabsContent>
 
-        <TabsContent value="rental" className="outline-none">
+        <TabsContent value="rental" className="outline-none space-y-6">
           <RentalReport transactions={filteredTransactions} />
         </TabsContent>
 
-        <TabsContent value="fnb" className="outline-none">
+        <TabsContent value="fnb" className="outline-none space-y-6">
           <FnBReport transactions={filteredTransactions} fnbItems={fnbItems} />
         </TabsContent>
       </Tabs>

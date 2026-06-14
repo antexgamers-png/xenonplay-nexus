@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -11,7 +10,10 @@ import {
     Wallet, 
     HandCoins, 
     ReceiptText,
-    FileSpreadsheet
+    FileSpreadsheet,
+    History,
+    Zap,
+    CalendarDays
 } from 'lucide-react';
 import { 
     Select, 
@@ -28,11 +30,15 @@ import { useFirestore } from '@/firebase';
 import { updateDoc, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { DateRangePicker } from '@/components/reports/date-range-picker';
-import { startOfDay, endOfDay, subDays, format } from 'date-fns';
+import { startOfDay, endOfDay, subDays, format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { id as idLocale } from 'date-fns/locale';
 import type { DateRange } from 'react-day-picker';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 import * as XLSX from 'xlsx';
+import { useShift } from '@/components/providers/shift-provider';
+import { cn } from '@/lib/utils';
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('id-ID', {
@@ -48,6 +54,7 @@ interface TransactionClientProps {
 }
 
 export function TransactionClient({ transactions, stations }: TransactionClientProps) {
+  const { activeShift } = useShift();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
@@ -70,11 +77,30 @@ export function TransactionClient({ transactions, stations }: TransactionClientP
       case 'today':
         setDate({ from: startOfDay(now), to: endOfDay(now) });
         break;
+      case 'yesterday':
+        const yesterday = subDays(now, 1);
+        setDate({ from: startOfDay(yesterday), to: endOfDay(yesterday) });
+        break;
+      case 'activeShift':
+        if (activeShift) {
+            setDate({ from: new Date(activeShift.openedAt), to: endOfDay(now) });
+        }
+        break;
       case '3days':
         setDate({ from: startOfDay(subDays(now, 2)), to: endOfDay(now) });
         break;
       case '7days':
         setDate({ from: startOfDay(subDays(now, 6)), to: endOfDay(now) });
+        break;
+      case '30days':
+        setDate({ from: startOfDay(subDays(now, 29)), to: endOfDay(now) });
+        break;
+      case 'thisMonth':
+        setDate({ from: startOfMonth(now), to: endOfMonth(now) });
+        break;
+      case 'lastMonth':
+        const prevMonth = subMonths(now, 1);
+        setDate({ from: startOfMonth(prevMonth), to: endOfMonth(prevMonth) });
         break;
       case 'custom':
         break;
@@ -83,8 +109,8 @@ export function TransactionClient({ transactions, stations }: TransactionClientP
 
   const dateFilteredTransactions = useMemo(() => {
     if (!date?.from) return transactions;
-    const fromTime = startOfDay(date.from).getTime();
-    const toTime = date.to ? endOfDay(date.to).getTime() : endOfDay(date.from).getTime();
+    const fromTime = date.from.getTime();
+    const toTime = date.to ? date.to.getTime() : endOfDay(date.from).getTime();
 
     return transactions.filter(t => t.timestamp >= fromTime && t.timestamp <= toTime);
   }, [transactions, date]);
@@ -176,27 +202,43 @@ export function TransactionClient({ transactions, stations }: TransactionClientP
 
   return (
     <div className="space-y-6">
-      {/* DATE FILTER RANGE */}
-      <div className="flex flex-col sm:flex-row gap-6 justify-between items-end bg-card p-6 rounded-xl border shadow-sm">
-        <div className="flex flex-wrap gap-4 items-end">
-            <div className="space-y-1.5">
-                <Label className="text-xs font-bold uppercase text-muted-foreground tracking-wider">Periode Transaksi</Label>
+      {/* FILTER BAR - STICKY FOR BETTER ACCESS */}
+      <div className="sticky top-0 z-20 flex flex-col sm:flex-row gap-6 justify-between items-end bg-card/80 backdrop-blur-md p-6 rounded-2xl border shadow-lg transition-all duration-300">
+        <div className="flex flex-wrap gap-4 items-end w-full sm:w-auto">
+            <div className="space-y-1.5 flex-1 sm:flex-initial">
+                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-1 flex items-center gap-1.5">
+                    <History className="size-3" /> Periode Transaksi
+                </Label>
                 <Select value={rangeType} onValueChange={handleRangeChange}>
-                    <SelectTrigger className="w-[200px] h-10 bg-background">
+                    <SelectTrigger className="w-full sm:w-[200px] h-10 bg-background font-bold text-xs rounded-xl">
                         <SelectValue placeholder="Pilih rentang" />
                     </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="today">Hari Ini</SelectItem>
-                        <SelectItem value="3days">3 Hari Terakhir</SelectItem>
-                        <SelectItem value="7days">7 Hari Terakhir</SelectItem>
-                        <SelectItem value="custom">Pilih Rentang Waktu</SelectItem>
+                    <SelectContent className="rounded-xl shadow-2xl">
+                        <SelectItem value="today" className="text-xs font-bold uppercase">Hari Ini</SelectItem>
+                        <SelectItem value="yesterday" className="text-xs font-bold uppercase">Kemarin</SelectItem>
+                        <SelectItem value="activeShift" disabled={!activeShift} className="text-xs font-bold uppercase text-primary">
+                            <div className="flex items-center gap-2">
+                                <Zap className="size-3 fill-current" /> Sejak Shift Buka
+                            </div>
+                        </SelectItem>
+                        <Separator className="my-1" />
+                        <SelectItem value="3days" className="text-xs font-bold uppercase">3 Hari Terakhir</SelectItem>
+                        <SelectItem value="7days" className="text-xs font-bold uppercase">7 Hari Terakhir</SelectItem>
+                        <SelectItem value="30days" className="text-xs font-bold uppercase">30 Hari Terakhir</SelectItem>
+                        <Separator className="my-1" />
+                        <SelectItem value="thisMonth" className="text-xs font-bold uppercase">Bulan Ini</SelectItem>
+                        <SelectItem value="lastMonth" className="text-xs font-bold uppercase">Bulan Lalu</SelectItem>
+                        <Separator className="my-1" />
+                        <SelectItem value="custom" className="text-xs font-bold uppercase">Pilih Manual...</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
 
             {rangeType === 'custom' && (
                 <div className="space-y-1.5 animate-in fade-in slide-in-from-left-2 duration-300">
-                    <Label className="text-xs font-bold uppercase text-muted-foreground tracking-wider">Pilih Tanggal</Label>
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-1 flex items-center gap-1.5">
+                        <CalendarDays className="size-3" /> Rentang Tanggal
+                    </Label>
                     <DateRangePicker date={date} setDate={setDate} />
                 </div>
             )}
@@ -204,88 +246,103 @@ export function TransactionClient({ transactions, stations }: TransactionClientP
         
         <Button 
             variant="outline" 
-            className="gap-2 h-10 font-black uppercase text-[10px] tracking-widest border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10 shadow-sm" 
+            className="w-full sm:w-auto gap-2 h-10 font-black uppercase text-[10px] tracking-widest border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10 shadow-sm rounded-xl" 
             onClick={exportToExcel}
             disabled={filteredTransactions.length === 0}
         >
-            <FileSpreadsheet className="size-4" /> Ekspor Excel (.xlsx)
+            <FileSpreadsheet className="size-4" /> Ekspor (.xlsx)
         </Button>
       </div>
 
+      {date?.from && (
+          <div className="px-4 py-2 bg-muted/30 border border-dashed rounded-lg inline-flex items-center gap-2 animate-in fade-in duration-500">
+              <CalendarDays className="size-3 text-muted-foreground" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                  Data: {format(date.from, 'dd MMM yyyy', { locale: idLocale })} 
+                  {date.to && date.to.getTime() !== date.from.getTime() ? ` - ${format(date.to, 'dd MMM yyyy', { locale: idLocale })}` : ''}
+              </span>
+          </div>
+      )}
+
       {/* STATS CARDS */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="border-emerald-500/20 bg-emerald-500/[0.02]">
+        <Card className="border-emerald-500/20 bg-emerald-500/[0.02] shadow-sm rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Uang Masuk (Lunas)</CardTitle>
+            <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Uang Masuk (Lunas)</CardTitle>
             <Wallet className="h-4 w-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(stats.totalCollected)}</div>
-            <p className="text-xs text-muted-foreground mt-1">Total pendapatan periode ini.</p>
+            <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{formatCurrency(stats.totalCollected)}</div>
+            <p className="text-[9px] text-muted-foreground mt-1 uppercase">Pendapatan bersih periode ini.</p>
           </CardContent>
         </Card>
 
-        <Card className="border-amber-500/20 bg-amber-500/[0.02]">
+        <Card className="border-amber-500/20 bg-amber-500/[0.02] shadow-sm rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Piutang</CardTitle>
+            <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Piutang (Belum Bayar)</CardTitle>
             <HandCoins className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">{formatCurrency(stats.totalReceivables)}</div>
+            <div className="text-2xl font-black text-amber-600 dark:text-amber-400">{formatCurrency(stats.totalReceivables)}</div>
             <div className="flex items-center gap-2 mt-1">
-                <Badge variant="outline" className="text-[10px] bg-amber-500/10 text-amber-600 border-amber-500/20">
-                    {stats.unpaidCount} Transaksi
+                <Badge variant="outline" className="text-[8px] bg-amber-500/10 text-amber-600 border-amber-500/20 h-4 font-black">
+                    {stats.unpaidCount} NOTA
                 </Badge>
-                <p className="text-xs text-muted-foreground">Menunggu pembayaran.</p>
+                <p className="text-[9px] text-muted-foreground uppercase">Menunggu pelunasan.</p>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="hidden lg:block border-blue-500/20 bg-blue-500/[0.02]">
+        <Card className="hidden lg:block border-blue-500/20 bg-blue-500/[0.02] shadow-sm rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Nota</CardTitle>
+            <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Volume Transaksi</CardTitle>
             <ReceiptText className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{dateFilteredTransactions.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">Riwayat nota periode ini.</p>
+            <div className="text-2xl font-black">{dateFilteredTransactions.length}</div>
+            <p className="text-[9px] text-muted-foreground mt-1 uppercase">Total nota tercetak.</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* FILTERS */}
-      <Card>
-        <CardHeader className="pb-3">
+      {/* LIST SECTION */}
+      <Card className="rounded-2xl shadow-sm">
+        <CardHeader className="pb-3 border-b border-border/50">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <CardTitle className="text-lg flex items-center gap-2">
-                    <ReceiptText className="h-5 w-5 text-primary" />
-                    Daftar Nota
-                </CardTitle>
+                <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-primary/10 text-primary">
+                        <ReceiptText className="h-5 w-5" />
+                    </div>
+                    <div>
+                        <CardTitle className="text-lg font-black uppercase tracking-tight">Daftar Nota</CardTitle>
+                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Audit Rinci Penjualan</p>
+                    </div>
+                </div>
                 <div className="flex flex-col sm:flex-row gap-3">
                     <div className="relative w-full sm:w-64">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                         <Input
-                            placeholder="Cari stasiun..."
-                            className="pl-8"
+                            placeholder="Cari stasiun/produk..."
+                            className="pl-9 h-10 text-xs rounded-xl"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
-                        <SelectTrigger className="w-full sm:w-[180px]">
-                            <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
-                            <SelectValue placeholder="Status" />
+                        <SelectTrigger className="w-full sm:w-[160px] h-10 rounded-xl text-xs font-bold uppercase">
+                            <Filter className="mr-2 h-3 w-3 text-muted-foreground" />
+                            <SelectValue placeholder="Semua Status" />
                         </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">Semua Status</SelectItem>
-                            <SelectItem value="paid">Lunas</SelectItem>
-                            <SelectItem value="unpaid">Belum Lunas</SelectItem>
+                        <SelectContent className="rounded-xl">
+                            <SelectItem value="all" className="text-xs uppercase font-bold">Semua Status</SelectItem>
+                            <SelectItem value="paid" className="text-xs uppercase font-bold text-emerald-600">Lunas</SelectItem>
+                            <SelectItem value="unpaid" className="text-xs uppercase font-bold text-amber-600">Belum Lunas</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
             </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
             <TransactionTable 
                 transactions={filteredTransactions} 
                 onRowClick={handleRowClick}
@@ -293,7 +350,6 @@ export function TransactionClient({ transactions, stations }: TransactionClientP
         </CardContent>
       </Card>
 
-      {/* DETAIL MODAL */}
       {selectedTransaction && (
         <TransactionDetailDialog 
             isOpen={isDetailOpen}
