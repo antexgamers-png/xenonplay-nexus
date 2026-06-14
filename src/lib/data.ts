@@ -438,15 +438,48 @@ export async function deleteReward(db: Firestore, id: string) {
   await deleteDoc(doc(db, 'rewards', id));
 }
 
-export async function redeemMemberPoints(db: Firestore, member: Member, points: number, label: string) {
+export async function redeemMemberPoints(db: Firestore, member: Member, points: number, label: string, rewardType: string) {
     return await runTransaction(db, async (txn) => {
         const mRef = doc(db, 'members', member.id);
         const mSnap = await txn.get(mRef);
         if(!mSnap.exists()) throw new Error("Member tidak ditemukan.");
         if(mSnap.data().points < points) throw new Error("Poin tidak cukup.");
         
+        const now = Date.now();
         const rRef = doc(collection(db, 'redemptions'));
-        txn.update(mRef, { points: increment(-points), lastActivity: Date.now() });
-        txn.set(rRef, { id: rRef.id, memberId: member.id, rewardLabel: label, pointsRedeemed: points, timestamp: Date.now() });
+        
+        let voucherCode = null;
+        if (rewardType === 'time') {
+            voucherCode = `REWARD-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+            const vRef = doc(db, 'vouchers', voucherCode);
+            
+            // Logika durasi sederhana berdasarkan label
+            let duration = 60;
+            if (label.includes('2 Jam')) duration = 120;
+            if (label.includes('3 Jam')) duration = 180;
+            
+            txn.set(vRef, {
+                id: voucherCode,
+                code: voucherCode,
+                durationMinutes: duration,
+                stationType: 'All',
+                status: 'active',
+                usesCount: 0,
+                createdAt: now,
+                description: `Redeem Point: ${member.name}`
+            });
+        }
+
+        txn.update(mRef, { points: increment(-points), lastActivity: now });
+        txn.set(rRef, { 
+            id: rRef.id, 
+            memberId: member.id, 
+            rewardLabel: label, 
+            pointsRedeemed: points, 
+            timestamp: now,
+            voucherCode: voucherCode 
+        });
+
+        return voucherCode;
     });
 }
