@@ -7,8 +7,8 @@ export interface UserProfile {
   role: UserRole;
   displayName?: string;
   createdAt?: number;
-  lastLogin?: number; // Menambahkan riwayat login terakhir
-  currentSessionId?: string; // Menyimpan ID sesi aktif terakhir untuk Single Device Enforcement
+  lastLogin?: number;
+  currentSessionId?: string;
 }
 
 export type ExpenseCategory = 'electricity' | 'stock' | 'salary' | 'maintenance' | 'rent' | 'other';
@@ -62,6 +62,7 @@ export interface PointRedemption {
     rewardLabel: string;
     pointsRedeemed: number;
     timestamp: number;
+    voucherCode?: string | null;
 }
 
 export interface Member {

@@ -32,7 +32,7 @@ service cloud.firestore {
       allow write: if isSignedIn();
     }
 
-    // Perbaikan: Izin eksplisit untuk list (query)
+    // Perbaikan: Izin eksplisit untuk list (query) agar tidak error saat filter memberId
     match /redemptions/{id} {
       allow get, list: if true;
       allow write: if isSignedIn();

@@ -2,7 +2,7 @@
 'use client';
 
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, limit } from 'firebase/firestore';
 import type { PointRedemption, Member, CreditVoucher } from '@/lib/types';
 import {
   Dialog,
@@ -16,12 +16,16 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { History, Gift, Ticket, CheckCircle2, XCircle } from 'lucide-react';
+import { History, Gift, Ticket, CheckCircle2, XCircle, Copy, Check } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
+import { useState } from 'react';
 
 export function MemberHistoryDialog({ isOpen, onOpenChange, member }: { isOpen: boolean, onOpenChange: (open: boolean) => void, member: Member }) {
   const firestore = useFirestore();
+  const { toast } = useToast();
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   const redeemQuery = useMemoFirebase(() => {
     if (!firestore || !member.id) return null;
@@ -35,6 +39,13 @@ export function MemberHistoryDialog({ isOpen, onOpenChange, member }: { isOpen: 
 
   const { data: redemptions, isLoading } = useCollection<PointRedemption>(redeemQuery);
   const { data: vouchers } = useCollection<CreditVoucher>(voucherQuery);
+
+  const handleCopyCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCode(code);
+    toast({ title: "Kode Tersalin", variant: "success" });
+    setTimeout(() => setCopiedCode(null), 2000);
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -68,16 +79,35 @@ export function MemberHistoryDialog({ isOpen, onOpenChange, member }: { isOpen: 
                                     <Badge variant="outline" className="text-[8px] font-black border-emerald-500/20 text-emerald-600">-{r.pointsRedeemed} Pts</Badge>
                                 </div>
                                 {r.voucherCode && (
-                                    <div className={cn("p-2.5 rounded-xl border flex items-center justify-between", isUsed ? "opacity-50" : "bg-background shadow-sm")}>
-                                        <div className="flex items-center gap-2">
-                                            <Ticket className="size-3 text-amber-500" />
-                                            <span className="text-[10px] font-black font-mono tracking-widest">{r.voucherCode}</span>
+                                    <div className={cn("p-3 rounded-xl border flex items-center justify-between", isUsed ? "bg-muted/50 opacity-60" : "bg-card shadow-sm border-primary/20")}>
+                                        <div className="flex items-center gap-3">
+                                            <div className="size-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-600">
+                                                <Ticket className="size-4" />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Voucher Code</span>
+                                                <span className="text-sm font-black font-mono tracking-widest text-foreground">{r.voucherCode}</span>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-1 text-[8px] font-black uppercase">
+                                        <div className="flex items-center gap-2">
                                             {isUsed ? (
-                                                <><XCircle className="size-2 text-red-500" /> Terpakai</>
+                                                <div className="flex items-center gap-1 text-[8px] font-black uppercase text-red-500">
+                                                    <XCircle className="size-2.5" /> Terpakai
+                                                </div>
                                             ) : (
-                                                <><CheckCircle2 className="size-2 text-emerald-500" /> Ready</>
+                                                <div className="flex items-center gap-1 text-[8px] font-black uppercase text-emerald-600">
+                                                    <CheckCircle2 className="size-2.5" /> Ready
+                                                </div>
+                                            )}
+                                            {!isUsed && (
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="icon" 
+                                                    className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary"
+                                                    onClick={() => handleCopyCode(r.voucherCode!)}
+                                                >
+                                                    {copiedCode === r.voucherCode ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+                                                </Button>
                                             )}
                                         </div>
                                     </div>

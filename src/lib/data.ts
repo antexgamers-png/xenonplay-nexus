@@ -20,7 +20,7 @@ import type { Station, Transaction, PricingRule, FnbItem, GeneralSettings, Membe
 
 /**
  * XENONPLAY NEXUS - Core Data Mutation Engine
- * Perbaikan: Menambahkan voucherCode pada riwayat redemptions.
+ * Versi Final Stable dengan Logika Loyalitas Otomatis & Riwayat Redeem.
  */
 
 function processLoyaltyInTransaction(txn: any, memberSnap: any, transactionRef: any, mRef: any) {
