@@ -20,10 +20,10 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// KONFIGURASI SESI (STRESS-TESTED)
-const IDLE_TIMEOUT_MS = 120 * 60 * 1000; // 2 Jam Diam -> Logout
-const MAX_SESSION_AGE_MS = 12 * 60 * 60 * 1000; // 12 Jam Maksimal Sesi (Check on Load/Resume)
-const THROTTLE_PING_MS = 10 * 60 * 1000; // Update lastLogin maksimal 10 menit sekali
+// KONFIGURASI SESI (OPTIMAL UNTUK OPERASIONAL KASIR)
+const IDLE_TIMEOUT_MS = 12 * 60 * 60 * 1000; // 12 Jam Diam -> Logout (Ditingkatkan agar tidak sering logout)
+const MAX_SESSION_AGE_MS = 24 * 60 * 60 * 1000; // 24 Jam Maksimal Sesi
+const THROTTLE_PING_MS = 15 * 60 * 1000; // Update lastLogin tiap 15 menit
 const SAFETY_RELEASE_MS = 5000;
 
 const FullPageLoader = () => (
@@ -81,8 +81,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (snap.exists()) {
             const data = snap.data() as UserProfile;
             const now = Date.now();
+            // Cek apakah sesi benar-benar sudah terlalu lama (24 jam)
             if (data.lastLogin && (now - data.lastLogin > MAX_SESSION_AGE_MS)) {
-                toast({ title: "Sesi Habis", description: "Demi keamanan, silakan login kembali.", variant: "destructive" });
+                toast({ title: "Sesi Berakhir", description: "Demi keamanan, silakan masuk kembali.", variant: "destructive" });
                 signOut(auth);
                 return true;
             }
@@ -103,8 +104,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const data = snap.data() as UserProfile;
           const mySessionId = localStorage.getItem('xenon_session_id');
           
+          // HANYA logout jika ID Sesi benar-benar berbeda dan keduanya ada
           if (data.currentSessionId && mySessionId && data.currentSessionId !== mySessionId) {
-              toast({ title: "Sesi Dialihkan", description: "Akun login di perangkat lain.", variant: "destructive" });
+              console.log("[Auth] Session conflict detected. Logging out.");
+              toast({ title: "Sesi Dialihkan", description: "Akun ini sedang digunakan di perangkat lain.", variant: "destructive" });
               signOut(auth);
           }
       });
@@ -112,7 +115,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // 2. Handle Resume dari Sleep (visibilitychange)
       const handleVisibility = () => {
           if (document.visibilityState === 'visible') {
-              checkSessionExpiry(user.uid);
+              // Tambahkan delay sedikit agar koneksi internet stabil dulu sebelum cek sesi
+              setTimeout(() => {
+                if (auth.currentUser) checkSessionExpiry(auth.currentUser.uid);
+              }, 2000);
           }
       };
       document.addEventListener('visibilitychange', handleVisibility);
@@ -131,22 +137,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const lastPing = parseInt(localStorage.getItem('xenon_last_ping') || '0');
           const now = Date.now();
           
-          // Rolling Ping: Perbarui lastLogin tiap 10 menit aktivitas
+          // Rolling Ping: Perbarui lastLogin secara berkala agar tidak expired saat sedang aktif
           if (now - lastPing > THROTTLE_PING_MS && firestore) {
-              // Gunakan setDoc merge untuk menghindari error jika dokumen dihapus
               setDoc(doc(firestore, 'users', user.uid), { lastLogin: now }, { merge: true }).catch(() => {});
               localStorage.setItem('xenon_last_ping', now.toString());
           }
 
           idleTimerRef.current = setTimeout(() => {
-              toast({ title: "Sesi Berakhir", description: "Sistem logout otomatis karena diam.", variant: "destructive" });
+              // Hanya logout otomatis jika sudah 12 jam tidak ada aktivitas sama sekali
+              toast({ title: "Sesi Diam Berakhir", description: "Sistem logout otomatis karena tidak ada aktivitas.", variant: "destructive" });
               signOut(auth);
           }, IDLE_TIMEOUT_MS);
       }
   }, [user, auth, isPublicRoute, toast, firestore]);
 
   useEffect(() => {
-      const events = ['mousedown', 'keydown', 'touchstart'];
+      const events = ['mousedown', 'keydown', 'touchstart', 'scroll'];
       if (user && !user.isAnonymous && !isPublicRoute) {
           events.forEach(e => window.addEventListener(e, resetIdleTimer));
           resetIdleTimer();
@@ -195,7 +201,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               localStorage.setItem('xenon_session_id', userData.currentSessionId);
           }
         } else if (user.email) {
-          // Logic: Pengguna pertama otomatis Admin
           const usersSnap = await getDocs(query(collection(firestore, 'users'), limit(1)));
           const isFirstUser = usersSnap.empty;
           const newRole: UserRole = isFirstUser ? 'admin' : 'staff';
