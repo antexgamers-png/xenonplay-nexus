@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -15,7 +16,7 @@ import {
   where,
   runTransaction,
 } from 'firebase/firestore';
-import type { Station, Transaction, PricingRule, FnbItem, GeneralSettings, Member, Shift, CreditVoucher, Expense, PointRedemption, LandingSettings, Reward, Reservation } from './types';
+import type { Station, Transaction, PricingRule, FnbItem, GeneralSettings, Member, Shift, CreditVoucher, Expense, PointRedemption, LandingSettings, Reward, Reservation, MemberRequest } from './types';
 
 /**
  * XENONPLAY NEXUS - Core Data Mutation Engine
@@ -100,6 +101,32 @@ export async function updateMember(db: Firestore, id: string, updates: Partial<M
 
 export async function deleteMember(db: Firestore, id: string) {
   return await deleteDoc(doc(db, 'members', id));
+}
+
+// --- MEMBER REQUESTS ---
+export async function addMemberRequest(db: Firestore, data: { name: string, phone: string }) {
+    const docRef = doc(collection(db, 'memberRequests'));
+    await setDoc(docRef, { ...data, id: docRef.id, timestamp: Date.now() });
+}
+
+export async function approveMemberRequest(db: Firestore, request: MemberRequest) {
+    return await runTransaction(db, async (txn) => {
+        const mRef = doc(collection(db, 'members'));
+        txn.set(mRef, {
+            id: mRef.id,
+            name: request.name,
+            phone: request.phone,
+            points: 0,
+            stamps: 0,
+            joinDate: Date.now(),
+            lastActivity: Date.now()
+        });
+        txn.delete(doc(db, 'memberRequests', request.id));
+    });
+}
+
+export async function deleteMemberRequest(db: Firestore, id: string) {
+    await deleteDoc(doc(db, 'memberRequests', id));
 }
 
 // --- STATION MANAGEMENT ---

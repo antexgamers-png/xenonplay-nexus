@@ -90,7 +90,18 @@
             "points": { "type": "number" },
             "stamps": { "type": "number" },
             "joinDate": { "type": "number" },
-            "lastActivity": { "type": "number", "description": "Timestamp aktivitas terakhir untuk hitung kadaluarsa poin" }
+            "lastActivity": { "type": "number" }
+        }
+    },
+    "MemberRequest": {
+        "title": "MemberRequest",
+        "type": "object",
+        "description": "Permohonan pendaftaran member baru dari landing page.",
+        "properties": {
+            "id": { "type": "string" },
+            "name": { "type": "string" },
+            "phone": { "type": "string" },
+            "timestamp": { "type": "number" }
         }
     }
   },
@@ -106,7 +117,8 @@
       { "path": "/shifts/{shiftId}", "definition": { "entityName": "Shift" } },
       { "path": "/members/{memberId}", "definition": { "entityName": "Member" } },
       { "path": "/redemptions/{redemptionId}", "definition": { "entityName": "PointRedemption" } },
-      { "path": "/reservations/{resId}", "definition": { "entityName": "Reservation" } }
+      { "path": "/reservations/{resId}", "definition": { "entityName": "Reservation" } },
+      { "path": "/memberRequests/{requestId}", "definition": { "entityName": "MemberRequest" } }
     ]
   }
 }

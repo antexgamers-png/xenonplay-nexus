@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useCollection, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
@@ -18,7 +19,7 @@ import { ReservationFormDialog } from '@/components/reservations/reservation-for
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { addMember } from '@/lib/data';
+import { addMemberRequest } from '@/lib/data';
 
 // Helper component to render Lucide icons dynamically from string
 const DynamicIcon = ({ name, className }: { name: string, className?: string }) => {
@@ -28,7 +29,6 @@ const DynamicIcon = ({ name, className }: { name: string, className?: string }) 
 
 /**
  * COMPONENT: ActivityTicker (Optimized)
- * Menggunakan React.memo dan useMemo untuk performa maksimal.
  */
 const ActivityTicker = memo(function ActivityTicker({ 
     members, 
@@ -213,15 +213,14 @@ export function PublicLandingClient() {
       
       setIsRegistering(true);
       try {
-          await addMember(firestore, {
+          await addMemberRequest(firestore, {
               name: regName,
-              phone: regPhone,
-              email: ''
+              phone: regPhone
           });
           setRegSuccess(true);
           toast({
-              title: "Selamat Datang, Sultan!",
-              description: "Pendaftaran member berhasil. Silakan cek poin kamu di kasir.",
+              title: "Permohonan Terkirim!",
+              description: "Pendaftaran kamu sedang ditinjau oleh kasir. Harap tunggu konfirmasi.",
               variant: "success"
           });
       } catch (err: any) {
@@ -457,7 +456,7 @@ export function PublicLandingClient() {
                             >
                                 <div className="text-center space-y-2 mb-8">
                                     <h3 className="text-2xl font-black uppercase tracking-tight text-white">Daftar Member Sultan</h3>
-                                    <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">Registrasi Gratis & Instan</p>
+                                    <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">Registrasi Sedang Ditinjau</p>
                                 </div>
 
                                 <form onSubmit={handleRegisterMember} className="space-y-5">
@@ -493,10 +492,10 @@ export function PublicLandingClient() {
                                         className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-[0.2em] text-sm shadow-xl shadow-primary/20 transition-all active:scale-95 gap-3"
                                     >
                                         {isRegistering ? <LucideIcons.RefreshCw className="size-5 animate-spin" /> : <LucideIcons.Zap className="size-5 fill-current" />}
-                                        Daftar Sekarang
+                                        Kirim Permohonan
                                     </Button>
                                     <p className="text-[9px] text-center text-slate-600 uppercase font-bold italic tracking-tighter mt-4">
-                                        *Data kamu aman & hanya digunakan untuk sistem loyalitas XenonPlay.
+                                        *Pendaftaran kamu akan dikonfirmasi secara manual oleh tim kami.
                                     </p>
                                 </form>
                             </motion.div>
@@ -511,11 +510,11 @@ export function PublicLandingClient() {
                                     <LucideIcons.CheckCircle2 className="size-10" />
                                 </div>
                                 <div className="space-y-2">
-                                    <h3 className="text-3xl font-black uppercase tracking-tight text-white">Berhasil Bergabung!</h3>
-                                    <p className="text-slate-400 text-sm font-medium">Selamat, <span className="text-primary font-black uppercase">{regName}</span>!</p>
+                                    <h3 className="text-3xl font-black uppercase tracking-tight text-white">Terkirim!</h3>
+                                    <p className="text-slate-400 text-sm font-medium">Tunggu kabar baik ya, <span className="text-primary font-black uppercase">{regName}</span>!</p>
                                 </div>
                                 <p className="text-slate-500 text-xs leading-relaxed max-w-[240px] mx-auto uppercase font-bold tracking-widest">
-                                    Akun kamu sudah aktif. Beritahu nomor HP kamu ke kasir setiap kali mabar untuk kumpulkan poin.
+                                    Data kamu sedang diverifikasi oleh admin. Silakan datang ke kasir untuk aktivasi member kamu.
                                 </p>
                                 <Button 
                                     variant="outline" 

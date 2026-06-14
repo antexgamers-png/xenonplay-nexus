@@ -75,6 +75,13 @@ export interface Member {
   lastActivity?: number;
 }
 
+export interface MemberRequest {
+    id: string;
+    name: string;
+    phone: string;
+    timestamp: number;
+}
+
 export interface Reward {
   id: string;
   label: string;
