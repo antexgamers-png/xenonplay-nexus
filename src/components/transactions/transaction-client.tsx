@@ -90,12 +90,6 @@ export function TransactionClient({ transactions, stations }: TransactionClientP
             setDate({ from: new Date(activeShift.openedAt), to: endOfDay(now) });
         }
         break;
-      case '3days':
-        setDate({ from: startOfDay(subDays(now, 2)), to: endOfDay(now) });
-        break;
-      case '7days':
-        setDate({ from: startOfDay(subDays(now, 6)), to: endOfDay(now) });
-        break;
       case '30days':
         setDate({ from: startOfDay(subDays(now, 29)), to: endOfDay(now) });
         break;
@@ -148,7 +142,7 @@ export function TransactionClient({ transactions, stations }: TransactionClientP
     setIsDetailOpen(true);
   };
 
-  const handleMarkAsPaid = async (member?: Member | null) => {
+  const handleMarkAsPaid = async (member?: any) => {
     if (!selectedTransaction || !firestore) return;
     try {
         await markTransactionAsPaid(firestore, selectedTransaction.id, activeShift?.id, member);
@@ -175,22 +169,23 @@ export function TransactionClient({ transactions, stations }: TransactionClientP
 
     filteredTransactions.forEach((t, index) => {
         const shift = allShifts?.find(s => s.id === t.shiftId);
-        const operatorName = shift?.openedByName || 'System/Admin';
+        const operatorName = shift?.openedByName || 'operator';
         
-        // Menampilkan nama paket/barang yang bersih sesuai permintaan user
+        // Logika Ekstraksi Item yang sangat bersih
         const itemDetails = (t.additionalCharges || [])
             .map(c => {
                 let desc = c.description || '';
-                // Hapus prefix teknis agar hanya menyisakan nama paket atau barang
+                // Hapus semua prefix teknis
                 desc = desc.replace(/^Sewa\s+/i, '');
                 desc = desc.replace(/^FnB:\s+/i, '');
                 desc = desc.replace(/^Tambah\s+FnB:\s+/i, '');
                 desc = desc.replace(/^Tambah\s+waktu\s+/i, '');
                 desc = desc.replace(/^Biaya\s+Tambahan\s+/i, '');
-                
-                return `${desc}`;
+                desc = desc.replace(/^Klaim\s+Voucher:\s+/i, '');
+                return desc.trim();
             })
-            .join(' | ');
+            .filter((val, index, self) => val && self.indexOf(val) === index) // Hanya ambil yang unik
+            .join(', ');
 
         const bruto = t.amount || 0;
         const discount = t.discount || 0;
@@ -202,7 +197,7 @@ export function TransactionClient({ transactions, stations }: TransactionClientP
             format(t.timestamp, 'dd/MM/yyyy'),
             format(t.timestamp, 'HH:mm'),
             t.stationName,
-            itemDetails,
+            itemDetails || (t.packageName || 'Sewa TV'),
             bruto.toString(),
             discount.toString(),
             netto.toString(),
@@ -214,13 +209,12 @@ export function TransactionClient({ transactions, stations }: TransactionClientP
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Riwayat Transaksi");
 
-    // Atur lebar kolom agar proporsional
     worksheet['!cols'] = [
         { wch: 5 }, { wch: 18 }, { wch: 12 }, { wch: 8 }, { wch: 15 }, 
         { wch: 60 }, { wch: 12 }, { wch: 10 }, { wch: 12 }, { wch: 12 }
     ];
 
-    XLSX.writeFile(workbook, `XP_Laporan_Transaksi_${format(new Date(), 'yyyyMMdd')}.xlsx`);
+    XLSX.writeFile(workbook, `Laporan_Transaksi_${format(new Date(), 'yyyyMMdd')}.xlsx`);
   };
 
   return (
@@ -244,10 +238,7 @@ export function TransactionClient({ transactions, stations }: TransactionClientP
                             </div>
                         </SelectItem>
                         <Separator className="my-1" />
-                        <SelectItem value="3days" className="text-xs font-bold uppercase">3 Hari Terakhir</SelectItem>
-                        <SelectItem value="7days" className="text-xs font-bold uppercase">7 Hari Terakhir</SelectItem>
                         <SelectItem value="30days" className="text-xs font-bold uppercase">30 Hari Terakhir</SelectItem>
-                        <Separator className="my-1" />
                         <SelectItem value="thisMonth" className="text-xs font-bold uppercase">Bulan Ini</SelectItem>
                         <SelectItem value="lastMonth" className="text-xs font-bold uppercase">Bulan Lalu</SelectItem>
                         <Separator className="my-1" />

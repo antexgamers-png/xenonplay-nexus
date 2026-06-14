@@ -17,10 +17,10 @@ import {
   runTransaction,
 } from 'firebase/firestore';
 import type { Station, Transaction, PricingRule, FnbItem, GeneralSettings, Member, Shift, CreditVoucher, Expense, PointRedemption, LandingSettings, Reward, Reservation, MemberRequest } from './types';
+import { formatDuration } from './utils';
 
 /**
  * XENONPLAY NEXUS - Core Data Mutation Engine
- * Versi Final Stable dengan Logika Loyalitas 5 Poin (Manual Redemption).
  */
 
 function processLoyaltyInTransaction(txn: any, memberSnap: any, transactionRef: any, mRef: any) {
@@ -31,7 +31,6 @@ function processLoyaltyInTransaction(txn: any, memberSnap: any, transactionRef: 
     let nextStamps = currentStamps + 1;
     let addedPoints = 0;
 
-    // SISTEM BARU: 10 Stempel = 5 Poin (Tanpa Voucher Otomatis)
     if (nextStamps >= 10) {
         nextStamps = 0;
         addedPoints = 5;
@@ -72,7 +71,6 @@ export async function convertSessionToCredit(db: Firestore, stationId: string, t
     });
 }
 
-// --- SHIFT MANAGEMENT ---
 export async function openShift(db: Firestore, userId: string, userName: string, initialBalance: number) {
   const docRef = doc(collection(db, 'shifts'));
   const id = docRef.id;
@@ -89,7 +87,6 @@ export async function closeShift(db: Firestore, shiftId: string, actualBalance: 
   return await updateDoc(shiftRef, { status: 'closed', closedAt: Date.now(), actualBalance, difference, notes });
 }
 
-// --- MEMBER MANAGEMENT ---
 export async function addMember(db: Firestore, member: Omit<Member, 'id' | 'points' | 'stamps' | 'joinDate' | 'lastActivity'>) {
   const docRef = doc(collection(db, 'members'));
   await setDoc(docRef, { ...member, id: docRef.id, points: 0, stamps: 0, joinDate: Date.now(), lastActivity: Date.now() });
@@ -103,7 +100,6 @@ export async function deleteMember(db: Firestore, id: string) {
   return await deleteDoc(doc(db, 'members', id));
 }
 
-// --- MEMBER REQUESTS ---
 export async function addMemberRequest(db: Firestore, data: { name: string, phone: string }) {
     const docRef = doc(collection(db, 'memberRequests'));
     await setDoc(docRef, { ...data, id: docRef.id, timestamp: Date.now() });
@@ -129,7 +125,6 @@ export async function deleteMemberRequest(db: Firestore, id: string) {
     await deleteDoc(doc(db, 'memberRequests', id));
 }
 
-// --- STATION MANAGEMENT ---
 export async function addStation(db: Firestore, id: string, stationData: any) {
   const docRef = doc(db, 'stations', id);
   await setDoc(docRef, { ...stationData, id, status: 'disconnected', is_active: false, is_paused: false, start_time: null, end_time: null, current_transaction_id: null });
@@ -175,7 +170,6 @@ export async function moveStation(db: Firestore, sourceId: string, targetId: str
     });
 }
 
-// --- PRICING & FNB ---
 export async function addPricingRule(db: Firestore, rule: any) {
   const docRef = doc(collection(db, 'pricingRules'));
   await setDoc(docRef, { ...rule, id: docRef.id });
@@ -202,7 +196,6 @@ export async function deleteFnbItem(db: Firestore, id: string) {
   return await deleteDoc(doc(db, 'fnbItems', id));
 }
 
-// --- TRANSACTION CORE ---
 export async function createTransaction(db: Firestore, data: any) {
     const docRef = doc(collection(db, 'transactions'));
     const now = Date.now();
@@ -213,16 +206,29 @@ export async function createTransaction(db: Firestore, data: any) {
     const finalBruto = baseAmount + extraStickFee;
     const finalNetto = Math.max(0, finalBruto - discount);
     
-    // Gunakan nama paket jika ada, jika tidak fallback ke deskripsi durasi
-    const initialDesc = data.packageName || `Sewa ${data.durationMinutes}m`;
+    // Gunakan nama paket secara eksplisit agar bersih di laporan
+    const initialDesc = data.packageName || `Sewa ${formatDuration(data.durationMinutes)}`;
     const additionalCharges = [{ description: initialDesc, amount: baseAmount, timestamp: now, isPaid }];
-    if (extraStickFee > 0) additionalCharges.push({ description: `Biaya Tambahan ${data.extraSticks} Stik`, amount: extraStickFee, timestamp: now, isPaid });
+    if (extraStickFee > 0) additionalCharges.push({ description: `${data.extraSticks} Stik Extra`, amount: extraStickFee, timestamp: now, isPaid });
 
     const newTransaction: any = {
-        id: docRef.id, stationId: data.stationId || 'pos', stationName: data.stationName || 'Unknown', durationMinutes: data.durationMinutes || 0,
-        amount: finalBruto, discount: discount, paidAmount: isPaid ? finalNetto : 0, timestamp: now, status: isPaid ? 'paid' : 'unpaid',
-        memberId: data.memberId || null, memberName: data.memberName || null, shiftId: data.activeShiftId || null, fnbItems: data.fnbItems || [],
-        additionalCharges: additionalCharges, claimCode: data.claimCode || null, isLoyaltyProcessed: false
+        id: docRef.id, 
+        stationId: data.stationId || 'pos', 
+        stationName: data.stationName || 'Unknown', 
+        packageName: data.packageName || null,
+        durationMinutes: data.durationMinutes || 0,
+        amount: finalBruto, 
+        discount: discount, 
+        paidAmount: isPaid ? finalNetto : 0, 
+        timestamp: now, 
+        status: isPaid ? 'paid' : 'unpaid',
+        memberId: data.memberId || null, 
+        memberName: data.memberName || null, 
+        shiftId: data.activeShiftId || null, 
+        fnbItems: data.fnbItems || [],
+        additionalCharges: additionalCharges, 
+        claimCode: data.claimCode || null, 
+        isLoyaltyProcessed: false
     };
     
     return await runTransaction(db, async (txn) => {
@@ -249,8 +255,7 @@ export async function createStandaloneFnbTransaction(db: Firestore, items: any[]
     return await runTransaction(db, async (txn) => {
         txn.set(docRef, {
             id: docRef.id, stationId: 'pos', stationName: 'KASIR KANTIN', durationMinutes: 0, amount: totalAmount, discount: 0, paidAmount: totalAmount, timestamp: now, status: 'paid', shiftId: activeShiftId || null, fnbItems: items, 
-            // Gunakan prefix FnB: agar UI filter tetap jalan, tapi di Excel nanti di-strip
-            additionalCharges: items.map(i => ({ description: `FnB: ${i.name} x${i.quantity}`, amount: i.price * i.quantity, timestamp: now, isPaid: true })), 
+            additionalCharges: items.map(i => ({ description: `${i.name} x${i.quantity}`, amount: i.price * i.quantity, timestamp: now, isPaid: true })), 
             isLoyaltyProcessed: false
         });
         if (activeShiftId) txn.update(doc(db, 'shifts', activeShiftId), { totalSales: increment(totalAmount), expectedBalance: increment(totalAmount) });
@@ -270,7 +275,7 @@ export async function addItemsToTransaction(db: Firestore, transactionId: string
         const newPaid = isPaid ? (tData.paidAmount || 0) + netAdd : (tData.paidAmount || 0);
         txn.update(tRef, {
             amount: newBruto, discount: newDiscount, paidAmount: newPaid, status: (newBruto - newDiscount) > newPaid ? 'unpaid' : 'paid',
-            additionalCharges: [...(tData.additionalCharges || []), ...items.map(i => ({ description: `FnB: ${i.name} x${i.quantity}`, amount: i.price * i.quantity, timestamp: Date.now(), isPaid }))]
+            additionalCharges: [...(tData.additionalCharges || []), ...items.map(i => ({ description: `${i.name} x${i.quantity}`, amount: i.price * i.quantity, timestamp: Date.now(), isPaid }))]
         });
         if (activeShiftId && isPaid && netAdd > 0) txn.update(doc(db, 'shifts', activeShiftId), { totalSales: increment(netAdd), expectedBalance: increment(netAdd) });
     });
@@ -296,7 +301,7 @@ export async function addTimeToTransaction(db: Firestore, transactionId: string,
         const netAdd = Math.max(0, price - (discount || 0));
         const newPaid = isPaid ? (tData.paidAmount || 0) + netAdd : (tData.paidAmount || 0);
         
-        const desc = packageName || `Tambah waktu ${duration}m`;
+        const desc = packageName || `Sewa Tambahan ${formatDuration(duration)}`;
         
         txn.update(tRef, {
             durationMinutes: (tData.durationMinutes || 0) + duration, amount: newBruto, discount: newDiscount, paidAmount: newPaid, status: (newBruto - newDiscount) > newPaid ? 'unpaid' : 'paid',
@@ -333,7 +338,6 @@ export async function markTransactionAsPaid(db: Firestore, tId: string, activeSh
     });
 }
 
-// --- RESERVATIONS & EXPENSES ---
 export async function addReservation(db: Firestore, res: any) {
     await setDoc(doc(collection(db, 'reservations')), { ...res, status: 'scheduled', createdAt: Date.now() });
 }
@@ -351,7 +355,6 @@ export async function deleteExpense(db: Firestore, id: string) {
     await deleteDoc(doc(db, 'expenses', id));
 }
 
-// --- USER MANAGEMENT (ADMIN ONLY) ---
 export async function updateUserRole(db: Firestore, userId: string, role: string) {
     await updateDoc(doc(db, 'users', userId), { role });
 }
@@ -360,7 +363,6 @@ export async function deleteUserProfile(db: Firestore, userId: string) {
     return await deleteDoc(doc(db, 'users', userId));
 }
 
-// --- DATA CLEANUP ---
 export async function deleteAllTransactions(db: Firestore) {
     const snap = await getDocs(collection(db, 'transactions'));
     for (const d of snap.docs) await deleteDoc(d.ref);
@@ -381,7 +383,6 @@ export async function deleteAllMembers(db: Firestore) {
     for (const d of snap.docs) await deleteDoc(d.ref);
 }
 
-// --- SETTINGS ---
 export async function saveGeneralSettings(db: Firestore, settings: GeneralSettings) {
     await setDoc(doc(db, 'settings', 'general'), settings);
 }
@@ -394,7 +395,6 @@ export async function updatePricing(db: Firestore, price: number) {
     await setDoc(doc(db, 'prices', 'default'), { perHour: price, lastUpdated: Date.now() });
 }
 
-// --- REWARDS ---
 export async function addReward(db: Firestore, reward: any) {
     const docRef = doc(collection(db, 'rewards'));
     await setDoc(docRef, { ...reward, id: docRef.id });

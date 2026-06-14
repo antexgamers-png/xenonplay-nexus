@@ -36,6 +36,7 @@ export interface Transaction {
   id: string;
   stationId: string;
   stationName: string;
+  packageName?: string | null;
   durationMinutes: number;
   amount: number;
   discount: number;
