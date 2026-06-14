@@ -37,6 +37,7 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
+    DialogDescription,
     DialogFooter,
     DialogClose,
 } from '@/components/ui/dialog';
@@ -493,12 +494,16 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
             <div className="bg-emerald-500 h-2 w-full" />
             <div className="p-8 text-center space-y-6">
                 <div className="size-20 rounded-[2.5rem] bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto border-4 border-emerald-500/20 shadow-xl"><CheckCircle2 className="size-10" /></div>
-                <div className="space-y-2">
-                    <h3 className="text-2xl font-black uppercase tracking-tight">Pembayaran Sukses</h3>
-                    <p className="text-xs text-muted-foreground font-bold uppercase">Kembalian: <span className="text-emerald-600 font-mono">{formatCurrency(lastOrderDetails?.change || 0)}</span></p>
-                </div>
+                
+                <DialogHeader>
+                    <DialogTitle className="text-2xl font-black uppercase tracking-tight text-center">Pembayaran Sukses</DialogTitle>
+                    <DialogDescription className="text-center text-xs text-muted-foreground font-bold uppercase">
+                        Kembalian: <span className="text-emerald-600 font-mono">{formatCurrency(lastOrderDetails?.change || 0)}</span>
+                    </DialogDescription>
+                </DialogHeader>
+
                 <div className="flex flex-col gap-2 pt-4">
-                    <Button onClick={handlePrintReceipt} className="w-full h-14 rounded-2xl font-black uppercase tracking-widest gap-3 shadow-lg shadow-primary/30">
+                    <Button onClick={handlePrintReceipt} className="w-full h-14 rounded-2xl font-black uppercase tracking-widest gap-3 shadow-lg shadow-primary/20">
                         <Printer className="size-5" /> Cetak Nota Fisik
                     </Button>
                     <DialogClose asChild>
