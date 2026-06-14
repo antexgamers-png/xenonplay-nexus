@@ -4,7 +4,7 @@ import type { UserRole, UserProfile } from '@/lib/types';
 import type { ReactNode } from 'react';
 import React, { useEffect, createContext, useContext, useState, useRef, useCallback } from 'react';
 import { useUser } from '@/firebase/provider';
-import { doc, getDoc, setDoc, collection, getDocs, limit, query, onSnapshot, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, limit, query, onSnapshot } from 'firebase/firestore';
 import { useFirestore, useAuth as useFirebaseAuth } from '@/firebase';
 import { AppLayout } from '@/components/app-layout';
 import LoginPage from '@/app/login/page';
@@ -133,7 +133,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           
           // Rolling Ping: Perbarui lastLogin tiap 10 menit aktivitas
           if (now - lastPing > THROTTLE_PING_MS && firestore) {
-              updateDoc(doc(firestore, 'users', user.uid), { lastLogin: now }).catch(() => {});
+              // Gunakan setDoc merge untuk menghindari error jika dokumen dihapus
+              setDoc(doc(firestore, 'users', user.uid), { lastLogin: now }, { merge: true }).catch(() => {});
               localStorage.setItem('xenon_last_ping', now.toString());
           }
 
@@ -185,7 +186,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const userDocRef = doc(firestore, 'users', user.uid);
         const userDoc = await getDoc(userDocRef);
         
-        if (userDoc.exists()) {
+        if (userDoc.exists() && userDoc.data().role) {
           const userData = userDoc.data() as UserProfile;
           setRole(userData.role);
           

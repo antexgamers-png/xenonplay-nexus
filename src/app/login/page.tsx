@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -15,7 +14,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth as useFirebaseAuth, useFirestore } from '@/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { LogIn, RefreshCcw, ArrowLeft } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -49,13 +48,15 @@ export default function LoginPage() {
       const newSessionId = Math.random().toString(36).substring(2, 15);
       localStorage.setItem('xenon_session_id', newSessionId);
 
-      // Update Session ID & Last Login di Firestore
+      // Gunakan setDoc dengan merge: true agar tidak error jika dokumen user belum ada (misal setelah reset data)
       if (firestore) {
           const userDocRef = doc(firestore, 'users', userCredential.user.uid);
-          await updateDoc(userDocRef, {
+          await setDoc(userDocRef, {
+              id: userCredential.user.uid,
+              email: userCredential.user.email,
               currentSessionId: newSessionId,
               lastLogin: Date.now()
-          });
+          }, { merge: true });
       }
 
       router.push('/nexus');
@@ -80,7 +81,7 @@ export default function LoginPage() {
 
       <div className="absolute top-8 left-8 z-20">
           <Link href="/">
-            <Button variant="ghost" className="gap-2 font-bold uppercase text-[10px] tracking-widest">
+            <Button variant="ghost" className="gap-2 font-bold uppercase text-[10px] tracking-widest text-muted-foreground hover:text-foreground">
                 <ArrowLeft className="size-4" /> Kembali ke Beranda
             </Button>
           </Link>

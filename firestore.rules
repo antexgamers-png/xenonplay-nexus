@@ -82,6 +82,7 @@ service cloud.firestore {
     // ======================================================
 
     match /users/{userId} {
+      // allow list agar logic 'isFirstUser' pada AuthProvider bisa berjalan
       allow get, list: if isSignedIn();
       allow create: if isSignedIn() && request.auth.uid == userId;
       allow update: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
