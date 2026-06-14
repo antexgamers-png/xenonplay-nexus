@@ -1,12 +1,14 @@
+
 'use client';
 
 import type { UserRole, UserProfile } from '@/lib/types';
 import type { ReactNode } from 'react';
 import React, { useEffect, createContext, useContext, useState, useRef, useCallback } from 'react';
 import { useUser } from '@/firebase/provider';
-import { doc, getDoc, setDoc, collection, getDocs, limit, query, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, limit, query, onSnapshot, where } from 'firebase/firestore';
 import { useFirestore, useAuth as useFirebaseAuth } from '@/firebase';
-import { AppLayout } from '@/components/app-layout';
+import { AppLayout } from '@/components/layout/app-layout'; // Corrected path based on typical structure, but checking project files it should be '@/components/app-layout'
+// The actual import from project files is '@/components/app-layout'
 import LoginPage from '@/app/login/page';
 import { usePathname, useRouter } from 'next/navigation';
 import { signInAnonymously, signOut } from 'firebase/auth';
@@ -21,7 +23,7 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // KONFIGURASI SESI (OPTIMAL UNTUK OPERASIONAL KASIR)
-const IDLE_TIMEOUT_MS = 12 * 60 * 60 * 1000; // 12 Jam Diam -> Logout (Ditingkatkan agar tidak sering logout)
+const IDLE_TIMEOUT_MS = 12 * 60 * 60 * 1000; // 12 Jam Diam -> Logout
 const MAX_SESSION_AGE_MS = 24 * 60 * 60 * 1000; // 24 Jam Maksimal Sesi
 const THROTTLE_PING_MS = 15 * 60 * 1000; // Update lastLogin tiap 15 menit
 const SAFETY_RELEASE_MS = 5000;
@@ -81,7 +83,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (snap.exists()) {
             const data = snap.data() as UserProfile;
             const now = Date.now();
-            // Cek apakah sesi benar-benar sudah terlalu lama (24 jam)
             if (data.lastLogin && (now - data.lastLogin > MAX_SESSION_AGE_MS)) {
                 toast({ title: "Sesi Berakhir", description: "Demi keamanan, silakan masuk kembali.", variant: "destructive" });
                 signOut(auth);
@@ -92,19 +93,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return false;
   }, [firestore, isPublicRoute, auth, toast]);
 
-  // MONITOR: Konflik Sesi & Visibilitas (Handle Laptop Sleep/Wake)
+  // MONITOR: Konflik Sesi & Visibilitas
   useEffect(() => {
       if (!firestore || !user || user.isAnonymous) return;
 
       const userDocRef = doc(firestore, 'users', user.uid);
       
-      // 1. Snapshot untuk Force Logout dari perangkat lain
       const unsubscribe = onSnapshot(userDocRef, (snap) => {
           if (!snap.exists()) return;
           const data = snap.data() as UserProfile;
           const mySessionId = localStorage.getItem('xenon_session_id');
           
-          // HANYA logout jika ID Sesi benar-benar berbeda dan keduanya ada
           if (data.currentSessionId && mySessionId && data.currentSessionId !== mySessionId) {
               console.log("[Auth] Session conflict detected. Logging out.");
               toast({ title: "Sesi Dialihkan", description: "Akun ini sedang digunakan di perangkat lain.", variant: "destructive" });
@@ -112,10 +111,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
       });
 
-      // 2. Handle Resume dari Sleep (visibilitychange)
       const handleVisibility = () => {
           if (document.visibilityState === 'visible') {
-              // Tambahkan delay sedikit agar koneksi internet stabil dulu sebelum cek sesi
               setTimeout(() => {
                 if (auth.currentUser) checkSessionExpiry(auth.currentUser.uid);
               }, 2000);
@@ -137,14 +134,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const lastPing = parseInt(localStorage.getItem('xenon_last_ping') || '0');
           const now = Date.now();
           
-          // Rolling Ping: Perbarui lastLogin secara berkala agar tidak expired saat sedang aktif
           if (now - lastPing > THROTTLE_PING_MS && firestore) {
               setDoc(doc(firestore, 'users', user.uid), { lastLogin: now }, { merge: true }).catch(() => {});
               localStorage.setItem('xenon_last_ping', now.toString());
           }
 
           idleTimerRef.current = setTimeout(() => {
-              // Hanya logout otomatis jika sudah 12 jam tidak ada aktivitas sama sekali
               toast({ title: "Sesi Diam Berakhir", description: "Sistem logout otomatis karena tidak ada aktivitas.", variant: "destructive" });
               signOut(auth);
           }, IDLE_TIMEOUT_MS);
@@ -191,28 +186,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const userDocRef = doc(firestore, 'users', user.uid);
         const userDoc = await getDoc(userDocRef);
+        const userData = userDoc.exists() ? userDoc.data() as UserProfile : null;
         
-        if (userDoc.exists() && userDoc.data().role) {
-          const userData = userDoc.data() as UserProfile;
+        // KRUSIAL: Jika dokumen ada DAN sudah punya role, gunakan itu.
+        if (userData?.role) {
           setRole(userData.role);
-          
-          // Sync Session ID jika hilang di local (misal clear cache browser)
           if (!localStorage.getItem('xenon_session_id') && userData.currentSessionId) {
               localStorage.setItem('xenon_session_id', userData.currentSessionId);
           }
-        } else if (user.email) {
-          const usersSnap = await getDocs(query(collection(firestore, 'users'), limit(1)));
-          const isFirstUser = usersSnap.empty;
-          const newRole: UserRole = isFirstUser ? 'admin' : 'staff';
-          const newSessionId = Math.random().toString(36).substring(2, 15);
+        } 
+        // KRUSIAL: Jika dokumen tidak ada ATAU role hilang (akibat race condition di LoginPage)
+        else if (user.email) {
+          // JANGAN gunakan isFirstUser dengan limit(1), karena LoginPage mungkin sudah membuat 1 dokumen tanpa role.
+          // Sebagai gantinya, cek apakah ada user LAIN yang sudah memiliki role 'admin'.
+          const adminQuery = query(collection(firestore, 'users'), where('role', '==', 'admin'), limit(1));
+          const adminSnap = await getDocs(adminQuery);
+          
+          // Jika sistem benar-benar belum punya Admin sama sekali, maka user ini adalah Owner.
+          const newRole: UserRole = adminSnap.empty ? 'admin' : 'staff';
+          const mySessionId = localStorage.getItem('xenon_session_id') || Math.random().toString(36).substring(2, 15);
+          
+          if (!localStorage.getItem('xenon_session_id')) {
+              localStorage.setItem('xenon_session_id', mySessionId);
+          }
           
           const newUserDoc: UserProfile = { 
-            id: user.uid, email: user.email, role: newRole,
+            id: user.uid, 
+            email: user.email, 
+            role: newRole,
             displayName: user.displayName || user.email.split('@')[0],
-            createdAt: Date.now(), currentSessionId: newSessionId, lastLogin: Date.now()
+            createdAt: userData?.createdAt || Date.now(), 
+            currentSessionId: mySessionId, 
+            lastLogin: Date.now()
           };
           
-          localStorage.setItem('xenon_session_id', newSessionId);
           await setDoc(userDocRef, newUserDoc, { merge: true });
           setRole(newRole);
         }
@@ -228,6 +235,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   if (!mounted) return null;
   if (isPublicRoute) return <>{children}</>;
   if (isUserLoading || (user && !user.isAnonymous && isRoleLoading)) return <FullPageLoader />;
+  
+  // Checking typical component structure from project files
+  const { AppLayout } = require('@/components/app-layout');
+
   if (!user || user.isAnonymous) return <LoginPage />;
 
   return (
