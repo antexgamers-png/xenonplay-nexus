@@ -175,29 +175,41 @@ export function TransactionClient({ transactions, stations }: TransactionClientP
   const exportToExcel = () => {
     if (!filteredTransactions.length) return;
 
-    const excelData = filteredTransactions.map((t, index) => ({
-        'No': index + 1,
-        'Tanggal': format(t.timestamp, 'dd/MM/yyyy'),
-        'Jam': format(t.timestamp, 'HH:mm'),
-        'Stasiun': t.stationName,
-        'Durasi (Min)': t.stationId === 'pos' ? '-' : t.durationMinutes,
-        'Bruto (IDR)': t.amount || 0,
-        'Diskon (IDR)': t.discount || 0,
-        'Netto (IDR)': Math.max(0, (t.amount || 0) - (t.discount || 0)),
-        'Status Pembayaran': t.status.toUpperCase()
-    }));
+    const excelData = filteredTransactions.map((t, index) => {
+        // Gabungkan deskripsi item untuk kolom rincian
+        const itemDetails = (t.additionalCharges || [])
+            .map(c => `${c.description} (${formatCurrency(c.amount)})`)
+            .join(' | ');
+
+        return {
+            'No': index + 1,
+            'ID Transaksi': t.id,
+            'Tanggal': format(t.timestamp, 'dd/MM/yyyy'),
+            'Jam': format(t.timestamp, 'HH:mm'),
+            'Stasiun': t.stationName,
+            'Pelanggan': t.memberName || 'Guest',
+            'Durasi (Menit)': t.stationId === 'pos' ? '-' : t.durationMinutes,
+            'Rincian Belanja': itemDetails,
+            'Total Bruto (IDR)': t.amount || 0,
+            'Potongan Diskon (IDR)': t.discount || 0,
+            'Total Netto (IDR)': Math.max(0, (t.amount || 0) - (t.discount || 0)),
+            'Status Pembayaran': t.status.toUpperCase(),
+            'Shift ID': t.shiftId || '-'
+        };
+    });
 
     const worksheet = XLSX.utils.json_to_sheet(excelData);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Audit Transaksi");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Audit Nota Detail");
 
     const colWidths = [
-        { wch: 5 }, { wch: 15 }, { wch: 10 }, { wch: 25 }, { wch: 12 }, 
-        { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 20 }
+        { wch: 5 }, { wch: 20 }, { wch: 12 }, { wch: 10 }, { wch: 20 }, 
+        { wch: 20 }, { wch: 12 }, { wch: 60 }, { wch: 18 }, { wch: 18 }, 
+        { wch: 18 }, { wch: 15 }, { wch: 20 }
     ];
     worksheet['!cols'] = colWidths;
 
-    XLSX.writeFile(workbook, `Audit_Transaksi_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+    XLSX.writeFile(workbook, `XenonPlay_Detailed_Transactions_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
   };
 
   return (
@@ -210,7 +222,7 @@ export function TransactionClient({ transactions, stations }: TransactionClientP
                     <History className="size-3" /> Periode Transaksi
                 </Label>
                 <Select value={rangeType} onValueChange={handleRangeChange}>
-                    <SelectTrigger className="w-full sm:w-[200px] h-10 bg-background font-bold text-xs rounded-xl">
+                    <SelectTrigger className="w-full sm:w-[200px] h-10 bg-background font-bold text-xs rounded-xl border-border/60">
                         <SelectValue placeholder="Pilih rentang" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl shadow-2xl">
@@ -293,7 +305,7 @@ export function TransactionClient({ transactions, stations }: TransactionClientP
           </CardContent>
         </Card>
 
-        <Card className="hidden lg:block border-blue-500/20 bg-blue-500/[0.02] shadow-sm rounded-2xl">
+        <Card className="border-blue-500/20 bg-blue-500/[0.02] shadow-sm rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Volume Transaksi</CardTitle>
             <ReceiptText className="h-4 w-4 text-blue-500" />

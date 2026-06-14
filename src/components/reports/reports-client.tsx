@@ -96,38 +96,74 @@ export function ReportsClient({ transactions, fnbItems, stations, expenses }: Re
   }, [expenses, date]);
 
   const exportToExcel = () => {
-    if (!filteredTransactions.length) return;
+    // LOGIKA RINGKASAN HARIAN (SUMMARY GROUP BY DATE)
+    const summaryMap: Record<string, { 
+        date: string, 
+        rental: number, 
+        fnb: number, 
+        discount: number, 
+        netIncome: number, 
+        expenses: number, 
+        profit: number 
+    }> = {};
 
-    const excelData = filteredTransactions.map((t, index) => {
-        const bruto = t.amount || 0;
-        const diskon = t.discount || 0;
-        const netto = Math.max(0, bruto - diskon);
-        
-        return {
-            'No': index + 1,
-            'Tanggal': format(t.timestamp, 'dd/MM/yyyy'),
-            'Jam': format(t.timestamp, 'HH:mm'),
-            'Stasiun / Sumber': t.stationName,
-            'Durasi (Menit)': t.stationId === 'pos' ? '-' : (t.durationMinutes || 0),
-            'Total Bruto (IDR)': bruto,
-            'Potongan/Diskon (IDR)': diskon,
-            'Total Netto (IDR)': netto,
-            'Status Pembayaran': t.status === 'paid' ? 'LUNAS' : 'PIUTANG'
-        };
+    // 1. Proses Pemasukan
+    filteredTransactions.forEach(t => {
+        const dateKey = format(t.timestamp, 'yyyy-MM-dd');
+        if (!summaryMap[dateKey]) {
+            summaryMap[dateKey] = { date: dateKey, rental: 0, fnb: 0, discount: 0, netIncome: 0, expenses: 0, profit: 0 };
+        }
+
+        const rental = (t.additionalCharges || [])
+            .filter(c => !c.description.includes('FnB:'))
+            .reduce((s, c) => s + (c.amount || 0), 0);
+            
+        const fnb = (t.additionalCharges || [])
+            .filter(c => c.description.includes('FnB:'))
+            .reduce((s, c) => s + (c.amount || 0), 0);
+
+        summaryMap[dateKey].rental += rental;
+        summaryMap[dateKey].fnb += fnb;
+        summaryMap[dateKey].discount += (t.discount || 0);
     });
 
+    // 2. Proses Pengeluaran
+    filteredExpenses.forEach(e => {
+        const dateKey = format(e.timestamp, 'yyyy-MM-dd');
+        if (!summaryMap[dateKey]) {
+            summaryMap[dateKey] = { date: dateKey, rental: 0, fnb: 0, discount: 0, netIncome: 0, expenses: 0, profit: 0 };
+        }
+        summaryMap[dateKey].expenses += e.amount;
+    });
+
+    // 3. Hitung Netto & Profit
+    const excelData = Object.values(summaryMap)
+        .sort((a, b) => b.date.localeCompare(a.date))
+        .map(day => {
+            const netIncome = (day.rental + day.fnb) - day.discount;
+            return {
+                'Tanggal': day.date,
+                'Total Sewa TV (IDR)': day.rental,
+                'Total Jual FnB (IDR)': day.fnb,
+                'Total Potongan/Diskon (IDR)': day.discount,
+                'Pemasukan Bersih (IDR)': netIncome,
+                'Total Biaya Operasional (IDR)': day.expenses,
+                'Profit / Loss (IDR)': netIncome - day.expenses
+            };
+        });
+
+    if (excelData.length === 0) return;
+
     const worksheet = XLSX.utils.json_to_sheet(excelData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Ringkasan Keuangan Harian");
+
     const colWidths = [
-        { wch: 5 }, { wch: 15 }, { wch: 10 }, { wch: 25 }, { wch: 15 }, 
-        { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 20 }
+        { wch: 15 }, { wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 25 }, { wch: 25 }, { wch: 25 }
     ];
     worksheet['!cols'] = colWidths;
 
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Penjualan");
-
-    const dateStr = date?.from ? format(date.from, 'yyyy-MM-dd') : 'Laporan';
-    XLSX.writeFile(workbook, `XenonPlay_Report_${dateStr}.xlsx`);
+    XLSX.writeFile(workbook, `XenonPlay_Financial_Summary_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
   };
 
   return (
@@ -178,7 +214,7 @@ export function ReportsClient({ transactions, fnbItems, stations, expenses }: Re
             variant="outline" 
             className="flex-1 sm:flex-initial gap-2 h-10 font-black uppercase text-[10px] tracking-widest border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10 shadow-sm rounded-xl" 
             onClick={exportToExcel}
-            disabled={filteredTransactions.length === 0}
+            disabled={filteredTransactions.length === 0 && filteredExpenses.length === 0}
           >
             <FileSpreadsheet className="size-4" /> Ekspor Excel
           </Button>
