@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -14,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
 
 export function MemberClient({ initialData }: { initialData: Member[] }) {
   const [searchQuery, setSearchQuery] = useState('');
