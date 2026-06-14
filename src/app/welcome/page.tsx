@@ -5,8 +5,8 @@ import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
 /**
- * XENONPLAY WEB-ANIMATED WELCOME v4.5
- * Menggunakan kombinasi Maskot dan Logo untuk visual brand yang kuat.
+ * XENONPLAY WELCOME v5.0 - SPIRIT EDITION
+ * Menampilkan maskot sebagai "Spirit of the Station" dengan aura neon.
  */
 export default function WelcomePage() {
     const [mounted, setMounted] = useState(false);
@@ -19,87 +19,92 @@ export default function WelcomePage() {
 
     return (
         <div className="fixed inset-0 h-screen w-screen bg-slate-950 overflow-hidden flex items-center justify-center select-none">
-            {/* AMBIENT BACKGROUND */}
+            {/* AMBIENT DYNAMIC BACKGROUND */}
             <motion.div 
                 animate={{ 
-                    scale: [1, 1.1, 1],
-                    opacity: [0.2, 0.4, 0.2],
+                    scale: [1, 1.2, 1],
+                    opacity: [0.15, 0.3, 0.15],
                 }}
-                transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-                className="absolute size-[140vh] bg-gradient-to-tr from-primary/20 via-transparent to-accent/10 blur-[120px] rounded-full"
+                transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute size-[150vh] bg-[radial-gradient(circle,rgba(59,130,246,0.4)_0%,transparent_70%)] blur-[100px] rounded-full"
             />
 
-            {/* DECORATIVE RINGS */}
-            <div className="absolute inset-0 flex items-center justify-center">
-                <motion.div 
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                    className="absolute size-[65vh] border border-primary/10 rounded-full border-dashed"
-                />
-            </div>
-
-            {/* MAIN CONTENT */}
-            <div className="relative z-10 flex flex-col items-center gap-8">
-                {/* MASCOT & LOGO STACK */}
-                <div className="relative">
-                    {/* Character Mascot (Bigger) */}
+            {/* MAIN CONTENT CONTAINER */}
+            <div className="relative z-10 flex flex-col items-center gap-6">
+                {/* FLOATING MASCOT WITH GLOW */}
+                <div className="relative group">
+                    {/* Character Inner Glow */}
+                    <motion.div 
+                        animate={{ 
+                            opacity: [0.4, 0.7, 0.4],
+                            scale: [0.8, 1.1, 0.8]
+                        }}
+                        transition={{ duration: 4, repeat: Infinity }}
+                        className="absolute inset-0 bg-primary/40 blur-[80px] rounded-full"
+                    />
+                    
                     <motion.div
-                        initial={{ y: 50, opacity: 0 }}
-                        animate={{ y: [0, -25, 0], opacity: 1 }}
+                        initial={{ y: 30, opacity: 0 }}
+                        animate={{ y: [0, -20, 0], opacity: 1 }}
                         transition={{ 
                             y: { duration: 5, repeat: Infinity, ease: "easeInOut" },
-                            opacity: { duration: 1 }
+                            opacity: { duration: 1.5 }
                         }}
-                        className="relative size-72 md:size-[450px]"
+                        className="relative size-80 md:size-[520px]"
                     >
                         <Image 
                             src="/mascot.png" 
-                            alt="Xenon Mascot" 
+                            alt="Xenon Spirit" 
                             fill 
-                            className="object-contain drop-shadow-[0_0_60px_rgba(59,130,246,0.3)]"
+                            className="object-contain drop-shadow-[0_0_50px_rgba(59,130,246,0.6)]"
                             priority
-                            onError={(e) => {
-                                // Fallback ke logo jika mascot.png belum diupload
-                                (e.target as any).src = '/xenonplay-logo.png';
-                            }}
                         />
-                    </motion.div>
-
-                    {/* Small Branding Logo */}
-                    <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ delay: 0.8, type: "spring" }}
-                        className="absolute -bottom-10 left-1/2 -translate-x-1/2 size-24 bg-slate-950 p-4 rounded-3xl border border-white/10 shadow-2xl"
-                    >
-                        <Image src="/xenonplay-logo.png" alt="Logo" fill className="object-contain p-4" />
                     </motion.div>
                 </div>
 
-                {/* TEXT ANIMATION */}
-                <div className="text-center space-y-4 mt-12">
-                    <motion.h1 
-                        initial={{ letterSpacing: "1em", opacity: 0 }}
-                        animate={{ letterSpacing: "0.4em", opacity: 1 }}
-                        transition={{ duration: 1.5, delay: 0.5 }}
-                        className="text-4xl md:text-6xl font-black text-white uppercase tracking-[0.4em] leading-none"
-                    >
-                        SELAMAT <span className="text-primary">DATANG</span>
-                    </motion.h1>
+                {/* TEXTUAL BRANDING */}
+                <div className="text-center space-y-6">
                     <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: "100%" }}
-                        transition={{ duration: 1, delay: 1 }}
-                        className="h-1 bg-gradient-to-r from-transparent via-primary to-transparent mx-auto"
+                        initial={{ scaleX: 0 }}
+                        animate={{ scaleX: 1 }}
+                        transition={{ duration: 1, delay: 0.5 }}
+                        className="h-px w-64 bg-gradient-to-r from-transparent via-primary/50 to-transparent mx-auto"
                     />
-                    <p className="text-[10px] md:text-xs font-black text-white/40 uppercase tracking-[0.8em]">
-                        XENONPLAY • ELITE GAMING CENTER
-                    </p>
+                    
+                    <div className="space-y-2">
+                        <motion.h1 
+                            initial={{ letterSpacing: "1.5em", opacity: 0 }}
+                            animate={{ letterSpacing: "0.5em", opacity: 1 }}
+                            transition={{ duration: 2 }}
+                            className="text-4xl md:text-6xl font-black text-white uppercase tracking-[0.5em] leading-none drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]"
+                        >
+                            READY <span className="text-primary">TO PLAY</span>
+                        </motion.h1>
+                        <p className="text-[10px] md:text-xs font-black text-primary/40 uppercase tracking-[0.8em] mt-4">
+                            XENONPLAY • ELITE GAMING CORE
+                        </p>
+                    </div>
+
+                    <motion.div
+                        animate={{ opacity: [0.2, 0.5, 0.2] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                        className="inline-flex items-center gap-3 px-6 py-2 rounded-full border border-primary/20 bg-primary/5"
+                    >
+                        <div className="size-1.5 rounded-full bg-primary" />
+                        <span className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">System Synchronized</span>
+                    </motion.div>
                 </div>
             </div>
 
-            {/* SCANLINE OVERLAY */}
-            <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%)] bg-[length:100%_4px] pointer-events-none opacity-20" />
+            {/* RETRO SCANLINE OVERLAY */}
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%)] bg-[length:100%_4px] pointer-events-none opacity-30" />
+            
+            {/* CORNER WATERMARKS */}
+            <div className="absolute bottom-10 right-12 opacity-10">
+                <div className="relative size-24 grayscale">
+                    <Image src="/xenonplay-logo.png" alt="Branding" fill className="object-contain" />
+                </div>
+            </div>
         </div>
     );
 }
