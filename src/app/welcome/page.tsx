@@ -1,4 +1,3 @@
-
 'use client';
 
 import { motion } from 'framer-motion';
@@ -6,9 +5,8 @@ import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
 /**
- * XENONPLAY WELCOME v8.0 - ELITE DASHBOARD EDITION
- * Desain horizontal terinspirasi dari UI konsol Next-Gen.
- * Maskot berada di samping headline untuk komposisi yang lebih elegan.
+ * XENONPLAY WELCOME v8.1 - ELITE DASHBOARD EDITION
+ * Penambahan Watermark Logo di belakang maskot untuk kesan Sultan.
  */
 export default function WelcomePage() {
     const [mounted, setMounted] = useState(false);
@@ -82,13 +80,18 @@ export default function WelcomePage() {
                     </motion.div>
                 </motion.div>
 
-                {/* RIGHT SIDE: MASCOT COMPOSITION */}
+                {/* RIGHT SIDE: MASCOT & WATERMARK COMPOSITION */}
                 <motion.div 
                     initial={{ opacity: 0, scale: 0.9, x: 50 }}
                     animate={{ opacity: 1, scale: 1, x: 0 }}
                     transition={{ duration: 1.2, ease: "easeOut" }}
                     className="flex-1 relative w-full h-[50vh] md:h-full flex items-center justify-center lg:justify-end"
                 >
+                    {/* Watermark Logo (Behind Mascot) */}
+                    <div className="absolute top-1/2 left-1/2 md:left-auto md:right-[5%] -translate-x-1/2 md:translate-x-0 -translate-y-1/2 size-[450px] md:size-[600px] opacity-[0.04] pointer-events-none grayscale brightness-200">
+                        <Image src="/xenonplay-logo.png" alt="Watermark" fill className="object-contain" />
+                    </div>
+
                     {/* Mascot Aura */}
                     <div className="absolute top-1/2 left-1/2 md:left-auto md:right-1/4 -translate-x-1/2 md:translate-x-0 -translate-y-1/2 size-[400px] bg-primary/5 blur-[80px] rounded-full animate-pulse" />
                     
@@ -101,7 +104,7 @@ export default function WelcomePage() {
                             y: { duration: 5, repeat: Infinity, ease: "easeInOut" },
                             filter: { duration: 4, repeat: Infinity }
                         }}
-                        className="relative w-full h-full max-h-[70vh] flex items-center justify-center lg:justify-end"
+                        className="relative w-full h-full max-h-[70vh] flex items-center justify-center lg:justify-end z-10"
                     >
                         <div className="relative w-full h-full">
                             <Image 
@@ -123,7 +126,7 @@ export default function WelcomePage() {
                     <span className="text-[8px] font-bold text-primary uppercase tracking-widest mt-1">Global Region Hub</span>
                 </div>
                 <div className="text-right">
-                    <span className="text-[10px] font-black text-white uppercase tracking-widest italic">Nexus Core v8.0</span>
+                    <span className="text-[10px] font-black text-white uppercase tracking-widest italic">Nexus Core v8.1</span>
                 </div>
             </div>
 

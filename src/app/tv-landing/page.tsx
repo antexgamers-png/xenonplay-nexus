@@ -1,4 +1,3 @@
-
 'use client';
 
 import { motion } from 'framer-motion';
@@ -6,9 +5,8 @@ import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
 /**
- * XENONPLAY STANDBY v8.0 - TERMINATION DASHBOARD
- * Layout horizontal dengan maskot di sisi samping.
- * Indikator peringatan yang tegas namun tetap memiliki estetika premium.
+ * XENONPLAY STANDBY v8.1 - TERMINATION DASHBOARD
+ * Penambahan Watermark Logo transparan di belakang maskot.
  */
 export default function TvLandingPage() {
     const [mounted, setMounted] = useState(false);
@@ -80,13 +78,18 @@ export default function TvLandingPage() {
                     </div>
                 </motion.div>
 
-                {/* RIGHT SIDE: MASCOT TERMINATION */}
+                {/* RIGHT SIDE: MASCOT & WATERMARK COMPOSITION */}
                 <motion.div 
                     initial={{ opacity: 0, scale: 0.95, x: 50 }}
                     animate={{ opacity: 1, scale: 1, x: 0 }}
                     transition={{ duration: 1.5 }}
                     className="flex-1 relative w-full h-[50vh] md:h-full flex items-center justify-center lg:justify-end"
                 >
+                    {/* Watermark Logo (Behind Mascot) */}
+                    <div className="absolute top-1/2 left-1/2 md:left-auto md:right-[5%] -translate-x-1/2 md:translate-x-0 -translate-y-1/2 size-[450px] md:size-[600px] opacity-[0.04] pointer-events-none grayscale">
+                        <Image src="/xenonplay-logo.png" alt="Watermark" fill className="object-contain" />
+                    </div>
+
                     <div className="absolute top-1/2 right-1/4 -translate-y-1/2 size-[400px] bg-red-600/5 blur-[100px] rounded-full" />
                     
                     <motion.div
@@ -95,7 +98,7 @@ export default function TvLandingPage() {
                             filter: ["grayscale(0.5) brightness(0.7)", "grayscale(0.3) brightness(0.9)", "grayscale(0.5) brightness(0.7)"]
                         }}
                         transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-                        className="relative w-full h-full max-h-[65vh] flex items-center justify-center lg:justify-end"
+                        className="relative w-full h-full max-h-[65vh] flex items-center justify-center lg:justify-end z-10"
                     >
                         <div className="relative w-full h-full">
                             <Image 
