@@ -20,15 +20,11 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { addMemberRequest } from '@/lib/data';
 
-// Helper component to render Lucide icons dynamically from string
 const DynamicIcon = ({ name, className }: { name: string, className?: string }) => {
     const Icon = (LucideIcons as any)[name] || LucideIcons.HelpCircle;
     return <Icon className={className} />;
 };
 
-/**
- * COMPONENT: ActivityTicker (Optimized)
- */
 const ActivityTicker = memo(function ActivityTicker({ 
     members, 
     transactions, 
@@ -45,7 +41,7 @@ const ActivityTicker = memo(function ActivityTicker({
             "Unit PS5 Core-01 baru saja disterilisasi.",
             "Update: Kopi Susu Aren tersedia di kantin!",
             "Pemain VVIP sedang mabar di Stasiun 02.",
-            "Member Platinum baru saja mendaftar.",
+            "Member baru saja bergabung dalam komunitas.",
             "Tips: Mabar jam 10 pagi dapat diskon Happy Hour!"
         ];
 
@@ -53,21 +49,21 @@ const ActivityTicker = memo(function ActivityTicker({
 
         if (members && members.length > 0) {
             members.slice(0, 3).forEach(m => {
-                realEvents.push(`Member '${m.name}' telah bergabung!`);
+                realEvents.push(`Selamat bergabung, ${m.name}!`);
             });
         }
 
         if (transactions && transactions.length > 0) {
             transactions.slice(0, 3).forEach(t => {
                 if (t.stationId !== 'pos') {
-                    realEvents.push(`Sesi baru dimulai di ${t.stationName}.`);
+                    realEvents.push(`Sesi seru dimulai di ${t.stationName}.`);
                 }
             });
         }
 
         if (reservations && reservations.length > 0) {
             reservations.slice(0, 3).forEach(r => {
-                realEvents.push(`Slot jam ${new Date(r.startTime).getHours()}:00 telah dipesan.`);
+                realEvents.push(`Slot jam ${new Date(r.startTime).getHours()}:00 sudah ada yang booking.`);
             });
         }
 
@@ -107,7 +103,6 @@ export function PublicLandingClient() {
   const [isResOpen, setIsResOpen] = useState(false);
   const [defaultBookingStationId, setDefaultBookingStationId] = useState<string | undefined>(undefined);
   
-  // Membership Form State
   const [regName, setRegName] = useState('');
   const [regPhone, setRegPhone] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
@@ -144,15 +139,15 @@ export function PublicLandingClient() {
 
   const defaultSettings: LandingSettings = {
     heroHeadline: 'Nongkrong Sultan, Harga Teman.',
-    heroSubHeadline: 'Main PS5 makin puas dengan TV 4K HDR, Full AC, dan Sofa Sultan yang super empuk.',
-    ctaText: 'Mabar Sekarang',
+    heroSubHeadline: 'Nikmati atmosfer pro-gaming sesungguhnya dengan TV 4K HDR, Full AC, dan Sofa Sultan yang super nyaman.',
+    ctaText: 'Gas Mabar!',
     ctaLink: '#live',
     ctaIcon: 'Gamepad2',
     facilities: [
-        { icon: 'Monitor', title: 'Layar 4K HDR', description: 'Visual Tajam' },
-        { icon: 'Coffee', title: 'Snack & Drink', description: 'Teman Mabar' },
-        { icon: 'Wifi', title: 'WiFi 6E', description: 'Update Kilat' },
-        { icon: 'Star', title: 'Sofa Sultan', description: 'Main Nyaman' }
+        { icon: 'Monitor', title: 'Visual 4K HDR', description: 'Gambar Super Jernih' },
+        { icon: 'Coffee', title: 'Menu Kantin', description: 'Amunisi Mabar' },
+        { icon: 'Wifi', title: 'Koneksi Kilat', description: 'Anti-Lag' },
+        { icon: 'Star', title: 'Sofa Sultan', description: 'Kenyamanan Maksimal' }
     ],
     whatsapp: '',
     instagram: '',
@@ -219,13 +214,13 @@ export function PublicLandingClient() {
           setRegSuccess(true);
           toast({
               title: "Permohonan Terkirim!",
-              description: "Pendaftaran kamu sedang ditinjau oleh kasir. Harap tunggu konfirmasi.",
+              description: "Data kamu sedang ditinjau. Tunggu konfirmasi dari tim kami ya!",
               variant: "success"
           });
       } catch (err: any) {
           toast({
-              title: "Gagal Mendaftar",
-              description: "Silakan coba lagi atau hubungi kasir.",
+              title: "Waduh, Gagal!",
+              description: "Coba kirim ulang atau langsung daftar di kasir saja.",
               variant: "destructive"
           });
       } finally {
@@ -237,13 +232,11 @@ export function PublicLandingClient() {
 
   return (
     <div className="min-h-screen bg-background text-foreground font-body overflow-x-hidden selection:bg-primary">
-      {/* Efek Cahaya Latar (Ambient) */}
       <div className="fixed inset-0 pointer-events-none z-0">
           <div className="absolute top-[-10%] left-[-10%] w-[40vw] h-[40vh] bg-primary/5 blur-[120px] rounded-full" />
           <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vh] bg-accent/5 blur-[150px] rounded-full" />
       </div>
 
-      {/* Navigasi Minimalis */}
       <nav className="fixed top-0 left-0 w-full z-50 border-b border-border/40 bg-background/60 backdrop-blur-md">
           <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -257,8 +250,8 @@ export function PublicLandingClient() {
                     <span className="text-lg font-black tracking-tighter uppercase leading-none hidden sm:inline">
                         {generalSettings?.storeName || 'XENONPLAY'}
                     </span>
-                    <span className="text-[8px] font-black uppercase tracking-[0.3em] text-primary uppercase hidden sm:block">
-                        Elite Gaming Center
+                    <span className="text-[8px] font-black uppercase tracking-[0.3em] text-primary hidden sm:block">
+                        Elite Gaming Hub
                     </span>
                   </div>
               </div>
@@ -267,19 +260,18 @@ export function PublicLandingClient() {
                   <Link href="#membership" className="text-[10px] font-black uppercase tracking-widest hover:text-primary transition-colors hidden sm:block">Membership</Link>
                   <Link href="#paket" className="text-[10px] font-black uppercase tracking-widest hover:text-primary transition-colors hidden sm:block">Daftar Harga</Link>
                   <Button onClick={handleManualResOpen} size="sm" className="rounded-lg font-black uppercase text-[9px] tracking-widest h-8 px-4">
-                      Reservasi
+                      Booking Slot
                   </Button>
               </div>
           </div>
       </nav>
 
-      {/* Hero Section */}
       <section className="relative pt-32 pb-8 px-6">
           <div className="max-w-7xl mx-auto relative z-10">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="text-center lg:text-left">
                     <Badge variant="outline" className="mb-4 border-primary/30 bg-primary/10 text-primary px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest">
-                        <LucideIcons.Sparkles className="size-3 mr-2 inline" /> Premium Rental PS
+                        <LucideIcons.Sparkles className="size-3 mr-2 inline" /> Next-Gen Gaming Experience
                     </Badge>
                     <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter leading-tight mb-6">
                         {settings.heroHeadline}
@@ -289,11 +281,11 @@ export function PublicLandingClient() {
                     </p>
                     <div className="flex flex-wrap justify-center lg:justify-start gap-3">
                         <Button onClick={handleManualResOpen} className="h-12 px-8 rounded-xl font-black uppercase tracking-widest text-xs shadow-lg shadow-primary/30 gap-2">
-                            <LucideIcons.CalendarCheck className="size-4" /> Reservasi
+                            <LucideIcons.CalendarCheck className="size-4" /> Amankan Slot
                         </Button>
                         <Link href="#live">
                             <Button variant="outline" className="h-12 px-8 rounded-xl font-black uppercase tracking-widest text-xs border-border bg-muted/20 hover:bg-muted/40">
-                                Cek Stasiun PS
+                                Cek Unit Ready
                             </Button>
                         </Link>
                     </div>
@@ -317,14 +309,12 @@ export function PublicLandingClient() {
           </div>
       </section>
 
-      {/* Activity Ticker Section */}
       <ActivityTicker 
         members={recentMembers} 
         transactions={recentTransactions} 
         reservations={recentReservations} 
       />
 
-      {/* Fasilitas Section */}
       <section className="py-12 px-6 border-b border-border/50 bg-muted/10">
           <div className="max-w-7xl mx-auto">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -343,17 +333,16 @@ export function PublicLandingClient() {
           </div>
       </section>
 
-      {/* Live Status */}
       <section id="live" className="py-20 px-6">
           <div className="max-w-7xl mx-auto">
               <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-12">
                 <div>
-                    <h2 className="text-3xl font-black uppercase tracking-tighter mb-2">Pantau <span className="text-primary">Stasiun</span> Live</h2>
-                    <p className="text-xs text-muted-foreground">Pantau status stasiun secara real-time sebelum ke lokasi.</p>
+                    <h2 className="text-3xl font-black uppercase tracking-tighter mb-2">Cek Unit yang <span className="text-primary">Ready</span></h2>
+                    <p className="text-xs text-muted-foreground">Status unit kami terpantau secara real-time dari manapun kamu berada.</p>
                 </div>
                 <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-full">
                     <div className="size-1.5 rounded-full bg-emerald-500 animate-ping" />
-                    <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500">Update Langsung</span>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500">Live Server</span>
                 </div>
               </div>
 
@@ -363,7 +352,7 @@ export function PublicLandingClient() {
                         key={station.id} 
                         whileHover={{ y: -5 }}
                         className={cn(
-                            "p-6 rounded-[2rem] border transition-all duration-300 flex flex-col items-center gap-4 text-center group", 
+                            "p-6 rounded-[2.5rem] border transition-all duration-300 flex flex-col items-center gap-4 text-center group", 
                             station.is_active 
                                 ? "bg-muted/40 border-border opacity-60" 
                                 : "bg-card border-border hover:border-emerald-500/50 shadow-lg"
@@ -373,7 +362,7 @@ export function PublicLandingClient() {
                               <Image src={`/${station.type.toLowerCase()}-logo.png`} alt={station.type} fill className="object-contain group-hover:scale-110 transition-transform" />
                           </div>
                           <div className="space-y-1">
-                              <p className="font-black text-sm uppercase tracking-tighter">Stasiun {station.name}</p>
+                              <p className="font-black text-sm uppercase tracking-tighter">{station.name}</p>
                               <p className="font-bold text-[10px] uppercase text-muted-foreground">{station.type} CORE</p>
                           </div>
                           
@@ -382,7 +371,7 @@ export function PublicLandingClient() {
                                   "text-[8px] font-black uppercase tracking-widest px-3 py-1 rounded-full border",
                                   station.is_active ? "border-border text-muted-foreground" : "border-emerald-500/30 text-emerald-600 bg-emerald-500/5"
                               )}>
-                                {station.is_active ? 'Sedang Main' : 'Tersedia'}
+                                {station.is_active ? 'Sedang Dipakai' : 'Unit Siaga'}
                               </div>
                               
                               {!station.is_active && (
@@ -402,7 +391,6 @@ export function PublicLandingClient() {
           </div>
       </section>
 
-      {/* Membership Section */}
       <section id="membership" className="py-24 px-6 bg-slate-950 relative overflow-hidden">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.1)_0%,transparent_70%)] pointer-events-none" />
           
@@ -412,10 +400,10 @@ export function PublicLandingClient() {
                       <div className="space-y-4">
                           <Badge className="bg-primary/20 text-primary border-primary/30 font-black uppercase text-[10px] tracking-[0.2em] px-3 h-6">Sultan Membership</Badge>
                           <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter text-white leading-none">
-                              Main Terus, <span className="text-primary">Panen Hadiah.</span>
+                              Makin Sering Mabar, <span className="text-primary">Banyak Bonusnya.</span>
                           </h2>
                           <p className="text-slate-400 text-lg font-medium leading-relaxed">
-                              Gabung jadi member XenonPlay dan kumpulkan poin setiap kali kamu mabar. Tukarkan poinmu dengan jam main gratis atau snack favorit!
+                              Jadilah bagian dari komunitas elit XenonPlay. Kumpulkan poin dari tiap sesi bermainmu dan tukarkan dengan berbagai reward menarik mulai dari jam main gratis hingga camilan favorit.
                           </p>
                       </div>
 
@@ -425,19 +413,19 @@ export function PublicLandingClient() {
                                   <LucideIcons.Trophy className="size-5" />
                               </div>
                               <h4 className="text-white font-black uppercase text-sm mb-2 tracking-tight">Kumpulkan Poin</h4>
-                              <p className="text-slate-500 text-xs leading-relaxed">Dapatkan 5 Poin tambahan setiap 10 stempel sesi yang terkumpul.</p>
+                              <p className="text-slate-500 text-xs leading-relaxed">Dapatkan 5 Poin bonus secara otomatis setiap kali koleksi stempelmu penuh.</p>
                           </div>
                           <div className="p-6 rounded-3xl bg-white/5 border border-white/10 group hover:border-emerald-500/50 transition-colors">
                               <div className="size-10 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 mb-4">
                                   <LucideIcons.Gift className="size-5" />
                               </div>
-                              <h4 className="text-white font-black uppercase text-sm mb-2 tracking-tight">Tukar Hadiah</h4>
-                              <p className="text-slate-500 text-xs leading-relaxed">Tukar poin kamu dengan voucher bermain gratis atau camilan segar di kasir.</p>
+                              <h4 className="text-white font-black uppercase text-sm mb-2 tracking-tight">Klaim Reward</h4>
+                              <p className="text-slate-500 text-xs leading-relaxed">Tukar poin terkumpul dengan voucher mabar atau item kantin langsung di kasir.</p>
                           </div>
                       </div>
 
                       <Link href="/check-member" target="_blank" className="inline-flex items-center gap-3 text-primary font-black uppercase text-[10px] tracking-widest hover:gap-5 transition-all">
-                          Cek Poin & Riwayat Hadiah Saya <LucideIcons.ArrowRight className="size-4" />
+                          Cek Saldo Poin & Katalog Reward <LucideIcons.ArrowRight className="size-4" />
                       </Link>
                   </div>
 
@@ -454,8 +442,8 @@ export function PublicLandingClient() {
                                 className="space-y-6"
                             >
                                 <div className="text-center space-y-2 mb-8">
-                                    <h3 className="text-2xl font-black uppercase tracking-tight text-white">Daftar Member Sultan</h3>
-                                    <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">Registrasi Sedang Ditinjau</p>
+                                    <h3 className="text-2xl font-black uppercase tracking-tight text-white">Join Membership</h3>
+                                    <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">Daftar sekarang, nikmati keuntungannya</p>
                                 </div>
 
                                 <form onSubmit={handleRegisterMember} className="space-y-5">
@@ -463,7 +451,7 @@ export function PublicLandingClient() {
                                         <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Nama Lengkap</Label>
                                         <div className="relative">
                                             <Input 
-                                                placeholder="Contoh: Andi Pro Gamer" 
+                                                placeholder="Andi Gaming" 
                                                 className="h-14 pl-12 bg-slate-900/50 border-white/5 text-white rounded-2xl focus:ring-primary shadow-inner"
                                                 value={regName}
                                                 onChange={(e) => setRegName(e.target.value)}
@@ -491,10 +479,10 @@ export function PublicLandingClient() {
                                         className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-[0.2em] text-sm shadow-xl shadow-primary/20 transition-all active:scale-95 gap-3"
                                     >
                                         {isRegistering ? <LucideIcons.RefreshCw className="size-5 animate-spin" /> : <LucideIcons.Zap className="size-5 fill-current" />}
-                                        Kirim Permohonan
+                                        Daftar Sekarang
                                     </Button>
                                     <p className="text-[9px] text-center text-slate-600 uppercase font-bold italic tracking-tighter mt-4">
-                                        *Pendaftaran kamu akan dikonfirmasi secara manual oleh tim kami.
+                                        *Admin akan segera mengonfirmasi pendaftaranmu.
                                     </p>
                                 </form>
                             </motion.div>
@@ -509,18 +497,18 @@ export function PublicLandingClient() {
                                     <LucideIcons.CheckCircle2 className="size-10" />
                                 </div>
                                 <div className="space-y-2">
-                                    <h3 className="text-2xl font-black uppercase tracking-tight text-white">Permohonan Diterima</h3>
-                                    <p className="text-slate-400 text-sm font-medium">Tunggu kabar baik ya, <span className="text-primary font-black uppercase">{regName}</span>!</p>
+                                    <h3 className="text-2xl font-black uppercase tracking-tight text-white">Permohonan Terkirim</h3>
+                                    <p className="text-slate-400 text-sm font-medium">Mantap <span className="text-primary font-black uppercase">{regName}</span>, datamu sudah masuk!</p>
                                 </div>
                                 <p className="text-slate-500 text-[10px] leading-relaxed max-w-[280px] mx-auto uppercase font-bold tracking-widest">
-                                    Data kamu sedang menunggu konfirmasi admin. Kami akan menginformasikan status pendaftaran melalui nomor WhatsApp yang kamu daftarkan.
+                                    Admin kami akan segera meninjau pendaftaranmu. Tunggu info konfirmasi selanjutnya yang akan dikirim melalui WhatsApp ya!
                                 </p>
                                 <Button 
                                     variant="outline" 
                                     onClick={() => { setRegSuccess(false); setRegName(''); setRegPhone(''); }}
                                     className="border-white/10 text-white hover:bg-white/5 rounded-xl h-10 px-8 font-black uppercase text-[10px] tracking-widest"
                                 >
-                                    Daftarkan Teman Lain
+                                    Daftarkan Akun Lain
                                 </Button>
                             </motion.div>
                         )}
@@ -530,13 +518,12 @@ export function PublicLandingClient() {
           </div>
       </section>
 
-      {/* Pricing List */}
       <section id="paket" className="py-20 px-6 bg-muted/10 border-t border-border/40">
           <div className="max-w-7xl mx-auto">
               <div className="flex justify-between items-center mb-12 gap-4">
                 <div className="text-left">
-                    <h2 className="text-3xl font-black uppercase tracking-tighter mb-2">Paket <span className="text-primary">Mabar</span></h2>
-                    <p className="text-xs text-muted-foreground">Pilih durasi terbaik untuk petualangan gaming kamu.</p>
+                    <h2 className="text-3xl font-black uppercase tracking-tighter mb-2">Pilihan <span className="text-primary">Paket Mabar</span></h2>
+                    <p className="text-xs text-muted-foreground">Pilih durasi main paling pas buat gaya gaming kamu.</p>
                 </div>
                 <div className="flex gap-2">
                     <Button variant="outline" size="icon" className="rounded-full size-10 border-border bg-card hover:bg-muted" onClick={scrollPrev}>
@@ -566,7 +553,7 @@ export function PublicLandingClient() {
                                       {isHighlighted && (
                                           <div className="absolute top-4 right-4 z-20">
                                               <Badge className="bg-primary text-white border-none font-black text-[8px] tracking-[0.2em] px-2 h-5 rounded-lg shadow-lg">
-                                                  {isBundle ? 'BEST VALUE' : 'PALING LARIS'}
+                                                  {isBundle ? 'BEST VALUE' : 'TERLARIS'}
                                               </Badge>
                                           </div>
                                       )}
@@ -579,7 +566,7 @@ export function PublicLandingClient() {
                                                   "border-none text-[8px] font-black mb-2 px-2 py-0 h-4",
                                                   isHighlighted ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
                                               )}>
-                                                {rule.type === 'All' ? 'SEMUA UNIT' : `${rule.type} CORE`}
+                                                {rule.type === 'All' ? 'PRO STATIONS' : `${rule.type} CORE`}
                                               </Badge>
                                               <h3 className="text-xl font-black uppercase tracking-tight leading-none">{rule.name}</h3>
                                           </div>
@@ -589,25 +576,25 @@ export function PublicLandingClient() {
                                       <div className="space-y-2 mb-6 relative z-10 flex-1">
                                           <div className="flex items-center gap-2 text-muted-foreground">
                                               <LucideIcons.CheckCircle2 className="size-3 text-primary" />
-                                              <span className="text-xs font-medium">Durasi {formatDuration(rule.duration)}</span>
+                                              <span className="text-xs font-medium">Sewa {formatDuration(rule.duration)}</span>
                                           </div>
                                           {rule.items?.map((item, idx) => (
                                               <div key={idx} className="flex items-center gap-2 text-muted-foreground">
                                                   <LucideIcons.Sparkles className="size-3 text-emerald-500" />
-                                                  <span className="text-xs font-bold">Bonus {item.name} x{item.quantity}</span>
+                                                  <span className="text-xs font-bold">Include {item.name} x{item.quantity}</span>
                                               </div>
                                           ))}
                                           {!isBundle && (
                                               <div className="flex items-center gap-2 text-muted-foreground/60 italic">
                                                   <LucideIcons.Zap className="size-3" />
-                                                  <span className="text-[10px]">Performa Gaming Stabil</span>
+                                                  <span className="text-[10px]">Stabil 60 FPS Experience</span>
                                               </div>
                                           )}
                                       </div>
 
                                       <div className="pt-4 border-t border-border flex justify-between items-center relative z-10 mt-auto">
                                           <div>
-                                              <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">Harga Paket</p>
+                                              <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">Rate Paket</p>
                                               <p className={cn(
                                                   "text-2xl font-black font-mono tracking-tighter",
                                                   isHighlighted ? "text-primary" : "text-foreground"
@@ -636,30 +623,28 @@ export function PublicLandingClient() {
           </div>
       </section>
 
-      {/* Quick Booking CTA */}
       <section className="py-24 px-6 bg-primary relative overflow-hidden">
           <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/123/1920/1080')] opacity-10 mix-blend-overlay grayscale" />
           <div className="max-w-4xl mx-auto text-center relative z-10">
               <LucideIcons.Gamepad2 className="size-16 text-primary-foreground/20 mx-auto mb-8 animate-bounce" />
-              <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-6 text-primary-foreground">Sudah Siap Mendominasi Permainan?</h2>
-              <p className="text-primary-foreground/80 text-lg font-medium mb-10">Amankan slot kamu sekarang sebelum kehabisan unit favorit!</p>
+              <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-6 text-primary-foreground">Siap Dominasi Permainan?</h2>
+              <p className="text-primary-foreground/80 text-lg font-medium mb-10">Jangan sampai kehabisan unit! Amankan slot mabar kamu sekarang.</p>
               <Button onClick={handleManualResOpen} size="lg" className="h-16 px-12 rounded-2xl bg-background text-primary hover:bg-muted font-black uppercase tracking-widest shadow-2xl transition-transform hover:scale-105 active:scale-95">
                   Booking Unit Sekarang
               </Button>
           </div>
       </section>
 
-      {/* Location Section */}
       <section id="lokasi" className="py-24 px-6 border-t border-border/50">
           <div className="max-w-7xl mx-auto">
             <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-12">
                 <div>
-                    <h2 className="text-3xl font-black uppercase tracking-tighter mb-2">Lokasi <span className="text-primary">Rental</span> Kami</h2>
-                    <p className="text-xs text-muted-foreground">Kunjungi markas gaming kami dan rasakan atmosfer pro-gaming sesungguhnya.</p>
+                    <h2 className="text-3xl font-black uppercase tracking-tighter mb-2">Lokasi <span className="text-primary">Mabar</span> Kami</h2>
+                    <p className="text-xs text-muted-foreground">Mampir ke basecamp kami dan rasakan pengalaman gaming kelas atas.</p>
                 </div>
                 <div className="hidden md:flex items-center gap-2 text-primary opacity-50">
                     <LucideIcons.Navigation className="size-4" />
-                    <span className="text-[9px] font-black uppercase tracking-widest">Titik Koordinat Aktif</span>
+                    <span className="text-[9px] font-black uppercase tracking-widest">Active Marker</span>
                 </div>
             </div>
             
@@ -673,9 +658,9 @@ export function PublicLandingClient() {
                         <LucideIcons.MapPin className="size-7" />
                       </div>
                       <div>
-                        <h3 className="text-2xl font-black uppercase tracking-tight mb-3">XENON PLAY GAME CENTER</h3>
+                        <h3 className="text-2xl font-black uppercase tracking-tight mb-3">BASECAMP XENONPLAY</h3>
                         <p className="text-muted-foreground text-lg font-medium leading-relaxed">
-                          {settings.address || 'Alamat lengkap belum dikonfigurasi.'}
+                          {settings.address || 'Alamat lengkap sedang diperbarui.'}
                         </p>
                       </div>
                     </div>
@@ -686,7 +671,7 @@ export function PublicLandingClient() {
                         </div>
                         <div>
                             <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Jam Operasional</p>
-                            <p className="text-sm font-bold uppercase">Setiap Hari: 08:00 - 00:00 WITA</p>
+                            <p className="text-sm font-bold uppercase">Buka Tiap Hari: 08:00 - 00:00 WITA</p>
                         </div>
                     </div>
 
@@ -694,7 +679,7 @@ export function PublicLandingClient() {
                         <Link href={directionsUrl} target="_blank" className="block w-full">
                             <Button className="w-full h-14 rounded-2xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-primary/30 mt-2">
                                 <LucideIcons.Navigation className="size-5" />
-                                Petunjuk Arah (Google Maps)
+                                Gas ke Lokasi (Peta)
                             </Button>
                         </Link>
                     )}
@@ -734,7 +719,7 @@ export function PublicLandingClient() {
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center bg-muted gap-4">
                       <LucideIcons.Map className="size-12 text-muted-foreground/30" />
-                      <p className="text-xs font-black uppercase tracking-[0.3em] text-muted-foreground/40">Koordinat Belum Diatur</p>
+                      <p className="text-xs font-black uppercase tracking-[0.3em] text-muted-foreground/40">Peta belum diatur</p>
                   </div>
                 )}
               </div>
@@ -742,7 +727,6 @@ export function PublicLandingClient() {
           </div>
       </section>
 
-      {/* Footer Minimalis */}
       <footer className="py-12 border-t border-border bg-background">
           <div className="max-w-7xl mx-auto px-6">
               <div className="flex flex-col md:flex-row justify-between items-center gap-6">
@@ -777,13 +761,12 @@ export function PublicLandingClient() {
               
               <div className="mt-8 pt-6 border-t border-border text-center">
                   <p className="text-muted-foreground/60 text-[8px] uppercase font-bold tracking-[0.3em]">
-                    © {year} {generalSettings?.storeName || 'XenonPlay Gaming Center'} • Powered by <span className="text-muted-foreground">AfrIbr Studio</span>
+                    © {year} {generalSettings?.storeName || 'XenonPlay Gaming Center'} • Stability is the Core of Business
                   </p>
               </div>
           </div>
       </footer>
 
-      {/* Reservation Dialog (Modal) */}
       <ReservationFormDialog 
         isOpen={isResOpen}
         onOpenChange={setIsResOpen}

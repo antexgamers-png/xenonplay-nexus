@@ -52,15 +52,15 @@ const ICON_OPTIONS = [
 
 const DEFAULT_SETTINGS: LandingSettings = {
     heroHeadline: 'Nongkrong Sultan, Harga Teman.',
-    heroSubHeadline: 'Main PS5 makin puas dengan TV 4K HDR, Full AC, dan Sofa Sultan yang super empuk.',
-    ctaText: 'Mabar Sekarang',
+    heroSubHeadline: 'Nikmati atmosfer pro-gaming sesungguhnya dengan TV 4K HDR, Full AC, dan Sofa Sultan yang super nyaman.',
+    ctaText: 'Gas Mabar!',
     ctaLink: '#live',
     ctaIcon: 'Gamepad2',
     facilities: [
-        { icon: 'Monitor', title: 'Layar 4K HDR', description: 'Visual Tajam' },
-        { icon: 'Coffee', title: 'Snack & Drink', description: 'Teman Mabar' },
-        { icon: 'Wifi', title: 'WiFi 6E', description: 'Update Kilat' },
-        { icon: 'Star', title: 'Sofa Sultan', description: 'Main Nyaman' }
+        { icon: 'Monitor', title: 'Visual 4K HDR', description: 'Gambar Super Jernih' },
+        { icon: 'Coffee', title: 'Menu Kantin', description: 'Amunisi Mabar' },
+        { icon: 'Wifi', title: 'Koneksi Kilat', description: 'Anti-Lag' },
+        { icon: 'Star', title: 'Sofa Sultan', description: 'Kenyamanan Maksimal' }
     ],
     whatsapp: '',
     instagram: '',
@@ -147,7 +147,6 @@ export default function LandingEditorPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
-              {/* HERO SECTION */}
               <Card>
                   <CardHeader>
                       <CardTitle className="text-lg font-black uppercase tracking-tight">Hero Section</CardTitle>
@@ -177,7 +176,7 @@ export default function LandingEditorPage() {
                               <Input 
                                 value={formData.ctaText} 
                                 onChange={(e) => setFormData({...formData, ctaText: e.target.value})}
-                                placeholder="Mabar Sekarang"
+                                placeholder="Gas Mabar!"
                               />
                           </div>
                           <div className="space-y-2">
@@ -210,7 +209,6 @@ export default function LandingEditorPage() {
                   </CardContent>
               </Card>
 
-              {/* FACILITIES SECTION */}
               <Card>
                   <CardHeader className="flex flex-row items-center justify-between">
                       <div>
@@ -278,7 +276,6 @@ export default function LandingEditorPage() {
                   </CardContent>
               </Card>
 
-              {/* LOCATION SECTION (LAT/LNG FOCUS) */}
               <Card>
                   <CardHeader>
                       <CardTitle className="text-lg font-black uppercase tracking-tight flex items-center gap-2">
@@ -332,7 +329,6 @@ export default function LandingEditorPage() {
           </div>
 
           <div className="space-y-8">
-              {/* CONTACT SECTION */}
               <Card>
                   <CardHeader>
                       <CardTitle className="text-lg font-black uppercase tracking-tight">Kontak & Sosmed</CardTitle>
@@ -372,7 +368,6 @@ export default function LandingEditorPage() {
                   </CardContent>
               </Card>
 
-              {/* TIPS BOX */}
               <Card className="bg-primary/5 border-primary/20">
                   <CardHeader>
                       <CardTitle className="text-xs font-black uppercase tracking-widest text-primary">Info Integrasi Peta</CardTitle>
