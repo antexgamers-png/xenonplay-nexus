@@ -39,12 +39,9 @@ import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import Image from 'next/image';
 
-const TIERS = [
-    { name: 'Bronze', minPoints: 0, color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/20', icon: Medal },
-    { name: 'Silver', minPoints: 100, color: 'text-slate-300', bg: 'bg-slate-400/10', border: 'border-slate-400/20', icon: Medal },
-    { name: 'Gold', minPoints: 300, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', icon: Crown },
-    { name: 'Platinum', minPoints: 1000, color: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/20', icon: Sparkles },
-];
+const RANK_ICONS = [Crown, Medal, Medal];
+const RANK_COLORS = ['text-amber-400', 'text-slate-300', 'text-orange-400'];
+const RANK_BGS = ['bg-amber-500/10', 'bg-slate-400/10', 'bg-orange-500/10'];
 
 export default function CheckMemberPage() {
     const firestore = useFirestore();
@@ -63,8 +60,14 @@ export default function CheckMemberPage() {
         return collection(firestore, 'rewards');
     }, [firestore]);
 
-    const { data: members, isLoading: isLoadingMember, error: memberError } = useCollection<Member>(memberQuery);
+    const topMembersQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, 'members'), orderBy('points', 'desc'), limit(3));
+    }, [firestore]);
+
+    const { data: members, isLoading: isLoadingMember } = useCollection<Member>(memberQuery);
     const { data: allRewards } = useCollection<Reward>(rewardsQuery);
+    const { data: topMembers } = useCollection<Member>(topMembersQuery);
     
     const member = members && members.length > 0 ? members[0] : null;
 
@@ -90,17 +93,6 @@ export default function CheckMemberPage() {
         setVerifiedPhone(cleanPhone);
         setTimeout(() => setIsSearching(false), 800);
     };
-
-    const memberTier = useMemo(() => {
-        if (!member) return TIERS[0];
-        const sorted = [...TIERS].reverse();
-        return sorted.find(t => member.points >= t.minPoints) || TIERS[0];
-    }, [member]);
-
-    const nextTier = useMemo(() => {
-        if (!member) return TIERS[1];
-        return TIERS.find(t => t.minPoints > member.points) || null;
-    }, [member]);
 
     return (
         <div className="min-h-screen bg-slate-950 text-white font-body pb-20 selection:bg-primary">
@@ -151,8 +143,31 @@ export default function CheckMemberPage() {
                             </Card>
                         </div>
 
-                        {/* PREVIEW CATALOG / TIERS */}
+                        {/* TOP 3 & CATALOG */}
                         <div className="lg:col-span-5 space-y-6">
+                            <div className="p-6 rounded-[2rem] bg-gradient-to-br from-primary/10 to-transparent border border-primary/20 space-y-4">
+                                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-primary flex items-center gap-2"><Trophy className="size-3" /> Top 3 Elite Sultan</h3>
+                                <div className="space-y-3">
+                                    {topMembers?.map((m, idx) => {
+                                        const Icon = RANK_ICONS[idx] || Medal;
+                                        return (
+                                            <div key={m.id} className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900/50 border border-white/5 animate-in slide-in-from-right duration-500" style={{ delay: `${idx * 100}ms` }}>
+                                                <div className="flex items-center gap-3">
+                                                    <div className={cn("size-8 rounded-lg flex items-center justify-center font-black", RANK_BGS[idx], RANK_COLORS[idx])}>
+                                                        {idx + 1}
+                                                    </div>
+                                                    <span className="text-xs font-black uppercase tracking-tight truncate max-w-[150px]">{m.name}</span>
+                                                </div>
+                                                <Icon className={cn("size-4", RANK_COLORS[idx])} />
+                                            </div>
+                                        )
+                                    })}
+                                    {(!topMembers || topMembers.length === 0) && (
+                                        <p className="text-[10px] text-slate-600 font-bold uppercase text-center py-4">Data sedang dimuat...</p>
+                                    )}
+                                </div>
+                            </div>
+
                             <div className="p-6 rounded-[2rem] bg-white/5 border border-white/10 space-y-4 shadow-xl">
                                 <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-500 flex items-center gap-2"><Star className="size-3 text-amber-500" /> Katalog Penukaran</h3>
                                 <div className="space-y-2">
@@ -165,18 +180,6 @@ export default function CheckMemberPage() {
                                     <p className="text-[10px] text-slate-600 font-bold uppercase text-center mt-4">...dan banyak pilihan lainnya</p>
                                 </div>
                             </div>
-
-                            <div className="p-6 rounded-[2rem] bg-gradient-to-br from-primary/10 to-transparent border border-primary/20 space-y-4">
-                                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-primary flex items-center gap-2"><Crown className="size-3" /> Tier Membership</h3>
-                                <div className="grid grid-cols-2 gap-3">
-                                    {TIERS.map(t => (
-                                        <div key={t.name} className={cn("p-3 rounded-2xl border bg-slate-900/50", t.border)}>
-                                            <p className={cn("text-[9px] font-black uppercase tracking-widest", t.color)}>{t.name}</p>
-                                            <p className="text-[10px] font-bold text-slate-500">Min {t.minPoints} Pts</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
                         </div>
                     </div>
                 ) : (
@@ -186,11 +189,8 @@ export default function CheckMemberPage() {
                             <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none rotate-12"><Gamepad2 className="size-48" /></div>
                             
                             <div className="relative group">
-                                <div className={cn("size-32 rounded-[2.5rem] flex items-center justify-center shadow-2xl transition-all duration-500", memberTier.bg, memberTier.border)}>
-                                    <memberTier.icon className={cn("size-16", memberTier.color)} />
-                                </div>
-                                <div className="absolute -bottom-3 -right-3 size-12 rounded-full bg-slate-950 border-4 border-white/10 flex items-center justify-center shadow-lg">
-                                    <Badge className="bg-primary text-white text-[8px] font-black h-6 border-none">{memberTier.name}</Badge>
+                                <div className="size-32 rounded-[2.5rem] flex items-center justify-center shadow-2xl transition-all duration-500 bg-primary/10 border border-primary/20">
+                                    <User className="size-16 text-primary" />
                                 </div>
                             </div>
 
@@ -201,17 +201,13 @@ export default function CheckMemberPage() {
                                 </div>
                                 <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.4em]">Member Sejak {format(member.joinDate, 'MMMM yyyy', { locale: id })}</p>
                                 
-                                {nextTier && (
-                                    <div className="pt-4 max-w-sm mx-auto md:mx-0">
-                                        <div className="flex justify-between items-end mb-2">
-                                            <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Progress ke {nextTier.name}</span>
-                                            <span className="text-[10px] font-black text-primary">{member.points} / {nextTier.minPoints}</span>
-                                        </div>
-                                        <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
-                                            <div className="h-full bg-primary transition-all duration-1000" style={{ width: `${Math.min(100, (member.points / nextTier.minPoints) * 100)}%` }} />
-                                        </div>
+                                <div className="pt-4 flex items-center gap-3 justify-center md:justify-start">
+                                    <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 border border-white/10">
+                                        <TrendingUp className="size-3 text-emerald-500" />
+                                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Status Aktif</span>
                                     </div>
-                                )}
+                                    <Badge className="bg-emerald-500 text-white font-black text-[9px] h-6 px-3">VERIFIED MEMBER</Badge>
+                                </div>
                             </div>
 
                             <Button variant="outline" size="sm" onClick={() => { setVerifiedPhone(null); setPhoneInput(''); }} className="rounded-xl border-white/10 h-10 px-6 font-black uppercase text-[10px] tracking-widest relative z-10 hover:bg-red-500/10 hover:text-red-500 transition-colors">Keluar</Button>
@@ -274,7 +270,7 @@ export default function CheckMemberPage() {
 
                         {/* REWARDS CATALOG & HISTORY */}
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 mt-12">
-                            {/* CATALOG (NEW) */}
+                            {/* CATALOG */}
                             <div className="lg:col-span-8 space-y-6">
                                 <div className="flex items-center justify-between px-2">
                                     <div className="flex items-center gap-3">
