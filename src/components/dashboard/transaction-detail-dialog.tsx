@@ -108,7 +108,7 @@ export function TransactionDetailDialog({
         printItems.push({
             name: name.substring(0, 12),
             qty,
-            price: (rc.amount / parseInt(qty)).toLocaleString('id-ID'),
+            price: (rc.amount / (parseInt(qty) || 1)).toLocaleString('id-ID'),
             total: rc.amount.toLocaleString('id-ID')
         });
     });
@@ -130,20 +130,20 @@ export function TransactionDetailDialog({
           <style>
             @page { margin: 0; size: 58mm auto; }
             body { 
-              width: 58mm; margin: 0; padding: 5px; 
+              width: 58mm; margin: 0; padding: 2px; 
               font-family: 'Courier New', Courier, monospace; 
-              font-size: 10px; line-height: 1.2; color: #000;
+              font-size: 8.5px; line-height: 1.1; color: #000;
             }
             .center { text-align: center; }
             .right { text-align: right; }
             .bold { font-weight: bold; }
-            .sep { border-top: 1px dashed #000; margin: 5px 0; }
-            table { width: 100%; border-collapse: collapse; margin: 5px 0; }
-            .item-row td { padding: 2px 0; vertical-align: top; }
+            .sep { border-top: 1px dashed #000; margin: 4px 0; }
+            table { width: 100%; border-collapse: collapse; margin: 4px 0; }
+            .item-row td { padding: 1px 0; vertical-align: top; }
           </style>
         </head>
         <body onload="window.print(); window.close();">
-          <div class="center bold" style="font-size: 12px;">${storeName.toUpperCase()}</div>
+          <div class="center bold" style="font-size: 11px;">${storeName.toUpperCase()}</div>
           <div class="center">${address}</div>
           <div class="sep"></div>
           <div>Nota : ${transaction.id.substring(0, 8).toUpperCase()}</div>
@@ -177,7 +177,7 @@ export function TransactionDetailDialog({
           <div class="sep"></div>
           <div class="center">Terimakasih Telah Bermain</div>
           <div class="center italic">"Good Game, Well Played"</div>
-          <div style="height: 20px;"></div>
+          <div style="height: 15px;"></div>
         </body>
       </html>
     `;

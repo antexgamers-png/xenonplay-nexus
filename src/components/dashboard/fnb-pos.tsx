@@ -196,14 +196,21 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
         <head>
           <style>
             @page { margin: 0; size: 58mm auto; }
-            body { width: 58mm; margin: 0; padding: 5px; font-family: 'Courier New', monospace; font-size: 10px; }
-            .center { text-align: center; } .right { text-align: right; } .bold { font-weight: bold; }
-            .sep { border-top: 1px dashed #000; margin: 5px 0; }
-            table { width: 100%; border-collapse: collapse; }
+            body { 
+              width: 58mm; margin: 0; padding: 2px; 
+              font-family: 'Courier New', Courier, monospace; 
+              font-size: 8.5px; line-height: 1.1; color: #000;
+            }
+            .center { text-align: center; } 
+            .right { text-align: right; } 
+            .bold { font-weight: bold; }
+            .sep { border-top: 1px dashed #000; margin: 4px 0; }
+            table { width: 100%; border-collapse: collapse; margin: 4px 0; }
+            .item-row td { padding: 1px 0; vertical-align: top; }
           </style>
         </head>
         <body onload="window.print(); window.close();">
-          <div class="center bold">${storeName.toUpperCase()}</div>
+          <div class="center bold" style="font-size: 11px;">${storeName.toUpperCase()}</div>
           <div class="center">${address}</div>
           <div class="sep"></div>
           <div>Nota : ${lastOrderDetails.id.substring(0,8).toUpperCase()}</div>
@@ -211,10 +218,15 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
           <div>Kasir : ${lastOrderDetails.cashier.toUpperCase()}</div>
           <div class="sep"></div>
           <table>
-            <tr class="bold"><td>Item</td><td class="center">Qty</td><td class="right">Harga</td><td class="right">Total</td></tr>
+            <tr class="bold">
+              <td width="40%">Item</td>
+              <td width="10%" class="center">Qty</td>
+              <td width="25%" class="right">Harga</td>
+              <td width="25%" class="right">Total</td>
+            </tr>
             ${lastOrderDetails.items.map((item: any) => `
-              <tr>
-                <td>${item.name.substring(0,10).toUpperCase()}</td>
+              <tr class="item-row">
+                <td>${item.name.toUpperCase()}</td>
                 <td class="center">${item.quantity}</td>
                 <td class="right">${item.price.toLocaleString('id-ID')}</td>
                 <td class="right">${(item.price * item.quantity).toLocaleString('id-ID')}</td>
@@ -232,6 +244,7 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
           <div class="sep"></div>
           <div class="center">Terimakasih Telah Bermain</div>
           <div class="center">"Good Game, Well Played"</div>
+          <div style="height: 15px;"></div>
         </body>
       </html>`;
 
