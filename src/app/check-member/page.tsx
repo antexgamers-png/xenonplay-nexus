@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -267,10 +266,12 @@ export default function CheckMemberPage() {
                                                         <Badge className="bg-emerald-500/10 text-emerald-500 border-none text-[8px] font-black">-{r.pointsRedeemed} Pts</Badge>
                                                     </div>
                                                     {r.voucherCode && (
-                                                        <div className={cn("p-3 rounded-xl border flex items-center justify-between", isUsed ? "bg-muted/20 border-white/5 opacity-50" : "bg-primary/5 border-primary/20 shadow-[0_0_15px_rgba(59,130,246,0.1)]")}>
+                                                        <div className={cn("p-3 rounded-xl border flex items-center justify-between", isUsed ? "bg-muted/20 border-white/5 opacity-50" : "bg-emerald-500/5 border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.05)]")}>
                                                             <div className="flex items-center gap-2">
-                                                                <Ticket className={cn("size-3", isUsed ? "text-slate-500" : "text-primary")} />
-                                                                <span className="text-[11px] font-black font-mono tracking-widest">{r.voucherCode}</span>
+                                                                <Ticket className={cn("size-3", isUsed ? "text-slate-500" : "text-emerald-500")} />
+                                                                <span className="text-[10px] font-black uppercase tracking-widest">
+                                                                    {isUsed ? "Sudah Digunakan" : "Klaim di Kasir"}
+                                                                </span>
                                                             </div>
                                                             <div className="flex items-center gap-1.5">
                                                                 {isUsed ? (
