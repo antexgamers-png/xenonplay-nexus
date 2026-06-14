@@ -1,3 +1,4 @@
+
 'use client';
 
 import { motion } from 'framer-motion';
@@ -5,8 +6,9 @@ import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
 /**
- * XENONPLAY STANDBY v6.0 - ULTIMATE ENDING EDITION
- * Menggunakan aset landing.png dengan suasana "Sultan Mode" saat sesi habis.
+ * XENONPLAY STANDBY v7.0 - TERMINATION EDITION
+ * Desain ulang total menggunakan landing_mascot.png.
+ * Tampilan waspada saat sesi berakhir.
  */
 export default function TvLandingPage() {
     const [mounted, setMounted] = useState(false);
@@ -19,83 +21,75 @@ export default function TvLandingPage() {
 
     return (
         <div className="fixed inset-0 h-screen w-screen bg-slate-950 overflow-hidden flex items-center justify-center select-none">
-            {/* DARK MOODY AMBIENT (DEEP BLUE/PURPLE) */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.1)_0%,rgba(2,6,23,1)_85%)]" />
+            {/* LAYER 1: EMERGENCY RED AMBIENT */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(239,68,68,0.08)_0%,rgba(2,6,23,1)_85%)]" />
             
             <motion.div 
                 animate={{ 
-                    opacity: [0.1, 0.3, 0.1],
-                    scale: [1, 1.2, 1]
+                    opacity: [0.1, 0.25, 0.1],
                 }}
-                transition={{ duration: 12, repeat: Infinity }}
-                className="absolute inset-0 bg-primary/5 blur-[150px] rounded-full"
+                transition={{ duration: 8, repeat: Infinity }}
+                className="absolute inset-0 bg-red-900/5 blur-[120px] rounded-full"
             />
 
-            {/* CRT SCANLINE OVERLAY */}
-            <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.05)_50%)] bg-[length:100%_2px] pointer-events-none opacity-40 z-20" />
+            {/* LAYER 2: DARK GRID OVERLAY */}
+            <div className="absolute inset-0 opacity-10" 
+                 style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
 
             {/* MAIN CONTENT CONTAINER */}
-            <div className="relative z-30 flex flex-col items-center gap-12 px-6">
+            <div className="relative z-30 flex flex-col items-center gap-8 w-full max-w-7xl px-8">
                 
-                {/* STANDBY MASCOT WITH BREATHING EFFECT */}
-                <div className="relative group">
-                    {/* Shadow & Glow Base */}
-                    <div className="absolute inset-0 bg-blue-900/10 blur-[120px] rounded-full scale-75" />
-                    
+                {/* TERMINATION MASCOT WITH ALERT EFFECT */}
+                <div className="relative">
                     <motion.div
                         animate={{ 
                             y: [0, -15, 0],
-                            scale: [1, 1.05, 1],
-                            filter: ["brightness(0.7) contrast(1.1)", "brightness(0.9) contrast(1.2)", "brightness(0.7) contrast(1.1)"]
+                            filter: ["grayscale(0.2) brightness(0.8)", "grayscale(0) brightness(1.1)", "grayscale(0.2) brightness(0.8)"]
                         }}
-                        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-                        className="relative w-[75vw] h-[55vh] md:w-[65vw] md:h-[65vh] lg:w-[850px] lg:h-[650px]"
+                        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                        className="relative w-[70vw] h-[50vh] md:w-[60vw] md:h-[60vh] lg:w-[600px] lg:h-[600px]"
                     >
                         <Image 
-                            src="/landing.png" 
+                            src="/landing_mascot.png" 
                             alt="Xenon Standby" 
                             fill 
-                            className="object-contain"
+                            className="object-contain drop-shadow-[0_0_60px_rgba(239,68,68,0.4)]"
                             priority
                         />
                     </motion.div>
                 </div>
 
-                {/* STATUS & CALL TO ACTION */}
+                {/* TERMINATION STATUS */}
                 <div className="text-center space-y-10">
                     <motion.div 
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="inline-flex items-center gap-6 bg-red-500/5 border border-red-500/20 px-12 py-4 rounded-[2.5rem] backdrop-blur-md shadow-2xl"
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="inline-flex items-center gap-6 bg-red-600/10 border border-red-600/30 px-12 py-5 rounded-[3rem] backdrop-blur-xl shadow-2xl"
                     >
-                        <div className="size-3 rounded-full bg-red-500 shadow-[0_0_20px_rgba(239,68,68,0.8)] animate-pulse" />
-                        <span className="text-2xl md:text-3xl font-black text-red-500/70 uppercase tracking-[0.7em] ml-[0.7em]">SESI HABIS</span>
+                        <div className="size-4 rounded-full bg-red-600 shadow-[0_0_25px_#dc2626] animate-pulse" />
+                        <span className="text-3xl md:text-5xl font-black text-red-500 uppercase tracking-[0.6em] ml-[0.6em]">SESI HABIS</span>
                     </motion.div>
 
                     <div className="space-y-4">
-                        <h2 className="text-3xl md:text-4xl font-black text-white/20 uppercase tracking-[0.6em] ml-[0.6em]">Waktu Bermain Selesai</h2>
-                        <div className="h-0.5 w-32 bg-white/5 mx-auto rounded-full" />
-                        <p className="text-[11px] md:text-xs font-black text-white/10 uppercase tracking-[0.4em] max-w-md mx-auto leading-relaxed ml-[0.4em]">
-                            Unit segera dinonaktifkan.<br/>Hubungi Kasir untuk perpanjangan sesi atau redeem poin.
+                        <h2 className="text-2xl md:text-4xl font-black text-white/30 uppercase tracking-[0.5em] ml-[0.5em]">Waktu Main Selesai</h2>
+                        <div className="h-1 w-48 bg-gradient-to-r from-transparent via-red-600/30 to-transparent mx-auto rounded-full" />
+                        <p className="text-[10px] md:text-xs font-bold text-white/10 uppercase tracking-[0.3em] max-w-lg mx-auto leading-relaxed ml-[0.3em]">
+                            Unit akan segera dinonaktifkan secara otomatis.<br/>Silakan ke Kasir untuk mendaftar Member atau Top-up.
                         </p>
                     </div>
                 </div>
             </div>
 
-            {/* LOGO WATERMARK - BOTTOM LEFT */}
-            <div className="absolute bottom-10 left-12 flex items-center gap-5 opacity-10 z-40">
-                <div className="relative size-14">
-                    <Image src="/xenonplay-logo.png" alt="Logo Small" fill className="object-contain" />
+            {/* CENTER LOGO WATERMARK (BOTTOM) */}
+            <div className="absolute bottom-12 flex flex-col items-center gap-3 opacity-15 z-40">
+                <div className="relative size-16 grayscale brightness-200">
+                    <Image src="/xenonplay-logo.png" alt="Logo Watermark" fill className="object-contain" />
                 </div>
-                <div className="h-10 w-px bg-white/30" />
-                <div className="flex flex-col">
-                    <span className="text-[11px] font-black text-white uppercase tracking-[0.4em]">XenonPlay Nexus</span>
-                    <span className="text-[8px] font-bold text-white/50 uppercase tracking-widest mt-1">Management Console</span>
-                </div>
+                <span className="text-[10px] font-black text-white uppercase tracking-[0.8em] ml-[0.8em]">XENONPLAY NEXUS</span>
             </div>
 
             {/* VIGNETTE EFFECT */}
-            <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)] z-10" />
+            <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_20%,rgba(0,0,0,0.6)_100%)] z-10" />
         </div>
     );
 }
