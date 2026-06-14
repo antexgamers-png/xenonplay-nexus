@@ -23,7 +23,7 @@ import { FileSpreadsheet, CalendarDays, History, Zap } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import * as XLSX from 'xlsx';
 import { useShift } from '@/components/providers/shift-provider';
-import { cn } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 
 interface ReportsClientProps {
   transactions: Transaction[];
@@ -84,7 +84,7 @@ export function ReportsClient({ transactions, fnbItems, stations, expenses }: Re
     const toTime = date.to ? date.to.getTime() : endOfDay(date.from).getTime();
 
     return transactions.filter(t => t.timestamp >= fromTime && t.timestamp <= toTime)
-      .sort((a, b) => b.timestamp - a.timestamp);
+      .sort((a, b) => a.timestamp - b.timestamp);
   }, [transactions, date]);
 
   const filteredExpenses = useMemo(() => {
@@ -96,88 +96,139 @@ export function ReportsClient({ transactions, fnbItems, stations, expenses }: Re
   }, [expenses, date]);
 
   const exportToExcel = () => {
-    // DAILY SUMMARY LOGIC
-    const summaryMap: Record<string, { 
-        date: string, 
-        rental: number, 
-        fnb: number, 
-        discount: number, 
-        netIncome: number, 
-        expenses: number, 
-        profit: number 
-    }> = {};
+    // 1. Calculate Header Stats
+    let totalRental = 0;
+    let totalFnB = 0;
+    let totalDiscount = 0;
+    let totalExpenses = 0;
 
-    // 1. Process Income (Transactions)
+    // Grouping by date to present a chronological ledger
+    const dailyMap: Record<string, { rental: number, fnb: number, discount: number, dayExpenses: Expense[] }> = {};
+
     filteredTransactions.forEach(t => {
-        const dateKey = format(t.timestamp, 'yyyy-MM-dd');
-        if (!summaryMap[dateKey]) {
-            summaryMap[dateKey] = { date: dateKey, rental: 0, fnb: 0, discount: 0, netIncome: 0, expenses: 0, profit: 0 };
-        }
+      const dateKey = format(t.timestamp, 'dd/MM/yyyy');
+      if (!dailyMap[dateKey]) dailyMap[dateKey] = { rental: 0, fnb: 0, discount: 0, dayExpenses: [] };
 
-        const rental = (t.additionalCharges || [])
-            .filter(c => !c.description.includes('FnB:'))
-            .reduce((s, c) => s + (c.amount || 0), 0);
-            
-        const fnb = (t.additionalCharges || [])
-            .filter(c => c.description.includes('FnB:'))
-            .reduce((s, c) => s + (c.amount || 0), 0);
+      const rental = (t.additionalCharges || [])
+        .filter(c => !c.description.includes('FnB:'))
+        .reduce((s, c) => s + (c.amount || 0), 0);
+      const fnb = (t.additionalCharges || [])
+        .filter(c => c.description.includes('FnB:'))
+        .reduce((s, c) => s + (c.amount || 0), 0);
 
-        summaryMap[dateKey].rental += rental;
-        summaryMap[dateKey].fnb += fnb;
-        summaryMap[dateKey].discount += (t.discount || 0);
+      dailyMap[dateKey].rental += rental;
+      dailyMap[dateKey].fnb += fnb;
+      dailyMap[dateKey].discount += (t.discount || 0);
+
+      totalRental += rental;
+      totalFnB += fnb;
+      totalDiscount += (t.discount || 0);
     });
 
-    // 2. Process Expenses
     filteredExpenses.forEach(e => {
-        const dateKey = format(e.timestamp, 'yyyy-MM-dd');
-        if (!summaryMap[dateKey]) {
-            summaryMap[dateKey] = { date: dateKey, rental: 0, fnb: 0, discount: 0, netIncome: 0, expenses: 0, profit: 0 };
-        }
-        summaryMap[dateKey].expenses += e.amount;
+      const dateKey = format(e.timestamp, 'dd/MM/yyyy');
+      if (!dailyMap[dateKey]) dailyMap[dateKey] = { rental: 0, fnb: 0, discount: 0, dayExpenses: [] };
+      dailyMap[dateKey].dayExpenses.push(e);
+      totalExpenses += e.amount;
     });
 
-    // Final Header and Metadata
+    const totalNetIncome = (totalRental + totalFnB) - totalDiscount;
+
     const periodStr = date?.from ? 
         `${format(date.from, 'dd/MM/yyyy')} - ${date.to ? format(date.to, 'dd/MM/yyyy') : format(date.from, 'dd/MM/yyyy')}` 
         : 'Semua Waktu';
 
+    // User Requested Header Format
     const worksheetData = [
-        ['LAPORAN KEUANGAN'],
+        ['LAPORAN KEUANGAN XENONPLAY'],
         [`Periode : ${periodStr}`],
+        [`TOTAL PENDAPATAN : ${formatCurrency(totalNetIncome).replace('Rp', '').trim()}`],
+        [`TOTAL RUGI : ${formatCurrency(totalExpenses).replace('Rp', '').trim()}`],
         [],
-        ['No.', 'Tanggal', 'Total Sewa TV', 'Total Jual FnB', 'Total Diskon', 'Pemasukan Netto', 'Biaya Operasional', 'Profit / Loss']
+        ['No.', 'Item (Rental/FnB/Pengeluaran)', 'Debit', 'Kredit', 'Saldo', 'Keterangan']
     ];
 
-    Object.values(summaryMap)
-        .sort((a, b) => b.date.localeCompare(a.date))
-        .forEach((day, index) => {
-            const netIncome = (day.rental + day.fnb) - day.discount;
-            const profitLoss = netIncome - day.expenses;
-            
+    let runningSaldo = 0;
+    let rowNum = 1;
+
+    // Sort dates to ensure ledger flow
+    const sortedDates = Object.keys(dailyMap).sort((a, b) => {
+        const dateA = new Date(a.split('/').reverse().join('-')).getTime();
+        const dateB = new Date(b.split('/').reverse().join('-')).getTime();
+        return dateA - dateB;
+    });
+
+    sortedDates.forEach(dateKey => {
+        const day = dailyMap[dateKey];
+
+        // 1. Rental Entry
+        if (day.rental > 0) {
+            runningSaldo += day.rental;
             worksheetData.push([
-                (index + 1).toString(),
-                day.date,
+                (rowNum++).toString(),
+                'Pendapatan Sewa Unit',
                 day.rental.toString(),
+                '',
+                runningSaldo.toString(),
+                `Total Rental Harian ${dateKey}`
+            ]);
+        }
+
+        // 2. FnB Entry
+        if (day.fnb > 0) {
+            runningSaldo += day.fnb;
+            worksheetData.push([
+                (rowNum++).toString(),
+                'Penjualan Produk FnB',
                 day.fnb.toString(),
+                '',
+                runningSaldo.toString(),
+                `Total FnB Harian ${dateKey}`
+            ]);
+        }
+
+        // 3. Discount Entry (as Credit because it reduces balance)
+        if (day.discount > 0) {
+            runningSaldo -= day.discount;
+            worksheetData.push([
+                (rowNum++).toString(),
+                'Potongan Diskon/Promo',
+                '',
                 day.discount.toString(),
-                netIncome.toString(),
-                day.expenses.toString(),
-                profitLoss.toString()
+                runningSaldo.toString(),
+                `Total Diskon Harian ${dateKey}`
+            ]);
+        }
+
+        // 4. Expenses Entries (Individual)
+        day.dayExpenses.forEach(exp => {
+            runningSaldo -= exp.amount;
+            worksheetData.push([
+                (rowNum++).toString(),
+                exp.description,
+                '',
+                exp.amount.toString(),
+                runningSaldo.toString(),
+                `Pengeluaran ${dateKey}`
             ]);
         });
+    });
 
-    if (worksheetData.length <= 4) return;
+    if (worksheetData.length <= 6) {
+        alert("Tidak ada data untuk diekspor pada periode ini.");
+        return;
+    }
 
     const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Keuangan");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Ledger Keuangan");
 
-    // Adjust column widths
+    // Adjust column widths for readability
     worksheet['!cols'] = [
-        { wch: 5 }, { wch: 15 }, { wch: 18 }, { wch: 18 }, { wch: 15 }, { wch: 20 }, { wch: 20 }, { wch: 20 }
+        { wch: 5 }, { wch: 35 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 30 }
     ];
 
-    XLSX.writeFile(workbook, `XP_Summary_Keuangan_${format(new Date(), 'yyyyMMdd')}.xlsx`);
+    XLSX.writeFile(workbook, `XP_Ledger_Keuangan_${format(new Date(), 'yyyyMMdd')}.xlsx`);
   };
 
   return (
