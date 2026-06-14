@@ -102,7 +102,6 @@ export function ReportsClient({ transactions, fnbItems, stations, expenses }: Re
     let totalDiscount = 0;
     let totalExpenses = 0;
 
-    // Grouping by date to present a chronological ledger
     const dailyMap: Record<string, { rental: number, fnb: number, discount: number, dayExpenses: Expense[] }> = {};
 
     filteredTransactions.forEach(t => {
@@ -138,20 +137,20 @@ export function ReportsClient({ transactions, fnbItems, stations, expenses }: Re
         `${format(date.from, 'dd/MM/yyyy')} - ${date.to ? format(date.to, 'dd/MM/yyyy') : format(date.from, 'dd/MM/yyyy')}` 
         : 'Semua Waktu';
 
-    // User Requested Header Format
+    // Header Format
     const worksheetData = [
         ['LAPORAN KEUANGAN XENONPLAY'],
         [`Periode : ${periodStr}`],
-        [`TOTAL PENDAPATAN : ${formatCurrency(totalNetIncome).replace('Rp', '').trim()}`],
-        [`TOTAL RUGI : ${formatCurrency(totalExpenses).replace('Rp', '').trim()}`],
+        [`TOTAL PENDAPATAN : ${totalNetIncome}`],
+        [`TOTAL RUGI : ${totalExpenses}`],
         [],
-        ['No.', 'Item (Rental/FnB/Pengeluaran)', 'Debit', 'Kredit', 'Saldo', 'Keterangan']
+        ['No.', 'Tanggal', 'Item (Rental/FnB/Pengeluaran)', 'Debit', 'Kredit', 'Saldo', 'Keterangan']
     ];
 
     let runningSaldo = 0;
     let rowNum = 1;
 
-    // Sort dates to ensure ledger flow
+    // Sort dates
     const sortedDates = Object.keys(dailyMap).sort((a, b) => {
         const dateA = new Date(a.split('/').reverse().join('-')).getTime();
         const dateB = new Date(b.split('/').reverse().join('-')).getTime();
@@ -165,12 +164,13 @@ export function ReportsClient({ transactions, fnbItems, stations, expenses }: Re
         if (day.rental > 0) {
             runningSaldo += day.rental;
             worksheetData.push([
-                (rowNum++).toString(),
-                'Pendapatan Sewa Unit',
-                day.rental.toString(),
-                '',
-                runningSaldo.toString(),
-                `Total Rental Harian ${dateKey}`
+                rowNum++,
+                dateKey,
+                'Rental Unit',
+                day.rental,
+                0,
+                runningSaldo,
+                ''
             ]);
         }
 
@@ -178,38 +178,41 @@ export function ReportsClient({ transactions, fnbItems, stations, expenses }: Re
         if (day.fnb > 0) {
             runningSaldo += day.fnb;
             worksheetData.push([
-                (rowNum++).toString(),
-                'Penjualan Produk FnB',
-                day.fnb.toString(),
-                '',
-                runningSaldo.toString(),
-                `Total FnB Harian ${dateKey}`
+                rowNum++,
+                dateKey,
+                'Produk FnB',
+                day.fnb,
+                0,
+                runningSaldo,
+                ''
             ]);
         }
 
-        // 3. Discount Entry (as Credit because it reduces balance)
+        // 3. Discount Entry
         if (day.discount > 0) {
             runningSaldo -= day.discount;
             worksheetData.push([
-                (rowNum++).toString(),
-                'Potongan Diskon/Promo',
-                '',
-                day.discount.toString(),
-                runningSaldo.toString(),
-                `Total Diskon Harian ${dateKey}`
+                rowNum++,
+                dateKey,
+                'Diskon / Promo',
+                0,
+                day.discount,
+                runningSaldo,
+                ''
             ]);
         }
 
-        // 4. Expenses Entries (Individual)
+        // 4. Expenses Entries
         day.dayExpenses.forEach(exp => {
             runningSaldo -= exp.amount;
             worksheetData.push([
-                (rowNum++).toString(),
+                rowNum++,
+                dateKey,
                 exp.description,
-                '',
-                exp.amount.toString(),
-                runningSaldo.toString(),
-                `Pengeluaran ${dateKey}`
+                0,
+                exp.amount,
+                runningSaldo,
+                ''
             ]);
         });
     });
@@ -223,12 +226,12 @@ export function ReportsClient({ transactions, fnbItems, stations, expenses }: Re
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Ledger Keuangan");
 
-    // Adjust column widths for readability
+    // Adjust column widths
     worksheet['!cols'] = [
-        { wch: 5 }, { wch: 35 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 30 }
+        { wch: 5 }, { wch: 15 }, { wch: 35 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 25 }
     ];
 
-    XLSX.writeFile(workbook, `XP_Ledger_Keuangan_${format(new Date(), 'yyyyMMdd')}.xlsx`);
+    XLSX.writeFile(workbook, `XP_Laporan_Keuangan_${format(new Date(), 'yyyyMMdd')}.xlsx`);
   };
 
   return (
