@@ -87,41 +87,44 @@ export function TransactionDetailDialog({
     setIsPrinting(true);
     const storeName = settings?.storeName || 'XENONPLAY';
     const address = settings?.address || '';
-    const dateStr = format(transaction.timestamp, 'dd/MM/yyyy HH:mm');
+    const dateStr = format(transaction.timestamp, 'yyyy-MM-dd');
+    const timeStr = format(transaction.timestamp, 'HH:mm:ss');
     const shift = shifts?.find(s => s.id === transaction.shiftId);
     const cashierName = shift?.openedByName || 'Operator';
 
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
-    // Build Items for Table
-    const printItems: { name: string, qty: string, price: string, total: string }[] = [];
+    // Build items for print
+    const printItems: any[] = [];
     
     // 1. Rental/Package
     rentalCharges.forEach(rc => {
         let name = rc.description.replace(/^Sewa\s+/i, '');
-        let qty = "1";
+        let qty = 1;
         if (name.includes("Stik Extra")) {
-            qty = name.split(" ")[0];
+            qty = parseInt(name.split(" ")[0]) || 1;
             name = "Extra Stick";
         }
         printItems.push({
-            name: name.substring(0, 12),
-            qty,
-            price: (rc.amount / (parseInt(qty) || 1)).toLocaleString('id-ID'),
-            total: rc.amount.toLocaleString('id-ID')
+            name: name.toUpperCase(),
+            qty: qty,
+            price: rc.amount / qty,
+            total: rc.amount
         });
     });
 
     // 2. FnB Items
     (transaction.fnbItems || []).forEach(f => {
         printItems.push({
-            name: f.name.substring(0, 12),
-            qty: f.quantity.toString(),
-            price: f.price.toLocaleString('id-ID'),
-            total: (f.price * f.quantity).toLocaleString('id-ID')
+            name: f.name.toUpperCase(),
+            qty: f.quantity,
+            price: f.price,
+            total: f.price * f.quantity
         });
     });
+
+    const totalQty = printItems.reduce((s, i) => s + i.qty, 0);
 
     const html = `
       <html>
@@ -130,53 +133,89 @@ export function TransactionDetailDialog({
           <style>
             @page { margin: 0; size: 58mm auto; }
             body { 
-              width: 58mm; margin: 0; padding: 2px; 
+              width: 58mm; margin: 0; padding: 5px 2px; 
               font-family: 'Courier New', Courier, monospace; 
-              font-size: 8.5px; line-height: 1.1; color: #000;
+              font-size: 8.5px; line-height: 1.2; color: #000;
+              background: #fff;
             }
             .center { text-align: center; }
             .right { text-align: right; }
             .bold { font-weight: bold; }
-            .sep { border-top: 1px dashed #000; margin: 4px 0; }
-            table { width: 100%; border-collapse: collapse; margin: 4px 0; }
-            .item-row td { padding: 1px 0; vertical-align: top; }
+            .sep { border-top: 1px dashed #000; margin: 6px 0; }
+            .flex { display: flex; justify-content: space-between; }
+            .logo { width: 35px; height: 35px; object-fit: contain; filter: grayscale(1) contrast(1.2); margin-bottom: 4px; }
+            .item-block { margin-bottom: 4px; }
+            .item-name { font-weight: bold; display: block; margin-bottom: 1px; }
+            .summary-row { display: flex; justify-content: space-between; margin: 1px 0; }
+            .total-row { display: flex; justify-content: space-between; margin: 4px 0; font-weight: bold; font-size: 10px; }
           </style>
         </head>
         <body onload="window.print(); window.close();">
-          <div class="center bold" style="font-size: 11px;">${storeName.toUpperCase()}</div>
-          <div class="center">${address}</div>
+          <div class="center">
+            <img src="/xenonplay-logo.png" class="logo" />
+            <div class="bold" style="font-size: 10px; margin-bottom: 1px;">${storeName.toUpperCase()}</div>
+            <div>${address}</div>
+            <div style="margin-top: 2px;">Selamat datang di toko kami</div>
+          </div>
+          
           <div class="sep"></div>
-          <div>Nota : ${transaction.id.substring(0, 8).toUpperCase()}</div>
-          <div>Tgl. Transaksi : ${dateStr}</div>
-          <div>Kasir : ${cashierName.toUpperCase()}</div>
+          
+          <div class="flex">
+            <div>
+               <div>Nota : ${transaction.id.substring(0,8).toUpperCase()}</div>
+               <div>${dateStr}</div>
+               <div>${timeStr}</div>
+            </div>
+            <div class="right">
+               <div>Kasir : ${cashierName.toUpperCase()}</div>
+            </div>
+          </div>
+
           <div class="sep"></div>
-          <table>
-            <tr class="bold">
-              <td width="40%">Item</td>
-              <td width="10%" class="center">Qty</td>
-              <td width="25%" class="right">Harga</td>
-              <td width="25%" class="right">Total</td>
-            </tr>
-            ${printItems.map(item => `
-              <tr class="item-row">
-                <td>${item.name.toUpperCase()}</td>
-                <td class="center">${item.qty}</td>
-                <td class="right">${item.price}</td>
-                <td class="right">${item.total}</td>
-              </tr>
-            `).join('')}
-          </table>
+
+          ${printItems.map((item, idx) => `
+            <div class="item-block">
+              <span class="item-name">${idx + 1}. ${item.name}</span>
+              <div class="flex">
+                <span>${item.qty} x Rp ${item.price.toLocaleString('id-ID')}</span>
+                <span class="right">Rp ${item.total.toLocaleString('id-ID')}</span>
+              </div>
+            </div>
+          `).join('')}
+
           <div class="sep"></div>
-          <table>
-            <tr><td>Sub Total :</td><td class="right">${bruto.toLocaleString('id-ID')}</td></tr>
-            <tr><td>Diskon :</td><td class="right">-${discount.toLocaleString('id-ID')}</td></tr>
-            <tr class="bold"><td>Grand Total:</td><td class="right">${netto.toLocaleString('id-ID')}</td></tr>
-            <tr><td>Bayar :</td><td class="right">${(transaction.paidAmount || netto).toLocaleString('id-ID')}</td></tr>
-            <tr><td>Kembali :</td><td class="right">0</td></tr>
-          </table>
+
+          <div class="summary-row">
+            <span>Total QTY : ${totalQty}</span>
+          </div>
+          <div class="summary-row">
+            <span>Sub Total</span>
+            <span class="right">Rp ${bruto.toLocaleString('id-ID')}</span>
+          </div>
+          ${discount > 0 ? `
+          <div class="summary-row">
+            <span>Diskon</span>
+            <span class="right">Rp -${discount.toLocaleString('id-ID')}</span>
+          </div>
+          ` : ''}
+
+          <div class="total-row">
+            <span>Total</span>
+            <span class="right">Rp ${netto.toLocaleString('id-ID')}</span>
+          </div>
+
+          <div class="summary-row">
+            <span>Bayar</span>
+            <span class="right">Rp ${(transaction.paidAmount || netto).toLocaleString('id-ID')}</span>
+          </div>
+          <div class="summary-row">
+            <span>Kembali</span>
+            <span class="right">Rp 0</span>
+          </div>
+
           <div class="sep"></div>
-          <div class="center">Terimakasih Telah Bermain</div>
-          <div class="center italic">"Good Game, Well Played"</div>
+          <div class="center">Terima kasih telah berbelanja di toko kami</div>
+          <div class="center" style="margin-top: 2px;">"Good Game, Well Played"</div>
           <div style="height: 15px;"></div>
         </body>
       </html>

@@ -189,7 +189,9 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
 
       const storeName = settings?.storeName || 'XENONPLAY';
       const address = settings?.address || '';
-      const dateStr = format(lastOrderDetails.timestamp, 'dd/MM/yyyy HH:mm');
+      const dateStr = format(lastOrderDetails.timestamp, 'yyyy-MM-dd');
+      const timeStr = format(lastOrderDetails.timestamp, 'HH:mm:ss');
+      const totalQty = lastOrderDetails.items.reduce((s: number, i: any) => s + i.quantity, 0);
 
       const html = `
       <html>
@@ -197,53 +199,83 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
           <style>
             @page { margin: 0; size: 58mm auto; }
             body { 
-              width: 58mm; margin: 0; padding: 2px; 
+              width: 58mm; margin: 0; padding: 5px 2px; 
               font-family: 'Courier New', Courier, monospace; 
-              font-size: 8.5px; line-height: 1.1; color: #000;
+              font-size: 8.5px; line-height: 1.2; color: #000;
+              background: #fff;
             }
             .center { text-align: center; } 
             .right { text-align: right; } 
             .bold { font-weight: bold; }
-            .sep { border-top: 1px dashed #000; margin: 4px 0; }
-            table { width: 100%; border-collapse: collapse; margin: 4px 0; }
-            .item-row td { padding: 1px 0; vertical-align: top; }
+            .sep { border-top: 1px dashed #000; margin: 6px 0; }
+            .item-block { margin-bottom: 4px; }
+            .item-name { font-weight: bold; display: block; margin-bottom: 1px; }
+            .flex { display: flex; justify-content: space-between; }
+            .logo { width: 35px; height: 35px; object-fit: contain; filter: grayscale(1) contrast(1.2); margin-bottom: 4px; }
+            .summary-row { display: flex; justify-content: space-between; margin: 1px 0; }
+            .total-row { display: flex; justify-content: space-between; margin: 4px 0; font-weight: bold; font-size: 10px; }
           </style>
         </head>
         <body onload="window.print(); window.close();">
-          <div class="center bold" style="font-size: 11px;">${storeName.toUpperCase()}</div>
-          <div class="center">${address}</div>
+          <div class="center">
+            <img src="/xenonplay-logo.png" class="logo" />
+            <div class="bold" style="font-size: 10px; margin-bottom: 1px;">${storeName.toUpperCase()}</div>
+            <div>${address}</div>
+            <div style="margin-top: 2px;">Selamat datang di toko kami</div>
+          </div>
+          
           <div class="sep"></div>
-          <div>Nota : ${lastOrderDetails.id.substring(0,8).toUpperCase()}</div>
-          <div>Tgl. Transaksi : ${dateStr}</div>
-          <div>Kasir : ${lastOrderDetails.cashier.toUpperCase()}</div>
+          
+          <div class="flex">
+            <div>
+               <div>Nota : ${lastOrderDetails.id.substring(0,8).toUpperCase()}</div>
+               <div>${dateStr}</div>
+               <div>${timeStr}</div>
+            </div>
+            <div class="right">
+               <div>Kasir : ${lastOrderDetails.cashier.toUpperCase()}</div>
+            </div>
+          </div>
+
           <div class="sep"></div>
-          <table>
-            <tr class="bold">
-              <td width="40%">Item</td>
-              <td width="10%" class="center">Qty</td>
-              <td width="25%" class="right">Harga</td>
-              <td width="25%" class="right">Total</td>
-            </tr>
-            ${lastOrderDetails.items.map((item: any) => `
-              <tr class="item-row">
-                <td>${item.name.toUpperCase()}</td>
-                <td class="center">${item.quantity}</td>
-                <td class="right">${item.price.toLocaleString('id-ID')}</td>
-                <td class="right">${(item.price * item.quantity).toLocaleString('id-ID')}</td>
-              </tr>
-            `).join('')}
-          </table>
+
+          ${lastOrderDetails.items.map((item: any, idx: number) => `
+            <div class="item-block">
+              <span class="item-name">${idx + 1}. ${item.name.toUpperCase()}</span>
+              <div class="flex">
+                <span>${item.quantity} x Rp ${item.price.toLocaleString('id-ID')}</span>
+                <span class="right">Rp ${(item.price * item.quantity).toLocaleString('id-ID')}</span>
+              </div>
+            </div>
+          `).join('')}
+
           <div class="sep"></div>
-          <table>
-            <tr><td>Sub Total :</td><td class="right">${lastOrderDetails.total.toLocaleString('id-ID')}</td></tr>
-            <tr><td>Diskon :</td><td class="right">0</td></tr>
-            <tr class="bold"><td>Grand Total:</td><td class="right">${lastOrderDetails.total.toLocaleString('id-ID')}</td></tr>
-            <tr><td>Bayar :</td><td class="right">${lastOrderDetails.cash.toLocaleString('id-ID')}</td></tr>
-            <tr><td>Kembali :</td><td class="right">${lastOrderDetails.change.toLocaleString('id-ID')}</td></tr>
-          </table>
+
+          <div class="summary-row">
+            <span>Total QTY : ${totalQty}</span>
+          </div>
+          <div class="summary-row">
+            <span>Sub Total</span>
+            <span class="right">Rp ${lastOrderDetails.total.toLocaleString('id-ID')}</span>
+          </div>
+
+          <div class="total-row">
+            <span>Total</span>
+            <span class="right">Rp ${lastOrderDetails.total.toLocaleString('id-ID')}</span>
+          </div>
+
+          <div class="summary-row">
+            <span>Bayar (Cash)</span>
+            <span class="right">Rp ${lastOrderDetails.cash.toLocaleString('id-ID')}</span>
+          </div>
+          <div class="summary-row">
+            <span>Kembali</span>
+            <span class="right">Rp ${lastOrderDetails.change.toLocaleString('id-ID')}</span>
+          </div>
+
           <div class="sep"></div>
-          <div class="center">Terimakasih Telah Bermain</div>
-          <div class="center">"Good Game, Well Played"</div>
+          <div class="center">Terima kasih telah berbelanja di toko kami</div>
+          <div class="center" style="margin-top: 2px;">"Good Game, Well Played"</div>
           <div style="height: 15px;"></div>
         </body>
       </html>`;
