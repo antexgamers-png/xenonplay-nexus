@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -19,10 +20,9 @@ import type { Station, Transaction, PricingRule, FnbItem, GeneralSettings, Membe
 
 /**
  * XENONPLAY NEXUS - Core Data Mutation Engine
- * Seluruh fungsi di sini dirancang untuk dijalankan di sisi klien (Client-Side).
+ * Perbaikan: Menambahkan voucherCode pada riwayat redemptions.
  */
 
-// Helper: Memproses sistem loyalitas di dalam transaksi
 function processLoyaltyInTransaction(txn: any, memberSnap: any, transactionRef: any, mRef: any) {
     if (!memberSnap.exists()) return;
     
@@ -31,93 +31,56 @@ function processLoyaltyInTransaction(txn: any, memberSnap: any, transactionRef: 
     let nextStamps = currentStamps + 1;
     let addedPoints = 0;
 
-    // Jika stempel mencapai 10, berikan 1 poin dan reset stempel
     if (nextStamps >= 10) {
         nextStamps = 0;
         addedPoints = 1;
         
-        // Buat voucher otomatis untuk member
         const voucherCode = `FREE-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
         const vRef = doc(mRef.firestore, 'vouchers', voucherCode);
         txn.set(vRef, {
-            id: voucherCode,
-            code: voucherCode,
-            durationMinutes: 60,
-            stationType: 'All',
-            status: 'active',
-            usesCount: 0,
-            createdAt: Date.now(),
-            description: `Hadiah Loyalitas - ${mData.name}`
+            id: voucherCode, code: voucherCode, durationMinutes: 60, stationType: 'All', status: 'active',
+            usesCount: 0, createdAt: Date.now(), description: `Hadiah Loyalitas - ${mData.name}`
+        });
+
+        // Catat sebagai riwayat penukaran otomatis
+        const rRef = doc(collection(mRef.firestore, 'redemptions'));
+        txn.set(rRef, {
+            id: rRef.id, memberId: mData.id, rewardLabel: 'Gratis 1 Jam (Loyalty)', 
+            pointsRedeemed: 0, timestamp: Date.now(), voucherCode: voucherCode
         });
     }
 
-    txn.update(mRef, { 
-        stamps: nextStamps, 
-        points: increment(addedPoints), 
-        lastActivity: Date.now() 
-    });
+    txn.update(mRef, { stamps: nextStamps, points: increment(addedPoints), lastActivity: Date.now() });
     txn.update(transactionRef, { isLoyaltyProcessed: true });
 }
 
 export async function triggerADBAction(db: Firestore, stationId: string, action: string, staffId?: string, staffName?: string) {
   const stationRef = doc(db, 'stations', stationId);
-  return await updateDoc(stationRef, {
-    last_action: action,
-    last_action_timestamp: Date.now()
-  });
+  return await updateDoc(stationRef, { last_action: action, last_action_timestamp: Date.now() });
 }
 
 export async function convertSessionToCredit(db: Firestore, stationId: string, transactionId: string) {
     return await runTransaction(db, async (transaction) => {
         const sSnap = await transaction.get(doc(db, 'stations', stationId));
         const tSnap = await transaction.get(doc(db, 'transactions', transactionId));
-        
         if (!sSnap.exists() || !tSnap.exists()) throw new Error("Data sesi tidak ditemukan.");
-        
         const sData = sSnap.data() as Station;
         const tData = tSnap.data() as Transaction;
-        
         if (tData.status !== 'paid') throw new Error("Sesi harus lunas (Paid) sebelum bisa dikonversi ke Kredit.");
-        
         let currentUses = 0;
         if (tData.claimCode) {
             const vSnap = await transaction.get(doc(db, 'vouchers', tData.claimCode));
             if (vSnap.exists()) currentUses = vSnap.data().usesCount || 0;
         }
-        
         if (currentUses >= 2) throw new Error("Batas maksimal kredit voucher telah tercapai (Max 2x).");
-
         const now = Date.now();
         const remainingMs = Math.max(0, (sData.end_time || 0) - now);
         const remainingMins = Math.floor(remainingMs / 60000);
-        
-        if (remainingMins < 5) throw new Error("Sisa waktu terlalu sedikit untuk dikreditkan (Min 5 menit).");
-
+        if (remainingMins < 5) throw new Error("Sisa waktu terlalu sedikit untuk dikreditkan.");
         const code = `XP-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
         const vRef = doc(db, 'vouchers', code);
-        
-        transaction.set(vRef, {
-            id: code,
-            code: code,
-            durationMinutes: remainingMins,
-            stationType: sData.type,
-            status: 'active',
-            usesCount: currentUses + 1,
-            createdAt: now,
-            originalTransactionId: transactionId
-        });
-
-        transaction.update(doc(db, 'stations', stationId), {
-            is_active: false,
-            is_paused: false,
-            start_time: null,
-            end_time: null,
-            remaining_seconds: null,
-            current_transaction_id: null,
-            last_action: 'stop',
-            last_action_timestamp: now
-        });
-
+        transaction.set(vRef, { id: code, code, durationMinutes: remainingMins, stationType: sData.type, status: 'active', usesCount: currentUses + 1, createdAt: now, originalTransactionId: transactionId });
+        transaction.update(doc(db, 'stations', stationId), { is_active: false, is_paused: false, start_time: null, end_time: null, current_transaction_id: null, last_action: 'stop', last_action_timestamp: now });
         return code;
     });
 }
@@ -126,9 +89,7 @@ export async function convertSessionToCredit(db: Firestore, stationId: string, t
 export async function openShift(db: Firestore, userId: string, userName: string, initialBalance: number) {
   const docRef = doc(collection(db, 'shifts'));
   const id = docRef.id;
-  await setDoc(docRef, {
-    id, status: 'open', openedBy: userId, openedByName: userName, openedAt: Date.now(), initialBalance, totalSales: 0, expectedBalance: initialBalance
-  });
+  await setDoc(docRef, { id, status: 'open', openedBy: userId, openedByName: userName, openedAt: Date.now(), initialBalance, totalSales: 0, expectedBalance: initialBalance });
   return id;
 }
 
@@ -243,22 +204,10 @@ export async function createTransaction(db: Firestore, data: any) {
     if (extraStickFee > 0) additionalCharges.push({ description: `Biaya Tambahan ${data.extraSticks} Stik`, amount: extraStickFee, timestamp: now, isPaid });
 
     const newTransaction: any = {
-        id: docRef.id,
-        stationId: data.stationId || 'pos',
-        stationName: data.stationName || 'Unknown',
-        durationMinutes: data.durationMinutes || 0,
-        amount: finalBruto,
-        discount: discount,
-        paidAmount: isPaid ? finalNetto : 0,
-        timestamp: now,
-        status: isPaid ? 'paid' : 'unpaid',
-        memberId: data.memberId || null,
-        memberName: data.memberName || null,
-        shiftId: data.activeShiftId || null,
-        fnbItems: data.fnbItems || [],
-        additionalCharges: additionalCharges,
-        claimCode: data.claimCode || null,
-        isLoyaltyProcessed: false
+        id: docRef.id, stationId: data.stationId || 'pos', stationName: data.stationName || 'Unknown', durationMinutes: data.durationMinutes || 0,
+        amount: finalBruto, discount: discount, paidAmount: isPaid ? finalNetto : 0, timestamp: now, status: isPaid ? 'paid' : 'unpaid',
+        memberId: data.memberId || null, memberName: data.memberName || null, shiftId: data.activeShiftId || null, fnbItems: data.fnbItems || [],
+        additionalCharges: additionalCharges, claimCode: data.claimCode || null, isLoyaltyProcessed: false
     };
     
     return await runTransaction(db, async (txn) => {
@@ -452,34 +401,14 @@ export async function redeemMemberPoints(db: Firestore, member: Member, points: 
         if (rewardType === 'time') {
             voucherCode = `REWARD-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
             const vRef = doc(db, 'vouchers', voucherCode);
-            
-            // Logika durasi sederhana berdasarkan label
             let duration = 60;
             if (label.includes('2 Jam')) duration = 120;
             if (label.includes('3 Jam')) duration = 180;
-            
-            txn.set(vRef, {
-                id: voucherCode,
-                code: voucherCode,
-                durationMinutes: duration,
-                stationType: 'All',
-                status: 'active',
-                usesCount: 0,
-                createdAt: now,
-                description: `Redeem Point: ${member.name}`
-            });
+            txn.set(vRef, { id: voucherCode, code: voucherCode, durationMinutes: duration, stationType: 'All', status: 'active', usesCount: 0, createdAt: now, description: `Redeem Point: ${member.name}` });
         }
 
         txn.update(mRef, { points: increment(-points), lastActivity: now });
-        txn.set(rRef, { 
-            id: rRef.id, 
-            memberId: member.id, 
-            rewardLabel: label, 
-            pointsRedeemed: points, 
-            timestamp: now,
-            voucherCode: voucherCode 
-        });
-
+        txn.set(rRef, { id: rRef.id, memberId: member.id, rewardLabel: label, pointsRedeemed: points, timestamp: now, voucherCode: voucherCode });
         return voucherCode;
     });
 }

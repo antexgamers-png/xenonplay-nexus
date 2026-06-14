@@ -1,0 +1,102 @@
+
+'use client';
+
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, where, orderBy, limit } from 'firebase/firestore';
+import type { PointRedemption, Member, CreditVoucher } from '@/lib/types';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { format } from 'date-fns';
+import { id } from 'date-fns/locale';
+import { History, Gift, Ticket, CheckCircle2, XCircle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+
+export function MemberHistoryDialog({ isOpen, onOpenChange, member }: { isOpen: boolean, onOpenChange: (open: boolean) => void, member: Member }) {
+  const firestore = useFirestore();
+
+  const redeemQuery = useMemoFirebase(() => {
+    if (!firestore || !member.id) return null;
+    return query(collection(firestore, 'redemptions'), where('memberId', '==', member.id), limit(20));
+  }, [firestore, member.id]);
+
+  const voucherQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'vouchers'), limit(100));
+  }, [firestore]);
+
+  const { data: redemptions, isLoading } = useCollection<PointRedemption>(redeemQuery);
+  const { data: vouchers } = useCollection<CreditVoucher>(voucherQuery);
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md bg-background border-border">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-black flex items-center gap-2 uppercase tracking-tight">
+            <History className="h-5 w-5 text-primary" />
+            Riwayat Hadiah: {member.name}
+          </DialogTitle>
+        </DialogHeader>
+
+        <ScrollArea className="h-[400px] py-4 pr-4">
+            <div className="space-y-3">
+                {isLoading ? (
+                    <div className="py-20 text-center text-xs text-muted-foreground animate-pulse">Memuat riwayat...</div>
+                ) : redemptions?.length ? (
+                    redemptions.sort((a,b) => b.timestamp - a.timestamp).map(r => {
+                        const voucher = vouchers?.find(v => v.code === r.voucherCode);
+                        const isUsed = voucher?.status === 'used';
+
+                        return (
+                            <div key={r.id} className="p-4 rounded-2xl bg-muted/30 border border-border space-y-3">
+                                <div className="flex justify-between items-start">
+                                    <div className="flex gap-3">
+                                        <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600"><Gift className="size-4" /></div>
+                                        <div>
+                                            <p className="text-xs font-bold uppercase">{r.rewardLabel}</p>
+                                            <p className="text-[9px] text-muted-foreground font-mono">{format(r.timestamp, 'dd MMM yyyy, HH:mm', { locale: id })}</p>
+                                        </div>
+                                    </div>
+                                    <Badge variant="outline" className="text-[8px] font-black border-emerald-500/20 text-emerald-600">-{r.pointsRedeemed} Pts</Badge>
+                                </div>
+                                {r.voucherCode && (
+                                    <div className={cn("p-2.5 rounded-xl border flex items-center justify-between", isUsed ? "opacity-50" : "bg-background shadow-sm")}>
+                                        <div className="flex items-center gap-2">
+                                            <Ticket className="size-3 text-amber-500" />
+                                            <span className="text-[10px] font-black font-mono tracking-widest">{r.voucherCode}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1 text-[8px] font-black uppercase">
+                                            {isUsed ? (
+                                                <><XCircle className="size-2 text-red-500" /> Terpakai</>
+                                            ) : (
+                                                <><CheckCircle2 className="size-2 text-emerald-500" /> Ready</>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )
+                    })
+                ) : (
+                    <div className="py-20 text-center border-2 border-dashed rounded-3xl opacity-30">
+                        <p className="text-xs font-bold uppercase tracking-widest">Belum ada riwayat redeem</p>
+                    </div>
+                )}
+            </div>
+        </ScrollArea>
+
+        <DialogFooter className="pt-4 border-t">
+            <DialogClose asChild><Button variant="outline" className="w-full font-bold uppercase text-[10px]">Tutup</Button></DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

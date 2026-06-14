@@ -20,7 +20,6 @@ service cloud.firestore {
 
     // ======================================================
     // 1. PUBLIC READ-ONLY COLLECTIONS
-    // Digunakan oleh Landing Page, Public Display, dan Member Portal
     // ======================================================
     
     match /members/{id} {
@@ -33,9 +32,15 @@ service cloud.firestore {
       allow write: if isSignedIn();
     }
 
+    // Perbaikan: Izin eksplisit untuk list (query)
     match /redemptions/{id} {
-      allow read: if true;
+      allow get, list: if true;
       allow write: if isSignedIn();
+    }
+
+    match /vouchers/{id} {
+      allow get, list: if true;
+      allow write: if true; 
     }
 
     match /stations/{id} {
@@ -49,19 +54,13 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    match /vouchers/{id} {
-      allow read: if true;
-      allow write: if true; // Diperlukan untuk konversi sesi ke kredit
-    }
-
     match /settings/{id} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
     match /reservations/{id} {
-      allow read: if true;
-      allow write: if true; // Pelanggan buat reservasi dari landing
+      allow read, write: if true;
     }
 
     match /rewards/{id} {
