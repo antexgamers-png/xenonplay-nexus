@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useCollection, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
@@ -510,11 +509,11 @@ export function PublicLandingClient() {
                                     <LucideIcons.CheckCircle2 className="size-10" />
                                 </div>
                                 <div className="space-y-2">
-                                    <h3 className="text-3xl font-black uppercase tracking-tight text-white">Terkirim!</h3>
+                                    <h3 className="text-2xl font-black uppercase tracking-tight text-white">Permohonan Diterima</h3>
                                     <p className="text-slate-400 text-sm font-medium">Tunggu kabar baik ya, <span className="text-primary font-black uppercase">{regName}</span>!</p>
                                 </div>
-                                <p className="text-slate-500 text-xs leading-relaxed max-w-[240px] mx-auto uppercase font-bold tracking-widest">
-                                    Data kamu sedang diverifikasi oleh admin. Silakan datang ke kasir untuk aktivasi member kamu.
+                                <p className="text-slate-500 text-[10px] leading-relaxed max-w-[280px] mx-auto uppercase font-bold tracking-widest">
+                                    Data kamu sedang menunggu konfirmasi admin. Kami akan menginformasikan status pendaftaran melalui nomor WhatsApp yang kamu daftarkan.
                                 </p>
                                 <Button 
                                     variant="outline" 
