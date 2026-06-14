@@ -42,6 +42,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
+import { doc } from 'firebase/firestore';
 
 interface FnbItemWithQuantity extends FnbItem {
   quantity: number;
@@ -239,7 +240,7 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
   };
 
   return (
-    <div className="relative pb-24 px-1 sm:px-0">
+    <div className="relative pb-24 px-1 pr-1 sm:px-0">
       {/* SELECTION PANEL */}
       <div className="flex flex-col gap-6">
         <div className="relative max-w-2xl mx-auto w-full group">
@@ -430,7 +431,7 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
                 <AlertDialogFooter className="gap-2 border-t pt-4">
                     <AlertDialogCancel className="font-bold h-12 rounded-xl">Batal</AlertDialogCancel>
                     <AlertDialogAction onClick={handleCheckout} className={cn("h-12 flex-1 rounded-xl font-black uppercase", isCashEnough ? "bg-primary shadow-primary/20" : "bg-muted text-muted-foreground")} disabled={isProcessing || !isCashEnough}>
-                        {isProcessing ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : <Banknote className="h-4 w-4 mr-2" />} LUNASI PEMBAYARAN
+                        {isProcessing ? <RefreshCcw className="h-4 w-4 animate-spin mr-2" /> : <Banknote className="h-4 w-4 mr-2" />} LUNASI PEMBAYARAN
                     </AlertDialogAction>
                 </AlertDialogFooter>
                 </AlertDialogContent>
