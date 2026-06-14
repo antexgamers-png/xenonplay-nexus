@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -20,7 +19,7 @@ import type { Station, Transaction, PricingRule, FnbItem, GeneralSettings, Membe
 
 /**
  * XENONPLAY NEXUS - Core Data Mutation Engine
- * Versi Final Stable dengan Logika Loyalitas Otomatis & Riwayat Redeem.
+ * Versi Final Stable dengan Logika Loyalitas 5 Poin (Manual Redemption).
  */
 
 function processLoyaltyInTransaction(txn: any, memberSnap: any, transactionRef: any, mRef: any) {
@@ -31,23 +30,10 @@ function processLoyaltyInTransaction(txn: any, memberSnap: any, transactionRef: 
     let nextStamps = currentStamps + 1;
     let addedPoints = 0;
 
+    // SISTEM BARU: 10 Stempel = 5 Poin (Tanpa Voucher Otomatis)
     if (nextStamps >= 10) {
         nextStamps = 0;
-        addedPoints = 1;
-        
-        const voucherCode = `FREE-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
-        const vRef = doc(mRef.firestore, 'vouchers', voucherCode);
-        txn.set(vRef, {
-            id: voucherCode, code: voucherCode, durationMinutes: 60, stationType: 'All', status: 'active',
-            usesCount: 0, createdAt: Date.now(), description: `Hadiah Loyalitas - ${mData.name}`
-        });
-
-        // Catat sebagai riwayat penukaran otomatis
-        const rRef = doc(collection(mRef.firestore, 'redemptions'));
-        txn.set(rRef, {
-            id: rRef.id, memberId: mData.id, rewardLabel: 'Gratis 1 Jam (Loyalty)', 
-            pointsRedeemed: 0, timestamp: Date.now(), voucherCode: voucherCode
-        });
+        addedPoints = 5;
     }
 
     txn.update(mRef, { stamps: nextStamps, points: increment(addedPoints), lastActivity: Date.now() });

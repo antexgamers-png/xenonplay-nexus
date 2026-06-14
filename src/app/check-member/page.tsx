@@ -208,7 +208,7 @@ export default function CheckMemberPage() {
                                             </div>
                                         ))}
                                     </div>
-                                    <p className="text-[9px] text-amber-600 font-bold uppercase italic leading-relaxed">*Dapatkan 1 Poin (Gratis 1 Jam) tiap 10 stempel.</p>
+                                    <p className="text-[9px] text-amber-600 font-bold uppercase italic leading-relaxed">*Dapatkan 5 Poin tiap 10 stempel. Tukarkan poin dengan hadiah pilihan.</p>
                                 </div>
                             </Card>
                         </div>
