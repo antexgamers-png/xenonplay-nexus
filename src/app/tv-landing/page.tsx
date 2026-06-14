@@ -5,8 +5,8 @@ import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
 /**
- * XENONPLAY WEB-ANIMATED STANDBY v4.0
- * Optimal untuk mode standby TV saat sesi kosong (Unit Ready).
+ * XENONPLAY STANDBY v4.5
+ * Optimal untuk kenyamanan mata saat TV standby, menampilkan maskot yang sedang "istirahat".
  */
 export default function TvLandingPage() {
     const [mounted, setMounted] = useState(false);
@@ -20,6 +20,8 @@ export default function TvLandingPage() {
     return (
         <div className="fixed inset-0 h-screen w-screen bg-slate-950 overflow-hidden flex items-center justify-center select-none">
             {/* DARK AMBIENT BACKGROUND */}
+            <div className="absolute inset-0 bg-primary/5" />
+            
             <motion.div 
                 animate={{ 
                     opacity: [0.1, 0.2, 0.1],
@@ -29,22 +31,25 @@ export default function TvLandingPage() {
             />
 
             {/* MAIN CONTENT */}
-            <div className="relative z-10 flex flex-col items-center gap-16">
-                {/* FLOATING LOGO (Reduced Motion) */}
+            <div className="relative z-10 flex flex-col items-center gap-12">
+                {/* SLEEPING/STANDBY MASCOT */}
                 <motion.div
                     animate={{ 
-                        y: [0, -15, 0],
-                        filter: ["drop-shadow(0 0 10px rgba(59,130,246,0.2))", "drop-shadow(0 0 30px rgba(59,130,246,0.5))", "drop-shadow(0 0 10px rgba(59,130,246,0.2))"]
+                        y: [0, -10, 0],
+                        opacity: [0.6, 0.8, 0.6]
                     }}
                     transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-                    className="relative size-56 md:size-72 grayscale-[0.5] opacity-80"
+                    className="relative size-64 md:size-[380px] grayscale-[0.3]"
                 >
                     <Image 
-                        src="/xenonplay-logo.png" 
-                        alt="XenonPlay Standby" 
+                        src="/mascot.png" 
+                        alt="Xenon Standby" 
                         fill 
                         className="object-contain"
                         priority
+                        onError={(e) => {
+                            (e.target as any).src = '/xenonplay-logo.png';
+                        }}
                     />
                 </motion.div>
 
@@ -53,22 +58,22 @@ export default function TvLandingPage() {
                     <motion.div 
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className="inline-flex items-center gap-4 bg-emerald-500/10 border border-emerald-500/30 px-8 py-3 rounded-2xl"
+                        className="inline-flex items-center gap-4 bg-emerald-500/5 border border-emerald-500/20 px-8 py-3 rounded-3xl"
                     >
-                        <div className="size-3 rounded-full bg-emerald-500 animate-ping" />
-                        <span className="text-xl font-black text-emerald-500 uppercase tracking-[0.4em]">UNIT READY</span>
+                        <div className="size-2 rounded-full bg-emerald-500 animate-ping" />
+                        <span className="text-lg font-black text-emerald-500/60 uppercase tracking-[0.5em]">UNIT READY</span>
                     </motion.div>
 
-                    <div className="space-y-2">
-                        <h2 className="text-2xl font-black text-white/30 uppercase tracking-[0.5em]">Sesi Berakhir</h2>
-                        <p className="text-[10px] font-black text-white/10 uppercase tracking-[0.8em]">Silakan hubungi kasir untuk isi ulang waktu</p>
+                    <div className="space-y-1">
+                        <h2 className="text-xl font-black text-white/20 uppercase tracking-[0.6em]">Sesi Berakhir</h2>
+                        <p className="text-[9px] font-black text-white/10 uppercase tracking-[0.4em]">Hubungi kasir untuk isi ulang waktu mabar</p>
                     </div>
                 </div>
             </div>
 
-            {/* LOGO WATERMARK (Background) */}
-            <div className="absolute bottom-[-10vh] right-[-10vh] size-[50vh] opacity-[0.02] rotate-12">
-                <Image src="/xenonplay-logo.png" alt="BG" fill className="object-contain" />
+            {/* LOGO WATERMARK */}
+            <div className="absolute bottom-[-5vh] left-[-5vh] size-[40vh] opacity-[0.01]">
+                <Image src="/xenonplay-logo.png" alt="Logo BG" fill className="object-contain" />
             </div>
 
             {/* SCANLINE OVERLAY */}
