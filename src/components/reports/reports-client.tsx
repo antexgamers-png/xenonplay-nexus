@@ -23,6 +23,7 @@ import { FileSpreadsheet, CalendarDays, History, Zap } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { useShift } from '@/components/providers/shift-provider';
 import { cn } from '@/lib/utils';
+import { Separator } from '@/components/ui/separator';
 
 interface ReportsClientProps {
   transactions: Transaction[];
