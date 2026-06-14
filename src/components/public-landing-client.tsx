@@ -15,6 +15,10 @@ import { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
 import Autoplay from 'embla-carousel-autoplay';
 import { ReservationFormDialog } from '@/components/reservations/reservation-form-dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { addMember } from '@/lib/data';
 
 // Helper component to render Lucide icons dynamically from string
 const DynamicIcon = ({ name, className }: { name: string, className?: string }) => {
@@ -99,9 +103,16 @@ const ActivityTicker = memo(function ActivityTicker({
 
 export function PublicLandingClient() {
   const firestore = useFirestore();
+  const { toast } = useToast();
   const [year, setYear] = useState<number>(2025);
   const [isResOpen, setIsResOpen] = useState(false);
   const [defaultBookingStationId, setDefaultBookingStationId] = useState<string | undefined>(undefined);
+  
+  // Membership Form State
+  const [regName, setRegName] = useState('');
+  const [regPhone, setRegPhone] = useState('');
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [regSuccess, setRegSuccess] = useState(false);
 
   useEffect(() => { setYear(new Date().getFullYear()); }, []);
   
@@ -196,6 +207,34 @@ export function PublicLandingClient() {
     setIsResOpen(true);
   };
 
+  const handleRegisterMember = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!firestore || !regName || !regPhone) return;
+      
+      setIsRegistering(true);
+      try {
+          await addMember(firestore, {
+              name: regName,
+              phone: regPhone,
+              email: ''
+          });
+          setRegSuccess(true);
+          toast({
+              title: "Selamat Datang, Sultan!",
+              description: "Pendaftaran member berhasil. Silakan cek poin kamu di kasir.",
+              variant: "success"
+          });
+      } catch (err: any) {
+          toast({
+              title: "Gagal Mendaftar",
+              description: "Silakan coba lagi atau hubungi kasir.",
+              variant: "destructive"
+          });
+      } finally {
+          setIsRegistering(false);
+      }
+  };
+
   if (isLandingLoading) return <div className="h-screen w-screen bg-background flex items-center justify-center"><div className="size-12 border-4 border-primary border-t-transparent rounded-full animate-spin"/></div>;
 
   return (
@@ -227,8 +266,8 @@ export function PublicLandingClient() {
               </div>
               <div className="flex items-center gap-6">
                   <Link href="#live" className="text-[10px] font-black uppercase tracking-widest hover:text-primary transition-colors hidden sm:block">Status Unit</Link>
+                  <Link href="#membership" className="text-[10px] font-black uppercase tracking-widest hover:text-primary transition-colors hidden sm:block">Membership</Link>
                   <Link href="#paket" className="text-[10px] font-black uppercase tracking-widest hover:text-primary transition-colors hidden sm:block">Daftar Harga</Link>
-                  <Link href="#lokasi" className="text-[10px] font-black uppercase tracking-widest hover:text-primary transition-colors hidden sm:block">Lokasi</Link>
                   <Button onClick={handleManualResOpen} size="sm" className="rounded-lg font-black uppercase text-[9px] tracking-widest h-8 px-4">
                       Reservasi
                   </Button>
@@ -361,6 +400,134 @@ export function PublicLandingClient() {
                           </div>
                       </motion.div>
                   ))}
+              </div>
+          </div>
+      </section>
+
+      {/* Membership Section */}
+      <section id="membership" className="py-24 px-6 bg-slate-950 relative overflow-hidden">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.1)_0%,transparent_70%)] pointer-events-none" />
+          
+          <div className="max-w-7xl mx-auto relative z-10">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                  <div className="space-y-8">
+                      <div className="space-y-4">
+                          <Badge className="bg-primary/20 text-primary border-primary/30 font-black uppercase text-[10px] tracking-[0.2em] px-3 h-6">Sultan Membership</Badge>
+                          <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter text-white leading-none">
+                              Main Terus, <span className="text-primary">Panen Hadiah.</span>
+                          </h2>
+                          <p className="text-slate-400 text-lg font-medium leading-relaxed">
+                              Gabung jadi member XenonPlay dan kumpulkan poin setiap kali kamu mabar. Tukarkan poinmu dengan jam main gratis atau snack favorit!
+                          </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                          <div className="p-6 rounded-3xl bg-white/5 border border-white/10 group hover:border-primary/50 transition-colors">
+                              <div className="size-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-4">
+                                  <LucideIcons.Trophy className="size-5" />
+                              </div>
+                              <h4 className="text-white font-black uppercase text-sm mb-2 tracking-tight">Kumpulkan Poin</h4>
+                              <p className="text-slate-500 text-xs leading-relaxed">Dapatkan 5 Poin tambahan setiap 10 stempel sesi yang terkumpul.</p>
+                          </div>
+                          <div className="p-6 rounded-3xl bg-white/5 border border-white/10 group hover:border-emerald-500/50 transition-colors">
+                              <div className="size-10 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 mb-4">
+                                  <LucideIcons.Gift className="size-5" />
+                              </div>
+                              <h4 className="text-white font-black uppercase text-sm mb-2 tracking-tight">Tukar Hadiah</h4>
+                              <p className="text-slate-500 text-xs leading-relaxed">Tukar poin kamu dengan voucher bermain gratis atau camilan segar di kasir.</p>
+                          </div>
+                      </div>
+
+                      <Link href="/check-member" target="_blank" className="inline-flex items-center gap-3 text-primary font-black uppercase text-[10px] tracking-widest hover:gap-5 transition-all">
+                          Cek Poin & Riwayat Hadiah Saya <LucideIcons.ArrowRight className="size-4" />
+                      </Link>
+                  </div>
+
+                  <Card className="bg-white/5 border-white/10 p-8 md:p-10 rounded-[2.5rem] shadow-2xl relative overflow-hidden backdrop-blur-sm">
+                      <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary via-accent to-primary" />
+                      
+                      <AnimatePresence mode="wait">
+                        {!regSuccess ? (
+                            <motion.div 
+                                key="form"
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -20 }}
+                                className="space-y-6"
+                            >
+                                <div className="text-center space-y-2 mb-8">
+                                    <h3 className="text-2xl font-black uppercase tracking-tight text-white">Daftar Member Sultan</h3>
+                                    <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">Registrasi Gratis & Instan</p>
+                                </div>
+
+                                <form onSubmit={handleRegisterMember} className="space-y-5">
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Nama Lengkap</Label>
+                                        <div className="relative">
+                                            <Input 
+                                                placeholder="Contoh: Andi Pro Gamer" 
+                                                className="h-14 pl-12 bg-slate-900/50 border-white/5 text-white rounded-2xl focus:ring-primary shadow-inner"
+                                                value={regName}
+                                                onChange={(e) => setRegName(e.target.value)}
+                                                required
+                                            />
+                                            <LucideIcons.User className="absolute left-4 top-4 size-6 text-slate-600" />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Nomor WhatsApp</Label>
+                                        <div className="relative">
+                                            <Input 
+                                                placeholder="Contoh: 08123456789" 
+                                                className="h-14 pl-12 bg-slate-900/50 border-white/5 text-white rounded-2xl focus:ring-primary shadow-inner font-mono"
+                                                value={regPhone}
+                                                onChange={(e) => setRegPhone(e.target.value)}
+                                                required
+                                            />
+                                            <LucideIcons.Phone className="absolute left-4 top-4 size-6 text-slate-600" />
+                                        </div>
+                                    </div>
+                                    <Button 
+                                        type="submit" 
+                                        disabled={isRegistering}
+                                        className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-[0.2em] text-sm shadow-xl shadow-primary/20 transition-all active:scale-95 gap-3"
+                                    >
+                                        {isRegistering ? <LucideIcons.RefreshCw className="size-5 animate-spin" /> : <LucideIcons.Zap className="size-5 fill-current" />}
+                                        Daftar Sekarang
+                                    </Button>
+                                    <p className="text-[9px] text-center text-slate-600 uppercase font-bold italic tracking-tighter mt-4">
+                                        *Data kamu aman & hanya digunakan untuk sistem loyalitas XenonPlay.
+                                    </p>
+                                </form>
+                            </motion.div>
+                        ) : (
+                            <motion.div 
+                                key="success"
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="py-12 text-center space-y-6"
+                            >
+                                <div className="size-20 rounded-[2.5rem] bg-emerald-500/20 text-emerald-500 flex items-center justify-center mx-auto border-4 border-emerald-500/20 shadow-[0_0_50px_rgba(16,185,129,0.2)]">
+                                    <LucideIcons.CheckCircle2 className="size-10" />
+                                </div>
+                                <div className="space-y-2">
+                                    <h3 className="text-3xl font-black uppercase tracking-tight text-white">Berhasil Bergabung!</h3>
+                                    <p className="text-slate-400 text-sm font-medium">Selamat, <span className="text-primary font-black uppercase">{regName}</span>!</p>
+                                </div>
+                                <p className="text-slate-500 text-xs leading-relaxed max-w-[240px] mx-auto uppercase font-bold tracking-widest">
+                                    Akun kamu sudah aktif. Beritahu nomor HP kamu ke kasir setiap kali mabar untuk kumpulkan poin.
+                                </p>
+                                <Button 
+                                    variant="outline" 
+                                    onClick={() => { setRegSuccess(false); setRegName(''); setRegPhone(''); }}
+                                    className="border-white/10 text-white hover:bg-white/5 rounded-xl h-10 px-8 font-black uppercase text-[10px] tracking-widest"
+                                >
+                                    Daftarkan Teman Lain
+                                </Button>
+                            </motion.div>
+                        )}
+                      </AnimatePresence>
+                  </Card>
               </div>
           </div>
       </section>
