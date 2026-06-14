@@ -213,7 +213,9 @@ export async function createTransaction(db: Firestore, data: any) {
     const finalBruto = baseAmount + extraStickFee;
     const finalNetto = Math.max(0, finalBruto - discount);
     
-    const additionalCharges = [{ description: `Sewa ${data.durationMinutes}m`, amount: baseAmount, timestamp: now, isPaid }];
+    // Gunakan nama paket jika ada, jika tidak fallback ke deskripsi durasi
+    const initialDesc = data.packageName || `Sewa ${data.durationMinutes}m`;
+    const additionalCharges = [{ description: initialDesc, amount: baseAmount, timestamp: now, isPaid }];
     if (extraStickFee > 0) additionalCharges.push({ description: `Biaya Tambahan ${data.extraSticks} Stik`, amount: extraStickFee, timestamp: now, isPaid });
 
     const newTransaction: any = {
@@ -246,7 +248,10 @@ export async function createStandaloneFnbTransaction(db: Firestore, items: any[]
     const docRef = doc(collection(db, 'transactions'));
     return await runTransaction(db, async (txn) => {
         txn.set(docRef, {
-            id: docRef.id, stationId: 'pos', stationName: 'KASIR KANTIN', durationMinutes: 0, amount: totalAmount, discount: 0, paidAmount: totalAmount, timestamp: now, status: 'paid', shiftId: activeShiftId || null, fnbItems: items, additionalCharges: items.map(i => ({ description: `FnB: ${i.name} x${i.quantity}`, amount: i.price * i.quantity, timestamp: now, isPaid: true })), isLoyaltyProcessed: false
+            id: docRef.id, stationId: 'pos', stationName: 'KASIR KANTIN', durationMinutes: 0, amount: totalAmount, discount: 0, paidAmount: totalAmount, timestamp: now, status: 'paid', shiftId: activeShiftId || null, fnbItems: items, 
+            // Gunakan prefix FnB: agar UI filter tetap jalan, tapi di Excel nanti di-strip
+            additionalCharges: items.map(i => ({ description: `FnB: ${i.name} x${i.quantity}`, amount: i.price * i.quantity, timestamp: now, isPaid: true })), 
+            isLoyaltyProcessed: false
         });
         if (activeShiftId) txn.update(doc(db, 'shifts', activeShiftId), { totalSales: increment(totalAmount), expectedBalance: increment(totalAmount) });
         for (const item of items) txn.update(doc(db, 'fnbItems', item.id), { stock: increment(-item.quantity) });
@@ -265,13 +270,13 @@ export async function addItemsToTransaction(db: Firestore, transactionId: string
         const newPaid = isPaid ? (tData.paidAmount || 0) + netAdd : (tData.paidAmount || 0);
         txn.update(tRef, {
             amount: newBruto, discount: newDiscount, paidAmount: newPaid, status: (newBruto - newDiscount) > newPaid ? 'unpaid' : 'paid',
-            additionalCharges: [...(tData.additionalCharges || []), ...items.map(i => ({ description: `Tambah FnB: ${i.name} x${i.quantity}`, amount: i.price * i.quantity, timestamp: Date.now(), isPaid }))]
+            additionalCharges: [...(tData.additionalCharges || []), ...items.map(i => ({ description: `FnB: ${i.name} x${i.quantity}`, amount: i.price * i.quantity, timestamp: Date.now(), isPaid }))]
         });
         if (activeShiftId && isPaid && netAdd > 0) txn.update(doc(db, 'shifts', activeShiftId), { totalSales: increment(netAdd), expectedBalance: increment(netAdd) });
     });
 }
 
-export async function addTimeToTransaction(db: Firestore, transactionId: string, stationId: string, duration: number, price: number, isPaid: boolean, discount: number, activeShiftId?: string | null) {
+export async function addTimeToTransaction(db: Firestore, transactionId: string, stationId: string, duration: number, price: number, isPaid: boolean, discount: number, activeShiftId?: string | null, packageName?: string) {
     return await runTransaction(db, async (txn) => {
         const tRef = doc(db, 'transactions', transactionId);
         const tSnap = await txn.get(tRef);
@@ -290,9 +295,12 @@ export async function addTimeToTransaction(db: Firestore, transactionId: string,
         const newDiscount = (tData.discount || 0) + (discount || 0);
         const netAdd = Math.max(0, price - (discount || 0));
         const newPaid = isPaid ? (tData.paidAmount || 0) + netAdd : (tData.paidAmount || 0);
+        
+        const desc = packageName || `Tambah waktu ${duration}m`;
+        
         txn.update(tRef, {
             durationMinutes: (tData.durationMinutes || 0) + duration, amount: newBruto, discount: newDiscount, paidAmount: newPaid, status: (newBruto - newDiscount) > newPaid ? 'unpaid' : 'paid',
-            additionalCharges: [...(tData.additionalCharges || []), { description: `Tambah waktu ${duration}m`, amount: price, timestamp: Date.now(), isPaid }]
+            additionalCharges: [...(tData.additionalCharges || []), { description: desc, amount: price, timestamp: Date.now(), isPaid }]
         });
         txn.update(sRef, { end_time: (sData.end_time || Date.now()) + duration * 60000 });
         if (memberSnap && memberRef) processLoyaltyInTransaction(txn, memberSnap, tRef, memberRef);

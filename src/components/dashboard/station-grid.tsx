@@ -114,6 +114,7 @@ export function StationGrid({
         const transaction = await createTransaction(firestore, {
             stationId: station.id, 
             stationName: station.name, 
+            packageName: rule.name, // Simpan nama paket asli
             durationMinutes: rule.duration,
             amount: rule.price, 
             fnbItems: selectedFnb, 
@@ -188,7 +189,7 @@ export function StationGrid({
     if (!checkShift()) return;
     if(!firestore) return;
     try {
-        await addTimeToTransaction(firestore, tId, sId, rule.duration, rule.price, isPaid, discount, activeShift?.id);
+        await addTimeToTransaction(firestore, tId, sId, rule.duration, rule.price, isPaid, discount, activeShift?.id, rule.name);
         toast({ title: 'Durasi Berhasil Ditambah', variant: "success" });
     } catch (e: any) { 
         toast({ title: 'Gagal Tambah Waktu', description: e.message, variant: 'destructive' }); 

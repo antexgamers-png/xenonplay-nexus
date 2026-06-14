@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -176,23 +177,18 @@ export function TransactionClient({ transactions, stations }: TransactionClientP
         const shift = allShifts?.find(s => s.id === t.shiftId);
         const operatorName = shift?.openedByName || 'System/Admin';
         
-        // Clean up Item names for professional look
+        // Menampilkan nama paket/barang yang bersih sesuai permintaan user
         const itemDetails = (t.additionalCharges || [])
             .map(c => {
                 let desc = c.description || '';
-                // Remove redundant prefixes
+                // Hapus prefix teknis agar hanya menyisakan nama paket atau barang
                 desc = desc.replace(/^Sewa\s+/i, '');
                 desc = desc.replace(/^FnB:\s+/i, '');
                 desc = desc.replace(/^Tambah\s+FnB:\s+/i, '');
                 desc = desc.replace(/^Tambah\s+waktu\s+/i, '');
                 desc = desc.replace(/^Biaya\s+Tambahan\s+/i, '');
                 
-                // Humanize durations if raw (e.g. 60m -> 60 Menit)
-                if (/^\d+m$/.test(desc)) {
-                    desc = desc.replace('m', ' Menit');
-                }
-                
-                return `${desc} (${formatCurrency(c.amount).replace(',00', '').replace('Rp', '')})`;
+                return `${desc}`;
             })
             .join(' | ');
 
@@ -218,7 +214,7 @@ export function TransactionClient({ transactions, stations }: TransactionClientP
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Riwayat Transaksi");
 
-    // Set Column Widths for readability
+    // Atur lebar kolom agar proporsional
     worksheet['!cols'] = [
         { wch: 5 }, { wch: 18 }, { wch: 12 }, { wch: 8 }, { wch: 15 }, 
         { wch: 60 }, { wch: 12 }, { wch: 10 }, { wch: 12 }, { wch: 12 }

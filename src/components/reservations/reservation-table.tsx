@@ -116,6 +116,7 @@ export function ReservationTable({
         const transaction = await createTransaction(firestore, {
             stationId: tempStationId,
             stationName: targetStation.name,
+            packageName: rule.name, // Pass actual rule name
             durationMinutes: rule.duration,
             amount: rule.price,
             fnbItems: selectedFnb,
