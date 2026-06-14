@@ -6,9 +6,9 @@ import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
 /**
- * XENONPLAY WELCOME v7.0 - GHOST SPIRIT EDITION
- * Desain ulang total menggunakan welcome_mascot.png sebagai pusat visual.
- * Dioptimalkan untuk performa tinggi di browser TV tanpa lag.
+ * XENONPLAY WELCOME v8.0 - ELITE DASHBOARD EDITION
+ * Desain horizontal terinspirasi dari UI konsol Next-Gen.
+ * Maskot berada di samping headline untuk komposisi yang lebih elegan.
  */
 export default function WelcomePage() {
     const [mounted, setMounted] = useState(false);
@@ -20,103 +20,115 @@ export default function WelcomePage() {
     if (!mounted) return <div className="h-screen w-screen bg-slate-950" />;
 
     return (
-        <div className="fixed inset-0 h-screen w-screen bg-slate-950 overflow-hidden flex items-center justify-center select-none">
-            {/* LAYER 1: DEEP DYNAMIC NEON BACKGROUND */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,183,255,0.12)_0%,rgba(2,6,23,1)_80%)]" />
+        <div className="fixed inset-0 h-screen w-screen bg-[#020617] overflow-hidden flex items-center justify-center select-none font-body">
             
+            {/* LAYER 1: CINEMATIC BACKGROUND */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_50%,rgba(59,130,246,0.15)_0%,transparent_50%)]" />
+            
+            {/* AMBIENT MESH GLOW */}
             <motion.div 
                 animate={{ 
-                    opacity: [0.2, 0.5, 0.2],
-                    scale: [1, 1.1, 1],
+                    opacity: [0.3, 0.5, 0.3],
+                    scale: [1, 1.2, 1],
                 }}
-                transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.1)_0%,transparent_70%)] blur-[100px]"
+                transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute top-1/2 right-0 -translate-y-1/2 w-[60vw] h-[80vh] bg-primary/10 blur-[150px] rounded-full"
             />
 
-            {/* LAYER 2: CRT SCANLINES (GAMING AESTHETIC) */}
-            <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.15)_50%)] bg-[length:100%_4px] pointer-events-none z-20 opacity-40" />
+            {/* LAYER 2: CRT SCANLINES & NOISE */}
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.05)_50%)] bg-[length:100%_2px] pointer-events-none z-20 opacity-30" />
 
-            {/* MAIN CONTENT CONTAINER */}
-            <div className="relative z-30 flex flex-col items-center gap-12 w-full max-w-7xl px-8">
+            {/* MAIN DASHBOARD CONTAINER */}
+            <div className="relative z-30 w-full max-w-[90vw] h-full flex flex-col md:flex-row items-center justify-between gap-12">
                 
-                {/* SPIRIT MASCOT WITH ADVANCED BREATHING EFFECT */}
-                <div className="relative">
-                    {/* Shadow & Floor Glow */}
-                    <motion.div 
-                        animate={{ opacity: [0.3, 0.6, 0.3], scale: [0.8, 1.2, 0.8] }}
-                        transition={{ duration: 4, repeat: Infinity }}
-                        className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-48 h-10 bg-primary/20 blur-3xl rounded-full"
-                    />
+                {/* LEFT SIDE: BRANDING & HEADLINE */}
+                <motion.div 
+                    initial={{ opacity: 0, x: -50 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 1, ease: "easeOut" }}
+                    className="flex-1 flex flex-col items-center md:items-start text-center md:text-left space-y-6"
+                >
+                    <div className="flex items-center gap-4 mb-4">
+                        <div className="relative size-14 rotate-6 drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]">
+                            <Image src="/xenonplay-logo.png" alt="Logo" fill className="object-contain" priority />
+                        </div>
+                        <div className="h-10 w-px bg-white/20 hidden md:block" />
+                        <span className="text-xl font-black text-white tracking-tighter uppercase leading-none">XenonPlay <span className="text-primary">Nexus</span></span>
+                    </div>
 
+                    <div className="space-y-2">
+                        <motion.h1 
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.5, duration: 0.8 }}
+                            className="text-6xl md:text-8xl font-black text-white uppercase tracking-tighter leading-[0.9]"
+                        >
+                            READY <br />
+                            <span className="text-primary">TO PLAY</span>
+                        </motion.h1>
+                        <p className="text-sm md:text-lg font-black text-white/40 uppercase tracking-[0.5em] pt-4">
+                            ELITE GAMING EXPERIENCE
+                        </p>
+                    </div>
+
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 1.2 }}
+                        className="inline-flex items-center gap-4 bg-primary/10 border border-primary/20 px-8 py-3 rounded-2xl backdrop-blur-xl"
+                    >
+                        <div className="size-2 rounded-full bg-primary shadow-[0_0_15px_#3b82f6] animate-ping" />
+                        <span className="text-xs font-black text-primary uppercase tracking-[0.3em]">System Online • 60 FPS Stable</span>
+                    </motion.div>
+                </motion.div>
+
+                {/* RIGHT SIDE: MASCOT COMPOSITION */}
+                <motion.div 
+                    initial={{ opacity: 0, scale: 0.9, x: 50 }}
+                    animate={{ opacity: 1, scale: 1, x: 0 }}
+                    transition={{ duration: 1.2, ease: "easeOut" }}
+                    className="flex-1 relative w-full h-[50vh] md:h-full flex items-center justify-center lg:justify-end"
+                >
+                    {/* Mascot Aura */}
+                    <div className="absolute top-1/2 left-1/2 md:left-auto md:right-1/4 -translate-x-1/2 md:translate-x-0 -translate-y-1/2 size-[400px] bg-primary/5 blur-[80px] rounded-full animate-pulse" />
+                    
                     <motion.div
-                        initial={{ y: 20, opacity: 0 }}
                         animate={{ 
-                            y: [0, -40, 0],
-                            opacity: 1,
-                            filter: ["brightness(1) contrast(1)", "brightness(1.2) contrast(1.1)", "brightness(1) contrast(1)"]
+                            y: [0, -20, 0],
+                            filter: ["brightness(1) contrast(1)", "brightness(1.1) contrast(1.05)", "brightness(1) contrast(1)"]
                         }}
                         transition={{ 
-                            y: { duration: 6, repeat: Infinity, ease: "easeInOut" },
-                            opacity: { duration: 1.5 },
+                            y: { duration: 5, repeat: Infinity, ease: "easeInOut" },
                             filter: { duration: 4, repeat: Infinity }
                         }}
-                        className="relative w-[80vw] h-[50vh] md:w-[60vw] md:h-[60vh] lg:w-[650px] lg:h-[650px]"
+                        className="relative w-full h-full max-h-[70vh] flex items-center justify-center lg:justify-end"
                     >
-                        <Image 
-                            src="/welcome_mascot.png" 
-                            alt="Xenon Spirit" 
-                            fill 
-                            className="object-contain drop-shadow-[0_0_50px_rgba(59,130,246,0.6)]"
-                            priority
-                        />
+                        <div className="relative w-full h-full">
+                            <Image 
+                                src="/welcome_mascot.png" 
+                                alt="Xenon Spirit" 
+                                fill 
+                                className="object-contain drop-shadow-[0_0_50px_rgba(59,130,246,0.4)]"
+                                priority
+                            />
+                        </div>
                     </motion.div>
-                </div>
-
-                {/* TEXTUAL BRANDING & STATUS */}
-                <div className="text-center space-y-8">
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.5 }}
-                        className="space-y-4"
-                    >
-                        <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white uppercase tracking-[0.3em] leading-none drop-shadow-2xl">
-                            READY <span className="text-primary">TO PLAY</span>
-                        </h1>
-                        <p className="text-[10px] md:text-sm font-black text-primary/40 uppercase tracking-[1em] ml-[1em]">
-                            XENONPLAY • ELITE GAMING CORE
-                        </p>
-                    </motion.div>
-
-                    <motion.div 
-                        animate={{ scale: [1, 1.05, 1] }}
-                        transition={{ duration: 3, repeat: Infinity }}
-                        className="inline-flex items-center gap-4 bg-primary/10 border border-primary/20 px-10 py-3 rounded-full backdrop-blur-md"
-                    >
-                        <div className="size-2 rounded-full bg-primary shadow-[0_0_10px_#3b82f6] animate-ping" />
-                        <span className="text-xs md:text-base font-black text-primary uppercase tracking-[0.5em] ml-[0.5em]">System Synchronized</span>
-                    </motion.div>
-                </div>
+                </motion.div>
             </div>
 
-            {/* TOP LEFT: LOGO BRANDING */}
-            <div className="absolute top-10 left-12 flex items-center gap-4 z-40">
-                <div className="relative size-12 rotate-6">
-                    <Image src="/xenonplay-logo.png" alt="Logo" fill className="object-contain" />
-                </div>
+            {/* STATUS BAR FOOTER */}
+            <div className="absolute bottom-10 left-12 right-12 flex justify-between items-end z-40 border-t border-white/5 pt-8 opacity-40">
                 <div className="flex flex-col">
-                    <span className="text-lg font-black text-white uppercase tracking-tighter leading-none">XENONPLAY</span>
-                    <span className="text-[8px] font-bold text-primary uppercase tracking-[0.4em]">Nexus Core v7.0</span>
+                    <span className="text-[10px] font-black text-white uppercase tracking-widest">Active Server</span>
+                    <span className="text-[8px] font-bold text-primary uppercase tracking-widest mt-1">Global Region Hub</span>
+                </div>
+                <div className="text-right">
+                    <span className="text-[10px] font-black text-white uppercase tracking-widest italic">Nexus Core v8.0</span>
                 </div>
             </div>
 
-            {/* BOTTOM RIGHT: VESTIGE IDENTIFIER */}
-            <div className="absolute bottom-10 right-12 opacity-30 z-40 text-right">
-                <p className="text-[10px] font-black text-white uppercase tracking-widest italic">Stable Operation Active</p>
-            </div>
-
-            {/* VIGNETTE SHADOW */}
-            <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.5)_100%)] z-10" />
+            {/* VIGNETTE EDGE */}
+            <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)] z-10" />
         </div>
     );
 }
