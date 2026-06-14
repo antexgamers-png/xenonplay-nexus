@@ -253,14 +253,33 @@ export async function createStandaloneFnbTransaction(db: Firestore, items: any[]
     const now = Date.now();
     const totalAmount = items.reduce((s, i) => s + i.price * i.quantity, 0);
     const docRef = doc(collection(db, 'transactions'));
+    const newTransaction = {
+        id: docRef.id, 
+        stationId: 'pos', 
+        stationName: 'KASIR KANTIN', 
+        durationMinutes: 0, 
+        amount: totalAmount, 
+        discount: 0, 
+        paidAmount: totalAmount, 
+        timestamp: now, 
+        status: 'paid', 
+        shiftId: activeShiftId || null, 
+        fnbItems: items, 
+        additionalCharges: items.map(i => ({ description: `${i.name} x${i.quantity}`, amount: i.price * i.quantity, timestamp: now, isPaid: true })), 
+        isLoyaltyProcessed: false
+    };
+
     return await runTransaction(db, async (txn) => {
-        txn.set(docRef, {
-            id: docRef.id, stationId: 'pos', stationName: 'KASIR KANTIN', durationMinutes: 0, amount: totalAmount, discount: 0, paidAmount: totalAmount, timestamp: now, status: 'paid', shiftId: activeShiftId || null, fnbItems: items, 
-            additionalCharges: items.map(i => ({ description: `${i.name} x${i.quantity}`, amount: i.price * i.quantity, timestamp: now, isPaid: true })), 
-            isLoyaltyProcessed: false
-        });
-        if (activeShiftId) txn.update(doc(db, 'shifts', activeShiftId), { totalSales: increment(totalAmount), expectedBalance: increment(totalAmount) });
-        for (const item of items) txn.update(doc(db, 'fnbItems', item.id), { stock: increment(-item.quantity) });
+        txn.set(docRef, newTransaction);
+        if (activeShiftId) {
+            const shiftRef = doc(db, 'shifts', activeShiftId);
+            txn.update(shiftRef, { totalSales: increment(totalAmount), expectedBalance: increment(totalAmount) });
+        }
+        for (const item of items) {
+            const itemRef = doc(db, 'fnbItems', item.id);
+            txn.update(itemRef, { stock: increment(-item.quantity) });
+        }
+        return newTransaction;
     });
 }
 
