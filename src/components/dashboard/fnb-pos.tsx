@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -189,7 +190,7 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
 
       const storeName = settings?.storeName || 'XENONPLAY';
       const address = settings?.address || '';
-      const dateStr = format(lastOrderDetails.timestamp, 'yyyy-MM-dd');
+      const dateStr = format(lastOrderDetails.timestamp, 'dd/MM/yyyy');
       const timeStr = format(lastOrderDetails.timestamp, 'HH:mm:ss');
       const totalQty = lastOrderDetails.items.reduce((s: number, i: any) => s + i.quantity, 0);
 
@@ -199,28 +200,28 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
           <style>
             @page { margin: 0; size: 58mm auto; }
             body { 
-              width: 58mm; margin: 0; padding: 5px 2px; 
+              width: 58mm; margin: 0; padding: 4px 2px; 
               font-family: 'Courier New', Courier, monospace; 
-              font-size: 8.5px; line-height: 1.2; color: #000;
+              font-size: 8px; line-height: 1.1; color: #000;
               background: #fff;
             }
             .center { text-align: center; } 
             .right { text-align: right; } 
             .bold { font-weight: bold; }
-            .sep { border-top: 1px dashed #000; margin: 6px 0; }
-            .item-block { margin-bottom: 4px; }
-            .item-name { font-weight: bold; display: block; margin-bottom: 1px; }
+            .sep { border-top: 1px dashed #000; margin: 4px 0; }
+            .item-block { margin-bottom: 3px; }
+            .item-name { font-weight: bold; display: block; }
             .flex { display: flex; justify-content: space-between; }
-            .logo { width: 35px; height: 35px; object-fit: contain; filter: grayscale(1) contrast(1.2); margin-bottom: 4px; }
+            .logo { width: 35px; height: auto; object-fit: contain; filter: grayscale(1) contrast(1.5); margin: 0 auto 3px; display: block; }
             .summary-row { display: flex; justify-content: space-between; margin: 1px 0; }
-            .total-row { display: flex; justify-content: space-between; margin: 4px 0; font-weight: bold; font-size: 10px; }
+            .total-row { display: flex; justify-content: space-between; margin: 3px 0; font-weight: bold; font-size: 9px; }
           </style>
         </head>
         <body onload="window.print(); window.close();">
           <div class="center">
             <img src="/xenonplay-logo.png" class="logo" />
-            <div class="bold" style="font-size: 10px; margin-bottom: 1px;">${storeName.toUpperCase()}</div>
-            <div>${address}</div>
+            <div class="bold" style="font-size: 9px;">${storeName.toUpperCase()}</div>
+            <div style="font-size: 7.5px;">${address}</div>
             <div style="margin-top: 2px;">Selamat datang di toko kami</div>
           </div>
           
@@ -229,11 +230,12 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
           <div class="flex">
             <div>
                <div>Nota : ${lastOrderDetails.id.substring(0,8).toUpperCase()}</div>
-               <div>${dateStr}</div>
-               <div>${timeStr}</div>
+               <div>Tgl  : ${dateStr}</div>
+               <div>Jam  : ${timeStr}</div>
             </div>
             <div class="right">
-               <div>Kasir : ${lastOrderDetails.cashier.toUpperCase()}</div>
+               <div>Kasir:</div>
+               <div>${lastOrderDetails.cashier.toUpperCase()}</div>
             </div>
           </div>
 
@@ -274,8 +276,8 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
           </div>
 
           <div class="sep"></div>
-          <div class="center">Terima kasih telah berbelanja di toko kami</div>
-          <div class="center" style="margin-top: 2px;">"Good Game, Well Played"</div>
+          <div class="center" style="font-size: 7.5px;">Terima kasih telah berbelanja di toko kami</div>
+          <div class="center bold" style="margin-top: 1px;">"Good Game, Well Played"</div>
           <div style="height: 15px;"></div>
         </body>
       </html>`;

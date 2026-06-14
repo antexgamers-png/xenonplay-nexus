@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -61,7 +62,6 @@ export function TransactionDetailDialog({
 
   if (!transaction) return null;
 
-  const isPosOnly = transaction.stationId === 'pos';
   const bruto = transaction.amount || 0;
   const discount = transaction.discount || 0;
   const netto = Math.max(0, bruto - discount);
@@ -69,13 +69,10 @@ export function TransactionDetailDialog({
   const isPaid = transaction.status === 'paid';
 
   const charges = transaction.additionalCharges ?? [];
-  const rentalCharges = charges
-    .map((c, i) => ({ ...c, index: i }))
-    .filter(c => c && c.description && !c.description.startsWith('FnB:'));
-    
-  const fnbCharges = charges
-    .map((c, i) => ({ ...c, index: i }))
-    .filter(c => c && c.description && c.description.startsWith('FnB:'));
+  
+  // Pisahkan biaya rental dan item kantin secara akurat
+  const rentalCharges = charges.filter(c => c && c.description && !c.description.startsWith('FnB:'));
+  const fnbItems = transaction.fnbItems || [];
 
   const handleFinalPaid = () => {
       onMarkAsPaid(selectedMember);
@@ -87,7 +84,7 @@ export function TransactionDetailDialog({
     setIsPrinting(true);
     const storeName = settings?.storeName || 'XENONPLAY';
     const address = settings?.address || '';
-    const dateStr = format(transaction.timestamp, 'yyyy-MM-dd');
+    const dateStr = format(transaction.timestamp, 'dd/MM/yyyy');
     const timeStr = format(transaction.timestamp, 'HH:mm:ss');
     const shift = shifts?.find(s => s.id === transaction.shiftId);
     const cashierName = shift?.openedByName || 'Operator';
@@ -95,28 +92,22 @@ export function TransactionDetailDialog({
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
-    // Build items for print
-    const printItems: any[] = [];
+    const printLines: any[] = [];
     
-    // 1. Rental/Package
+    // 1. Tambahkan baris Rental
     rentalCharges.forEach(rc => {
-        let name = rc.description.replace(/^Sewa\s+/i, '');
-        let qty = 1;
-        if (name.includes("Stik Extra")) {
-            qty = parseInt(name.split(" ")[0]) || 1;
-            name = "Extra Stick";
-        }
-        printItems.push({
+        let name = rc.description.replace(/^Sewa\s+/i, '').replace(/x\d+$/i, '').trim();
+        printLines.push({
             name: name.toUpperCase(),
-            qty: qty,
-            price: rc.amount / qty,
+            qty: 1,
+            price: rc.amount,
             total: rc.amount
         });
     });
 
-    // 2. FnB Items
-    (transaction.fnbItems || []).forEach(f => {
-        printItems.push({
+    // 2. Tambahkan baris FnB (dari daftar terstruktur agar tidak duplikat)
+    fnbItems.forEach(f => {
+        printLines.push({
             name: f.name.toUpperCase(),
             qty: f.quantity,
             price: f.price,
@@ -124,37 +115,36 @@ export function TransactionDetailDialog({
         });
     });
 
-    const totalQty = printItems.reduce((s, i) => s + i.qty, 0);
+    const totalQty = printLines.reduce((s, i) => s + i.qty, 0);
 
     const html = `
       <html>
         <head>
-          <title>Print Nota</title>
           <style>
             @page { margin: 0; size: 58mm auto; }
             body { 
-              width: 58mm; margin: 0; padding: 5px 2px; 
+              width: 58mm; margin: 0; padding: 4px 2px; 
               font-family: 'Courier New', Courier, monospace; 
-              font-size: 8.5px; line-height: 1.2; color: #000;
+              font-size: 8px; line-height: 1.1; color: #000;
               background: #fff;
             }
             .center { text-align: center; }
             .right { text-align: right; }
             .bold { font-weight: bold; }
-            .sep { border-top: 1px dashed #000; margin: 6px 0; }
+            .sep { border-top: 1px dashed #000; margin: 4px 0; }
+            .item-block { margin-bottom: 3px; }
+            .item-name { font-weight: bold; display: block; }
             .flex { display: flex; justify-content: space-between; }
-            .logo { width: 35px; height: 35px; object-fit: contain; filter: grayscale(1) contrast(1.2); margin-bottom: 4px; }
-            .item-block { margin-bottom: 4px; }
-            .item-name { font-weight: bold; display: block; margin-bottom: 1px; }
+            .logo { width: 35px; height: auto; object-fit: contain; filter: grayscale(1) contrast(1.5); margin: 0 auto 3px; display: block; }
             .summary-row { display: flex; justify-content: space-between; margin: 1px 0; }
-            .total-row { display: flex; justify-content: space-between; margin: 4px 0; font-weight: bold; font-size: 10px; }
+            .total-row { display: flex; justify-content: space-between; margin: 3px 0; font-weight: bold; font-size: 9px; }
           </style>
         </head>
         <body onload="window.print(); window.close();">
           <div class="center">
             <img src="/xenonplay-logo.png" class="logo" />
-            <div class="bold" style="font-size: 10px; margin-bottom: 1px;">${storeName.toUpperCase()}</div>
-            <div>${address}</div>
+            <div class="bold" style="font-size: 9px;">${storeName.toUpperCase()}</div>
+            <div style="font-size: 7.5px;">${address}</div>
             <div style="margin-top: 2px;">Selamat datang di toko kami</div>
           </div>
           
@@ -163,17 +153,18 @@ export function TransactionDetailDialog({
           <div class="flex">
             <div>
                <div>Nota : ${transaction.id.substring(0,8).toUpperCase()}</div>
-               <div>${dateStr}</div>
-               <div>${timeStr}</div>
+               <div>Tgl  : ${dateStr}</div>
+               <div>Jam  : ${timeStr}</div>
             </div>
             <div class="right">
-               <div>Kasir : ${cashierName.toUpperCase()}</div>
+               <div>Kasir:</div>
+               <div>${cashierName.toUpperCase()}</div>
             </div>
           </div>
 
           <div class="sep"></div>
 
-          ${printItems.map((item, idx) => `
+          ${printLines.map((item, idx) => `
             <div class="item-block">
               <span class="item-name">${idx + 1}. ${item.name}</span>
               <div class="flex">
@@ -205,7 +196,7 @@ export function TransactionDetailDialog({
           </div>
 
           <div class="summary-row">
-            <span>Bayar</span>
+            <span>Bayar (Cash)</span>
             <span class="right">Rp ${(transaction.paidAmount || netto).toLocaleString('id-ID')}</span>
           </div>
           <div class="summary-row">
@@ -214,8 +205,8 @@ export function TransactionDetailDialog({
           </div>
 
           <div class="sep"></div>
-          <div class="center">Terima kasih telah berbelanja di toko kami</div>
-          <div class="center" style="margin-top: 2px;">"Good Game, Well Played"</div>
+          <div class="center" style="font-size: 7.5px;">Terima kasih telah berbelanja di toko kami</div>
+          <div class="center bold" style="margin-top: 1px;">"Good Game, Well Played"</div>
           <div style="height: 15px;"></div>
         </body>
       </html>
@@ -232,11 +223,11 @@ export function TransactionDetailDialog({
         <DialogHeader className="p-6 pb-2 shrink-0">
           <div className='flex items-start justify-between'>
             <div className="flex gap-3">
-                <div className={cn("p-2 rounded-lg", isPosOnly ? "bg-emerald-500/10 text-emerald-500" : "bg-primary/10 text-primary")}>
-                    {isPosOnly ? <ShoppingCart className="h-5 w-5" /> : <Gamepad2 className="h-5 w-5" />}
+                <div className={cn("p-2 rounded-lg", transaction.stationId === 'pos' ? "bg-emerald-500/10 text-emerald-500" : "bg-primary/10 text-primary")}>
+                    {transaction.stationId === 'pos' ? <ShoppingCart className="h-5 w-5" /> : <Gamepad2 className="h-5 w-5" />}
                 </div>
                 <div>
-                    <DialogTitle className="text-lg font-bold uppercase">{isPosOnly ? 'Nota Kasir Kantin' : `Nota ${transaction.stationName ?? 'Stasiun'}`}</DialogTitle>
+                    <DialogTitle className="text-lg font-bold uppercase">{transaction.stationId === 'pos' ? 'Nota Kasir Kantin' : `Nota ${transaction.stationName ?? 'Stasiun'}`}</DialogTitle>
                     <DialogDescription className="text-[10px] font-mono uppercase tracking-widest">{transaction.id}</DialogDescription>
                 </div>
             </div>
@@ -249,17 +240,16 @@ export function TransactionDetailDialog({
 
         <ScrollArea className="flex-1 px-6 overflow-y-auto">
           <div className="space-y-6 py-4">
-            {/* MEMBER BINDING SECTION (FOR UNPAID GUEST) */}
-            {!isPaid && !isPosOnly && (
+            {!isPaid && transaction.stationId !== 'pos' && (
                 <div className="space-y-3">
-                    <h4 className='text-[10px] font-black uppercase text-muted-foreground tracking-widest'>Siapa yang bayar? (Stempel Loyalitas)</h4>
+                    <h4 className='text-[10px] font-black uppercase text-muted-foreground tracking-widest'>Siapa yang bayar?</h4>
                     {transaction.memberId ? (
                         <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 flex justify-between items-center">
                             <div className="flex items-center gap-2">
                                 <UserCheck className="size-4 text-primary" />
                                 <span className="text-xs font-bold uppercase">{transaction.memberName}</span>
                             </div>
-                            <Badge variant="outline" className="text-[8px] font-black text-primary border-primary/20">MEMBER TERDAFTAR</Badge>
+                            <Badge variant="outline" className="text-[8px] font-black text-primary border-primary/20">MEMBER</Badge>
                         </div>
                     ) : selectedMember ? (
                         <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/30 flex justify-between items-center animate-in zoom-in-95">
@@ -276,7 +266,7 @@ export function TransactionDetailDialog({
                             <div className="relative">
                                 <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
                                 <Input 
-                                    placeholder="Cari member yang akan bayar..." 
+                                    placeholder="Cari member..." 
                                     className="pl-8 h-9 text-xs bg-muted/30"
                                     value={memberSearch}
                                     onChange={(e) => setMemberSearch(e.target.value)}
@@ -335,9 +325,9 @@ export function TransactionDetailDialog({
         <div className="p-6 pt-2 bg-muted/30 border-t shrink-0">
             <div className="space-y-2 mb-4">
                 <div className='flex justify-between text-xs opacity-60 font-bold'><span>TOTAL BRUTO</span><span className="font-mono">{formatCurrency(bruto)}</span></div>
-                {transaction.discount > 0 && <div className='flex justify-between text-xs text-amber-600 font-bold'><span>DISKON / REWARD</span><span className="font-mono">-{formatCurrency(transaction.discount)}</span></div>}
+                {transaction.discount > 0 && <div className='flex justify-between text-xs text-amber-600 font-bold'><span>DISKON</span><span className="font-mono">-{formatCurrency(transaction.discount)}</span></div>}
                 <Separator />
-                <div className='flex justify-between items-end'><span className="text-xs font-black uppercase">TOTAL TAGIHAN NETTO</span><span className="text-2xl font-black text-primary font-mono">{formatCurrency(outstandingAmount > 0 ? outstandingAmount : netto)}</span></div>
+                <div className='flex justify-between items-end'><span className="text-xs font-black uppercase">GRAND TOTAL</span><span className="text-2xl font-black text-primary font-mono">{formatCurrency(outstandingAmount > 0 ? outstandingAmount : netto)}</span></div>
             </div>
             <div className="flex gap-2">
                 <Button variant="outline" className="flex-1 font-bold uppercase gap-2 h-11" onClick={handlePrint} disabled={isPrinting}>

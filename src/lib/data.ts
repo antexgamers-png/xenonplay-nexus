@@ -206,17 +206,28 @@ export async function createTransaction(db: Firestore, data: any) {
     const finalBruto = baseAmount + extraStickFee;
     const finalNetto = Math.max(0, finalBruto - discount);
     
-    // UTAMA: Gunakan nama paket sebagai deskripsi item pertama
     const initialDesc = data.packageName || `Sewa ${formatDuration(data.durationMinutes)}`;
     const additionalCharges = [{ description: initialDesc, amount: baseAmount, timestamp: now, isPaid }];
     
     if (extraStickFee > 0) additionalCharges.push({ description: `${data.extraSticks} Stik Extra`, amount: extraStickFee, timestamp: now, isPaid });
 
+    // Tambahkan item kantin ke daftar biaya tambahan dengan prefix FnB:
+    if (data.fnbItems && data.fnbItems.length > 0) {
+        data.fnbItems.forEach((f: any) => {
+            additionalCharges.push({ 
+                description: `FnB: ${f.name} x${f.quantity}`, 
+                amount: f.price * f.quantity, 
+                timestamp: now, 
+                isPaid 
+            });
+        });
+    }
+
     const newTransaction: any = {
         id: docRef.id, 
         stationId: data.stationId || 'pos', 
         stationName: data.stationName || 'Unknown', 
-        packageName: data.packageName || initialDesc, // Simpan nama paket secara eksplisit
+        packageName: data.packageName || initialDesc,
         durationMinutes: data.durationMinutes || 0,
         amount: finalBruto, 
         discount: discount, 
@@ -265,7 +276,12 @@ export async function createStandaloneFnbTransaction(db: Firestore, items: any[]
         status: 'paid', 
         shiftId: activeShiftId || null, 
         fnbItems: items, 
-        additionalCharges: items.map(i => ({ description: `${i.name} x${i.quantity}`, amount: i.price * i.quantity, timestamp: now, isPaid: true })), 
+        additionalCharges: items.map(i => ({ 
+            description: `FnB: ${i.name} x${i.quantity}`, 
+            amount: i.price * i.quantity, 
+            timestamp: now, 
+            isPaid: true 
+        })), 
         isLoyaltyProcessed: false
     };
 
@@ -293,11 +309,38 @@ export async function addItemsToTransaction(db: Firestore, transactionId: string
         const newDiscount = (tData.discount || 0) + (discount || 0);
         const netAdd = Math.max(0, totalAmount - (discount || 0));
         const newPaid = isPaid ? (tData.paidAmount || 0) + netAdd : (tData.paidAmount || 0);
+        
+        // Gabungkan item FnB baru ke list yang sudah ada
+        const existingFnb = tData.fnbItems || [];
+        const updatedFnb = [...existingFnb];
+        items.forEach(newItem => {
+            const idx = updatedFnb.findIndex(it => it.id === newItem.id);
+            if (idx >= 0) updatedFnb[idx].quantity += newItem.quantity;
+            else updatedFnb.push(newItem);
+        });
+
         txn.update(tRef, {
-            amount: newBruto, discount: newDiscount, paidAmount: newPaid, status: (newBruto - newDiscount) > newPaid ? 'unpaid' : 'paid',
-            additionalCharges: [...(tData.additionalCharges || []), ...items.map(i => ({ description: `${i.name} x${i.quantity}`, amount: i.price * i.quantity, timestamp: Date.now(), isPaid }))]
+            amount: newBruto, 
+            discount: newDiscount, 
+            paidAmount: newPaid, 
+            fnbItems: updatedFnb,
+            status: (newBruto - newDiscount) > newPaid ? 'unpaid' : 'paid',
+            additionalCharges: [
+                ...(tData.additionalCharges || []), 
+                ...items.map(i => ({ 
+                    description: `FnB: ${i.name} x${i.quantity}`, 
+                    amount: i.price * i.quantity, 
+                    timestamp: Date.now(), 
+                    isPaid 
+                }))
+            ]
         });
         if (activeShiftId && isPaid && netAdd > 0) txn.update(doc(db, 'shifts', activeShiftId), { totalSales: increment(netAdd), expectedBalance: increment(netAdd) });
+        
+        // Potong stok
+        for (const i of items) {
+            txn.update(doc(db, 'fnbItems', i.id), { stock: increment(-i.quantity) });
+        }
     });
 }
 
@@ -321,7 +364,6 @@ export async function addTimeToTransaction(db: Firestore, transactionId: string,
         const netAdd = Math.max(0, price - (discount || 0));
         const newPaid = isPaid ? (tData.paidAmount || 0) + netAdd : (tData.paidAmount || 0);
         
-        // Gunakan nama paket jika ada, jika tidak gunakan fallback durasi
         const desc = packageName || `Sewa Tambahan ${formatDuration(duration)}`;
         
         txn.update(tRef, {
