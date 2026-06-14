@@ -69,7 +69,6 @@ export function TransactionClient({ transactions, stations }: TransactionClientP
   const firestore = useFirestore();
   const { toast } = useToast();
 
-  // Fetch shifts for operator names mapping
   const shiftsQuery = useMemoFirebase(() => !firestore ? null : collection(firestore, 'shifts'), [firestore]);
   const { data: allShifts } = useCollection<Shift>(shiftsQuery);
 
@@ -148,38 +147,20 @@ export function TransactionClient({ transactions, stations }: TransactionClientP
     setIsDetailOpen(true);
   };
 
-  const handleMarkAsPaid = async () => {
+  const handleMarkAsPaid = async (member?: Member | null) => {
     if (!selectedTransaction || !firestore) return;
-    
     try {
-        await markTransactionAsPaid(firestore, selectedTransaction.id);
-        
-        const stationToClear = stations.find(s => s.current_transaction_id === selectedTransaction.id);
-        if (stationToClear && !stationToClear.is_active) {
-            await updateDoc(doc(firestore, 'stations', stationToClear.id), {
-                current_transaction_id: null,
-            });
-        }
-
-        toast({
-            title: 'Pembayaran Sukses',
-            description: `Transaksi ${selectedTransaction.stationName} telah lunas.`,
-            variant: 'success'
-        });
+        await markTransactionAsPaid(firestore, selectedTransaction.id, activeShift?.id, member);
         setIsDetailOpen(false);
+        toast({ title: 'Pembayaran Lunas', variant: "success" });
     } catch (e: any) {
-        toast({
-            title: 'Gagal',
-            description: e.message,
-            variant: 'destructive'
-        });
+        toast({ title: 'Gagal', description: e.message, variant: 'destructive' });
     }
   };
 
   const exportToExcel = () => {
     if (!filteredTransactions.length) return;
 
-    // Header Metadata
     const periodStr = date?.from ? 
         `${format(date.from, 'dd/MM/yyyy')} - ${date.to ? format(date.to, 'dd/MM/yyyy') : format(date.from, 'dd/MM/yyyy')}` 
         : 'Semua Waktu';
@@ -187,7 +168,7 @@ export function TransactionClient({ transactions, stations }: TransactionClientP
     const worksheetData = [
         ['LAPORAN TRANSAKSI'],
         [`Periode : ${periodStr}`],
-        [], // Spacing
+        [],
         ['No.', 'Nama Operator', 'Tanggal', 'Jam', 'Stasiun', 'Item', 'Total Bruto', 'Diskon', 'Total Netto', 'Status']
     ];
 
@@ -195,9 +176,29 @@ export function TransactionClient({ transactions, stations }: TransactionClientP
         const shift = allShifts?.find(s => s.id === t.shiftId);
         const operatorName = shift?.openedByName || 'System/Admin';
         
+        // Clean up Item names for professional look
         const itemDetails = (t.additionalCharges || [])
-            .map(c => `${c.description} (${formatCurrency(c.amount)})`)
+            .map(c => {
+                let desc = c.description || '';
+                // Remove redundant prefixes
+                desc = desc.replace(/^Sewa\s+/i, '');
+                desc = desc.replace(/^FnB:\s+/i, '');
+                desc = desc.replace(/^Tambah\s+FnB:\s+/i, '');
+                desc = desc.replace(/^Tambah\s+waktu\s+/i, '');
+                desc = desc.replace(/^Biaya\s+Tambahan\s+/i, '');
+                
+                // Humanize durations if raw (e.g. 60m -> 60 Menit)
+                if (/^\d+m$/.test(desc)) {
+                    desc = desc.replace('m', ' Menit');
+                }
+                
+                return `${desc} (${formatCurrency(c.amount).replace(',00', '').replace('Rp', '')})`;
+            })
             .join(' | ');
+
+        const bruto = t.amount || 0;
+        const discount = t.discount || 0;
+        const netto = Math.max(0, bruto - discount);
 
         worksheetData.push([
             (index + 1).toString(),
@@ -206,29 +207,28 @@ export function TransactionClient({ transactions, stations }: TransactionClientP
             format(t.timestamp, 'HH:mm'),
             t.stationName,
             itemDetails,
-            (t.amount || 0).toString(),
-            (t.discount || 0).toString(),
-            Math.max(0, (t.amount || 0) - (t.discount || 0)).toString(),
+            bruto.toString(),
+            discount.toString(),
+            netto.toString(),
             t.status.toUpperCase()
         ]);
     });
 
     const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Transaksi");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Riwayat Transaksi");
 
-    // Styling column widths
+    // Set Column Widths for readability
     worksheet['!cols'] = [
-        { wch: 5 }, { wch: 20 }, { wch: 12 }, { wch: 10 }, { wch: 15 }, 
-        { wch: 50 }, { wch: 15 }, { wch: 12 }, { wch: 15 }, { wch: 15 }
+        { wch: 5 }, { wch: 18 }, { wch: 12 }, { wch: 8 }, { wch: 15 }, 
+        { wch: 60 }, { wch: 12 }, { wch: 10 }, { wch: 12 }, { wch: 12 }
     ];
 
-    XLSX.writeFile(workbook, `XenonPlay_Laporan_Transaksi_${format(new Date(), 'yyyyMMdd')}.xlsx`);
+    XLSX.writeFile(workbook, `XP_Laporan_Transaksi_${format(new Date(), 'yyyyMMdd')}.xlsx`);
   };
 
   return (
     <div className="space-y-6">
-      {/* FILTER BAR - STICKY FOR BETTER ACCESS */}
       <div className="sticky top-0 z-20 flex flex-col sm:flex-row gap-6 justify-between items-end bg-card/80 backdrop-blur-md p-6 rounded-2xl border shadow-lg transition-all duration-300">
         <div className="flex flex-wrap gap-4 items-end w-full sm:w-auto">
             <div className="space-y-1.5 flex-1 sm:flex-initial">
@@ -280,35 +280,24 @@ export function TransactionClient({ transactions, stations }: TransactionClientP
         </Button>
       </div>
 
-      {date?.from && (
-          <div className="px-4 py-2 bg-muted/30 border border-dashed rounded-lg inline-flex items-center gap-2 animate-in fade-in duration-500">
-              <CalendarDays className="size-3 text-muted-foreground" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                  Data: {format(date.from, 'dd MMM yyyy', { locale: idLocale })} 
-                  {date.to && date.to.getTime() !== date.from.getTime() ? ` - ${format(date.to, 'dd MMM yyyy', { locale: idLocale })}` : ''}
-              </span>
-          </div>
-      )}
-
-      {/* STATS CARDS */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card className="border-emerald-500/20 bg-emerald-500/[0.02] shadow-sm rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
             <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Uang Masuk (Lunas)</CardTitle>
             <Wallet className="h-4 w-4 text-emerald-500" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 pt-0">
             <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{formatCurrency(stats.totalCollected)}</div>
             <p className="text-[9px] text-muted-foreground mt-1 uppercase">Pendapatan bersih periode ini.</p>
           </CardContent>
         </Card>
 
         <Card className="border-amber-500/20 bg-amber-500/[0.02] shadow-sm rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
             <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Piutang (Belum Bayar)</CardTitle>
             <HandCoins className="h-4 w-4 text-amber-500" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 pt-0">
             <div className="text-2xl font-black text-amber-600 dark:text-amber-400">{formatCurrency(stats.totalReceivables)}</div>
             <div className="flex items-center gap-2 mt-1">
                 <Badge variant="outline" className="text-[8px] bg-amber-500/10 text-amber-600 border-amber-500/20 h-4 font-black">
@@ -320,20 +309,19 @@ export function TransactionClient({ transactions, stations }: TransactionClientP
         </Card>
 
         <Card className="border-blue-500/20 bg-blue-500/[0.02] shadow-sm rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
             <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Volume Transaksi</CardTitle>
             <ReceiptText className="h-4 w-4 text-blue-500" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 pt-0">
             <div className="text-2xl font-black">{dateFilteredTransactions.length}</div>
             <p className="text-[9px] text-muted-foreground mt-1 uppercase">Total nota tercetak.</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* LIST SECTION */}
-      <Card className="rounded-2xl shadow-sm">
-        <CardHeader className="pb-3 border-b border-border/50">
+      <Card className="rounded-2xl shadow-sm overflow-hidden border-border/50">
+        <CardHeader className="pb-3 border-b border-border/50 bg-muted/20">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                     <div className="p-2 rounded-xl bg-primary/10 text-primary">
@@ -348,7 +336,7 @@ export function TransactionClient({ transactions, stations }: TransactionClientP
                     <div className="relative w-full sm:w-64">
                         <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                         <Input
-                            placeholder="Cari stasiun/produk..."
+                            placeholder="Cari stasiun..."
                             className="pl-9 h-10 text-xs rounded-xl"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}

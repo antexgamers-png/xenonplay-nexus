@@ -96,7 +96,7 @@ export function ReportsClient({ transactions, fnbItems, stations, expenses }: Re
   }, [expenses, date]);
 
   const exportToExcel = () => {
-    // LOGIKA RINGKASAN HARIAN (SUMMARY GROUP BY DATE)
+    // DAILY SUMMARY LOGIC
     const summaryMap: Record<string, { 
         date: string, 
         rental: number, 
@@ -107,7 +107,7 @@ export function ReportsClient({ transactions, fnbItems, stations, expenses }: Re
         profit: number 
     }> = {};
 
-    // 1. Proses Pemasukan
+    // 1. Process Income (Transactions)
     filteredTransactions.forEach(t => {
         const dateKey = format(t.timestamp, 'yyyy-MM-dd');
         if (!summaryMap[dateKey]) {
@@ -127,7 +127,7 @@ export function ReportsClient({ transactions, fnbItems, stations, expenses }: Re
         summaryMap[dateKey].discount += (t.discount || 0);
     });
 
-    // 2. Proses Pengeluaran
+    // 2. Process Expenses
     filteredExpenses.forEach(e => {
         const dateKey = format(e.timestamp, 'yyyy-MM-dd');
         if (!summaryMap[dateKey]) {
@@ -136,15 +136,15 @@ export function ReportsClient({ transactions, fnbItems, stations, expenses }: Re
         summaryMap[dateKey].expenses += e.amount;
     });
 
-    // Header Metadata
+    // Final Header and Metadata
     const periodStr = date?.from ? 
         `${format(date.from, 'dd/MM/yyyy')} - ${date.to ? format(date.to, 'dd/MM/yyyy') : format(date.from, 'dd/MM/yyyy')}` 
         : 'Semua Waktu';
 
     const worksheetData = [
-        ['LAPORAN KEUANGAN (SUMMARY)'],
+        ['LAPORAN KEUANGAN'],
         [`Periode : ${periodStr}`],
-        [], // Spacing
+        [],
         ['No.', 'Tanggal', 'Total Sewa TV', 'Total Jual FnB', 'Total Diskon', 'Pemasukan Netto', 'Biaya Operasional', 'Profit / Loss']
     ];
 
@@ -170,13 +170,14 @@ export function ReportsClient({ transactions, fnbItems, stations, expenses }: Re
 
     const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Ringkasan Keuangan");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Keuangan");
 
+    // Adjust column widths
     worksheet['!cols'] = [
         { wch: 5 }, { wch: 15 }, { wch: 18 }, { wch: 18 }, { wch: 15 }, { wch: 20 }, { wch: 20 }, { wch: 20 }
     ];
 
-    XLSX.writeFile(workbook, `XenonPlay_Summary_Keuangan_${format(new Date(), 'yyyyMMdd')}.xlsx`);
+    XLSX.writeFile(workbook, `XP_Summary_Keuangan_${format(new Date(), 'yyyyMMdd')}.xlsx`);
   };
 
   return (
