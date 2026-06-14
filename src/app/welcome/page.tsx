@@ -5,8 +5,8 @@ import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
 /**
- * XENONPLAY WELCOME v5.0 - SPIRIT EDITION
- * Menampilkan maskot sebagai "Spirit of the Station" dengan aura neon.
+ * XENONPLAY WELCOME v6.0 - ULTIMATE SPIRIT EDITION
+ * Menggunakan aset welcome.png dengan animasi Aura Sultan 3D.
  */
 export default function WelcomePage() {
     const [mounted, setMounted] = useState(false);
@@ -19,44 +19,47 @@ export default function WelcomePage() {
 
     return (
         <div className="fixed inset-0 h-screen w-screen bg-slate-950 overflow-hidden flex items-center justify-center select-none">
-            {/* AMBIENT DYNAMIC BACKGROUND */}
+            {/* LAYER 1: AMBIENT DYNAMIC BACKGROUND */}
             <motion.div 
                 animate={{ 
-                    scale: [1, 1.2, 1],
-                    opacity: [0.15, 0.3, 0.15],
+                    scale: [1, 1.3, 1],
+                    opacity: [0.15, 0.4, 0.15],
                 }}
-                transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute size-[150vh] bg-[radial-gradient(circle,rgba(59,130,246,0.4)_0%,transparent_70%)] blur-[100px] rounded-full"
+                transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute size-[160vh] bg-[radial-gradient(circle,rgba(59,130,246,0.5)_0%,transparent_75%)] blur-[120px] rounded-full"
             />
 
+            {/* LAYER 2: GRID & SCANLINES (RETRO FEEL) */}
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%)] bg-[length:100%_4px] pointer-events-none opacity-30 z-20" />
+
             {/* MAIN CONTENT CONTAINER */}
-            <div className="relative z-10 flex flex-col items-center gap-6">
-                {/* FLOATING MASCOT WITH GLOW */}
+            <div className="relative z-30 flex flex-col items-center gap-4 px-6">
+                {/* FLOATING WELCOME MASCOT */}
                 <div className="relative group">
-                    {/* Character Inner Glow */}
+                    {/* Inner Mascot Glow */}
                     <motion.div 
                         animate={{ 
-                            opacity: [0.4, 0.7, 0.4],
-                            scale: [0.8, 1.1, 0.8]
+                            opacity: [0.3, 0.8, 0.3],
+                            scale: [0.9, 1.2, 0.9]
                         }}
-                        transition={{ duration: 4, repeat: Infinity }}
-                        className="absolute inset-0 bg-primary/40 blur-[80px] rounded-full"
+                        transition={{ duration: 5, repeat: Infinity }}
+                        className="absolute inset-0 bg-primary/30 blur-[100px] rounded-full"
                     />
                     
                     <motion.div
-                        initial={{ y: 30, opacity: 0 }}
-                        animate={{ y: [0, -20, 0], opacity: 1 }}
+                        initial={{ y: 50, opacity: 0 }}
+                        animate={{ y: [0, -30, 0], opacity: 1 }}
                         transition={{ 
-                            y: { duration: 5, repeat: Infinity, ease: "easeInOut" },
+                            y: { duration: 6, repeat: Infinity, ease: "easeInOut" },
                             opacity: { duration: 1.5 }
                         }}
-                        className="relative size-80 md:size-[520px]"
+                        className="relative w-[70vw] h-[50vh] md:w-[60vw] md:h-[60vh] lg:w-[800px] lg:h-[600px]"
                     >
                         <Image 
-                            src="/mascot.png" 
+                            src="/welcome.png" 
                             alt="Xenon Spirit" 
                             fill 
-                            className="object-contain drop-shadow-[0_0_50px_rgba(59,130,246,0.6)]"
+                            className="object-contain drop-shadow-[0_0_80px_rgba(59,130,246,0.7)]"
                             priority
                         />
                     </motion.div>
@@ -67,42 +70,43 @@ export default function WelcomePage() {
                     <motion.div
                         initial={{ scaleX: 0 }}
                         animate={{ scaleX: 1 }}
-                        transition={{ duration: 1, delay: 0.5 }}
-                        className="h-px w-64 bg-gradient-to-r from-transparent via-primary/50 to-transparent mx-auto"
+                        transition={{ duration: 1.5, delay: 0.5 }}
+                        className="h-px w-full max-w-lg bg-gradient-to-r from-transparent via-primary/60 to-transparent mx-auto"
                     />
                     
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                         <motion.h1 
                             initial={{ letterSpacing: "1.5em", opacity: 0 }}
-                            animate={{ letterSpacing: "0.5em", opacity: 1 }}
-                            transition={{ duration: 2 }}
-                            className="text-4xl md:text-6xl font-black text-white uppercase tracking-[0.5em] leading-none drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]"
+                            animate={{ letterSpacing: "0.4em", opacity: 1 }}
+                            transition={{ duration: 2.5 }}
+                            className="text-4xl md:text-6xl lg:text-7xl font-black text-white uppercase leading-none drop-shadow-[0_0_30px_rgba(59,130,246,0.5)]"
                         >
                             READY <span className="text-primary">TO PLAY</span>
                         </motion.h1>
-                        <p className="text-[10px] md:text-xs font-black text-primary/40 uppercase tracking-[0.8em] mt-4">
+                        <p className="text-[10px] md:text-xs font-black text-primary/50 uppercase tracking-[1em] mt-4 ml-[1em]">
                             XENONPLAY • ELITE GAMING CORE
                         </p>
                     </div>
 
                     <motion.div
-                        animate={{ opacity: [0.2, 0.5, 0.2] }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                        className="inline-flex items-center gap-3 px-6 py-2 rounded-full border border-primary/20 bg-primary/5"
+                        animate={{ opacity: [0.3, 0.7, 0.3] }}
+                        transition={{ duration: 3, repeat: Infinity }}
+                        className="inline-flex items-center gap-3 px-8 py-2.5 rounded-full border border-primary/20 bg-primary/5 backdrop-blur-sm"
                     >
-                        <div className="size-1.5 rounded-full bg-primary" />
-                        <span className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">System Synchronized</span>
+                        <div className="size-2 rounded-full bg-primary shadow-[0_0_10px_rgba(59,130,246,1)]" />
+                        <span className="text-[11px] font-black text-primary uppercase tracking-[0.4em]">Hardware Synchronized</span>
                     </motion.div>
                 </div>
             </div>
 
-            {/* RETRO SCANLINE OVERLAY */}
-            <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%)] bg-[length:100%_4px] pointer-events-none opacity-30" />
-            
-            {/* CORNER WATERMARKS */}
-            <div className="absolute bottom-10 right-12 opacity-10">
-                <div className="relative size-24 grayscale">
-                    <Image src="/xenonplay-logo.png" alt="Branding" fill className="object-contain" />
+            {/* CORNER BRANDING */}
+            <div className="absolute bottom-10 right-12 opacity-20 z-40 flex items-center gap-4">
+                <div className="text-right">
+                    <p className="text-[8px] font-black text-white uppercase tracking-widest">Enterprise System</p>
+                    <p className="text-[10px] font-black text-primary uppercase tracking-widest">v6.0 SPIRIT</p>
+                </div>
+                <div className="relative size-16 grayscale">
+                    <Image src="/xenonplay-logo.png" alt="Logo" fill className="object-contain" />
                 </div>
             </div>
         </div>
