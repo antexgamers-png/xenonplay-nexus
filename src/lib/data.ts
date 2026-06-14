@@ -206,16 +206,17 @@ export async function createTransaction(db: Firestore, data: any) {
     const finalBruto = baseAmount + extraStickFee;
     const finalNetto = Math.max(0, finalBruto - discount);
     
-    // Gunakan nama paket secara eksplisit agar bersih di laporan
+    // UTAMA: Gunakan nama paket sebagai deskripsi item pertama
     const initialDesc = data.packageName || `Sewa ${formatDuration(data.durationMinutes)}`;
     const additionalCharges = [{ description: initialDesc, amount: baseAmount, timestamp: now, isPaid }];
+    
     if (extraStickFee > 0) additionalCharges.push({ description: `${data.extraSticks} Stik Extra`, amount: extraStickFee, timestamp: now, isPaid });
 
     const newTransaction: any = {
         id: docRef.id, 
         stationId: data.stationId || 'pos', 
         stationName: data.stationName || 'Unknown', 
-        packageName: data.packageName || null,
+        packageName: data.packageName || initialDesc, // Simpan nama paket secara eksplisit
         durationMinutes: data.durationMinutes || 0,
         amount: finalBruto, 
         discount: discount, 
@@ -301,6 +302,7 @@ export async function addTimeToTransaction(db: Firestore, transactionId: string,
         const netAdd = Math.max(0, price - (discount || 0));
         const newPaid = isPaid ? (tData.paidAmount || 0) + netAdd : (tData.paidAmount || 0);
         
+        // Gunakan nama paket jika ada, jika tidak gunakan fallback durasi
         const desc = packageName || `Sewa Tambahan ${formatDuration(duration)}`;
         
         txn.update(tRef, {

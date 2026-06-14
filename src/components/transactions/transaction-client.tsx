@@ -171,11 +171,11 @@ export function TransactionClient({ transactions, stations }: TransactionClientP
         const shift = allShifts?.find(s => s.id === t.shiftId);
         const operatorName = shift?.openedByName || 'operator';
         
-        // Logika Ekstraksi Item yang sangat bersih
+        // Logika Ekstraksi Item yang sangat bersih untuk Excel
         const itemDetails = (t.additionalCharges || [])
             .map(c => {
                 let desc = c.description || '';
-                // Hapus semua prefix teknis
+                // Hapus semua prefix teknis agar hanya tersisa Nama Paket atau Nama Barang asli
                 desc = desc.replace(/^Sewa\s+/i, '');
                 desc = desc.replace(/^FnB:\s+/i, '');
                 desc = desc.replace(/^Tambah\s+FnB:\s+/i, '');
@@ -197,7 +197,7 @@ export function TransactionClient({ transactions, stations }: TransactionClientP
             format(t.timestamp, 'dd/MM/yyyy'),
             format(t.timestamp, 'HH:mm'),
             t.stationName,
-            itemDetails || (t.packageName || 'Sewa TV'),
+            itemDetails || t.packageName || 'Sewa TV',
             bruto.toString(),
             discount.toString(),
             netto.toString(),
