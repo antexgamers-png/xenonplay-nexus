@@ -119,6 +119,9 @@ export interface GeneralSettings {
   themeMode?: 'light' | 'dark' | 'scheduled';
   dayThemeStart?: string;
   nightThemeStart?: string;
+  receiptPaperSize?: string;
+  receiptHeader?: string;
+  receiptFooter?: string;
 }
 
 export interface LandingSettings {

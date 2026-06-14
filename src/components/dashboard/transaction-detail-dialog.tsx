@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -83,6 +84,10 @@ export function TransactionDetailDialog({
     setIsPrinting(true);
     const storeName = settings?.storeName || 'XENONPLAY';
     const address = settings?.address || '';
+    const paperSize = settings?.receiptPaperSize || '58mm';
+    const headerMsg = settings?.receiptHeader || 'Selamat datang di toko kami';
+    const footerMsg = settings?.receiptFooter || 'Terimakasih Telah Bermain\n"Good Game, Well Played"';
+
     const dateStr = format(transaction.timestamp, 'dd/MM/yyyy');
     const timeStr = format(transaction.timestamp, 'HH:mm');
     const shift = shifts?.find(s => s.id === transaction.shiftId);
@@ -120,9 +125,9 @@ export function TransactionDetailDialog({
       <html>
         <head>
           <style>
-            @page { margin: 0; size: 58mm auto; }
+            @page { margin: 0; size: ${paperSize} auto; }
             body { 
-              width: 58mm; margin: 0; padding: 5px 2px; 
+              width: ${paperSize}; margin: 0; padding: 5px 2px; 
               font-family: 'Courier New', Courier, monospace; 
               font-size: 8px; line-height: 1.1; color: #000;
               background: #fff;
@@ -138,6 +143,7 @@ export function TransactionDetailDialog({
             .logo { width: 40px; height: auto; object-fit: contain; filter: grayscale(1) contrast(2); margin: 0 auto 4px; display: block; }
             .summary-row { display: flex; justify-content: space-between; margin: 2px 0; }
             .total-row { display: flex; justify-content: space-between; margin: 4px 0; font-weight: bold; font-size: 9px; border-top: 1px solid #000; padding-top: 2px; }
+            .pre-wrap { white-space: pre-wrap; }
           </style>
         </head>
         <body onload="window.print(); window.close();">
@@ -145,7 +151,7 @@ export function TransactionDetailDialog({
             <img src="/xenonplay-logo.png" class="logo" />
             <div class="bold" style="font-size: 9px;">${storeName.toUpperCase()}</div>
             <div style="font-size: 7.5px;">${address}</div>
-            <div style="margin-top: 2px;">Selamat datang di toko kami</div>
+            <div style="margin-top: 2px;">${headerMsg}</div>
           </div>
           
           <div class="sep"></div>
@@ -205,8 +211,7 @@ export function TransactionDetailDialog({
           </div>
 
           <div class="sep"></div>
-          <div class="center" style="font-size: 7.5px;">Terima kasih telah berbelanja di toko kami</div>
-          <div class="center bold" style="margin-top: 2px;">"Good Game, Well Played"</div>
+          <div class="center pre-wrap" style="font-size: 7.5px;">${footerMsg}</div>
           <div style="height: 15px;"></div>
         </body>
       </html>
