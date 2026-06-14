@@ -20,10 +20,10 @@ import {
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { FileSpreadsheet, CalendarDays, History, Zap } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 import * as XLSX from 'xlsx';
 import { useShift } from '@/components/providers/shift-provider';
 import { cn } from '@/lib/utils';
-import { Separator } from '@/components/ui/separator';
 
 interface ReportsClientProps {
   transactions: Transaction[];
@@ -136,34 +136,47 @@ export function ReportsClient({ transactions, fnbItems, stations, expenses }: Re
         summaryMap[dateKey].expenses += e.amount;
     });
 
-    // 3. Hitung Netto & Profit
-    const excelData = Object.values(summaryMap)
+    // Header Metadata
+    const periodStr = date?.from ? 
+        `${format(date.from, 'dd/MM/yyyy')} - ${date.to ? format(date.to, 'dd/MM/yyyy') : format(date.from, 'dd/MM/yyyy')}` 
+        : 'Semua Waktu';
+
+    const worksheetData = [
+        ['LAPORAN KEUANGAN (SUMMARY)'],
+        [`Periode : ${periodStr}`],
+        [], // Spacing
+        ['No.', 'Tanggal', 'Total Sewa TV', 'Total Jual FnB', 'Total Diskon', 'Pemasukan Netto', 'Biaya Operasional', 'Profit / Loss']
+    ];
+
+    Object.values(summaryMap)
         .sort((a, b) => b.date.localeCompare(a.date))
-        .map(day => {
+        .forEach((day, index) => {
             const netIncome = (day.rental + day.fnb) - day.discount;
-            return {
-                'Tanggal': day.date,
-                'Total Sewa TV (IDR)': day.rental,
-                'Total Jual FnB (IDR)': day.fnb,
-                'Total Potongan/Diskon (IDR)': day.discount,
-                'Pemasukan Bersih (IDR)': netIncome,
-                'Total Biaya Operasional (IDR)': day.expenses,
-                'Profit / Loss (IDR)': netIncome - day.expenses
-            };
+            const profitLoss = netIncome - day.expenses;
+            
+            worksheetData.push([
+                (index + 1).toString(),
+                day.date,
+                day.rental.toString(),
+                day.fnb.toString(),
+                day.discount.toString(),
+                netIncome.toString(),
+                day.expenses.toString(),
+                profitLoss.toString()
+            ]);
         });
 
-    if (excelData.length === 0) return;
+    if (worksheetData.length <= 4) return;
 
-    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Ringkasan Keuangan Harian");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Ringkasan Keuangan");
 
-    const colWidths = [
-        { wch: 15 }, { wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 25 }, { wch: 25 }, { wch: 25 }
+    worksheet['!cols'] = [
+        { wch: 5 }, { wch: 15 }, { wch: 18 }, { wch: 18 }, { wch: 15 }, { wch: 20 }, { wch: 20 }, { wch: 20 }
     ];
-    worksheet['!cols'] = colWidths;
 
-    XLSX.writeFile(workbook, `XenonPlay_Financial_Summary_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+    XLSX.writeFile(workbook, `XenonPlay_Summary_Keuangan_${format(new Date(), 'yyyyMMdd')}.xlsx`);
   };
 
   return (

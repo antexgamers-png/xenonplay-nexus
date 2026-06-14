@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import type { Transaction, Station } from '@/lib/types';
+import type { Transaction, Station, Shift } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { 
@@ -26,8 +26,8 @@ import { Badge } from '@/components/ui/badge';
 import { TransactionTable } from './transaction-table';
 import { TransactionDetailDialog } from '@/components/dashboard/transaction-detail-dialog';
 import { markTransactionAsPaid } from '@/lib/data';
-import { useFirestore } from '@/firebase';
-import { updateDoc, doc } from 'firebase/firestore';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { updateDoc, doc, collection } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { DateRangePicker } from '@/components/reports/date-range-picker';
 import { startOfDay, endOfDay, subDays, format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
@@ -68,6 +68,10 @@ export function TransactionClient({ transactions, stations }: TransactionClientP
 
   const firestore = useFirestore();
   const { toast } = useToast();
+
+  // Fetch shifts for operator names mapping
+  const shiftsQuery = useMemoFirebase(() => !firestore ? null : collection(firestore, 'shifts'), [firestore]);
+  const { data: allShifts } = useCollection<Shift>(shiftsQuery);
 
   const handleRangeChange = (value: string) => {
     setRangeType(value);
@@ -175,41 +179,51 @@ export function TransactionClient({ transactions, stations }: TransactionClientP
   const exportToExcel = () => {
     if (!filteredTransactions.length) return;
 
-    const excelData = filteredTransactions.map((t, index) => {
-        // Gabungkan deskripsi item untuk kolom rincian
+    // Header Metadata
+    const periodStr = date?.from ? 
+        `${format(date.from, 'dd/MM/yyyy')} - ${date.to ? format(date.to, 'dd/MM/yyyy') : format(date.from, 'dd/MM/yyyy')}` 
+        : 'Semua Waktu';
+
+    const worksheetData = [
+        ['LAPORAN TRANSAKSI'],
+        [`Periode : ${periodStr}`],
+        [], // Spacing
+        ['No.', 'Nama Operator', 'Tanggal', 'Jam', 'Stasiun', 'Item', 'Total Bruto', 'Diskon', 'Total Netto', 'Status']
+    ];
+
+    filteredTransactions.forEach((t, index) => {
+        const shift = allShifts?.find(s => s.id === t.shiftId);
+        const operatorName = shift?.openedByName || 'System/Admin';
+        
         const itemDetails = (t.additionalCharges || [])
             .map(c => `${c.description} (${formatCurrency(c.amount)})`)
             .join(' | ');
 
-        return {
-            'No': index + 1,
-            'ID Transaksi': t.id,
-            'Tanggal': format(t.timestamp, 'dd/MM/yyyy'),
-            'Jam': format(t.timestamp, 'HH:mm'),
-            'Stasiun': t.stationName,
-            'Pelanggan': t.memberName || 'Guest',
-            'Durasi (Menit)': t.stationId === 'pos' ? '-' : t.durationMinutes,
-            'Rincian Belanja': itemDetails,
-            'Total Bruto (IDR)': t.amount || 0,
-            'Potongan Diskon (IDR)': t.discount || 0,
-            'Total Netto (IDR)': Math.max(0, (t.amount || 0) - (t.discount || 0)),
-            'Status Pembayaran': t.status.toUpperCase(),
-            'Shift ID': t.shiftId || '-'
-        };
+        worksheetData.push([
+            (index + 1).toString(),
+            operatorName,
+            format(t.timestamp, 'dd/MM/yyyy'),
+            format(t.timestamp, 'HH:mm'),
+            t.stationName,
+            itemDetails,
+            (t.amount || 0).toString(),
+            (t.discount || 0).toString(),
+            Math.max(0, (t.amount || 0) - (t.discount || 0)).toString(),
+            t.status.toUpperCase()
+        ]);
     });
 
-    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Audit Nota Detail");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Transaksi");
 
-    const colWidths = [
-        { wch: 5 }, { wch: 20 }, { wch: 12 }, { wch: 10 }, { wch: 20 }, 
-        { wch: 20 }, { wch: 12 }, { wch: 60 }, { wch: 18 }, { wch: 18 }, 
-        { wch: 18 }, { wch: 15 }, { wch: 20 }
+    // Styling column widths
+    worksheet['!cols'] = [
+        { wch: 5 }, { wch: 20 }, { wch: 12 }, { wch: 10 }, { wch: 15 }, 
+        { wch: 50 }, { wch: 15 }, { wch: 12 }, { wch: 15 }, { wch: 15 }
     ];
-    worksheet['!cols'] = colWidths;
 
-    XLSX.writeFile(workbook, `XenonPlay_Detailed_Transactions_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+    XLSX.writeFile(workbook, `XenonPlay_Laporan_Transaksi_${format(new Date(), 'yyyyMMdd')}.xlsx`);
   };
 
   return (
