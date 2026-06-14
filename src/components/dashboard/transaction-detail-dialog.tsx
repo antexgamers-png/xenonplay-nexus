@@ -10,7 +10,7 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import { Button } from '../ui/button';
-import type { Transaction, Member, GeneralSettings } from '@/lib/types';
+import type { Transaction, Member, GeneralSettings, Shift } from '@/lib/types';
 import { ScrollArea } from '../ui/scroll-area';
 import { Separator } from '../ui/separator';
 import { Badge } from '../ui/badge';
@@ -45,9 +45,11 @@ export function TransactionDetailDialog({
 
   const membersQuery = useMemoFirebase(() => !firestore ? null : collection(firestore, 'members'), [firestore]);
   const settingsRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'general') : null, [firestore]);
+  const shiftsQuery = useMemoFirebase(() => !firestore ? null : collection(firestore, 'shifts'), [firestore]);
   
   const { data: members } = useCollection<Member>(membersQuery);
   const { data: settings } = useDoc<GeneralSettings>(settingsRef);
+  const { data: shifts } = useCollection<Shift>(shiftsQuery);
 
   const filteredMembers = useMemo(() => {
     if (!memberSearch) return [];
@@ -60,7 +62,10 @@ export function TransactionDetailDialog({
   if (!transaction) return null;
 
   const isPosOnly = transaction.stationId === 'pos';
-  const outstandingAmount = Math.max(0, (transaction.amount || 0) - (transaction.discount || 0) - (transaction.paidAmount || 0));
+  const bruto = transaction.amount || 0;
+  const discount = transaction.discount || 0;
+  const netto = Math.max(0, bruto - discount);
+  const outstandingAmount = Math.max(0, netto - (transaction.paidAmount || 0));
   const isPaid = transaction.status === 'paid';
 
   const charges = transaction.additionalCharges ?? [];
@@ -82,89 +87,96 @@ export function TransactionDetailDialog({
     setIsPrinting(true);
     const storeName = settings?.storeName || 'XENONPLAY';
     const address = settings?.address || '';
-    const phone = settings?.phone || '';
-    const dateStr = format(transaction.timestamp, 'dd/MM/yy HH:mm');
-    const items = transaction.additionalCharges || [];
-    const bruto = transaction.amount || 0;
-    const discount = transaction.discount || 0;
-    const netto = Math.max(0, bruto - discount);
+    const dateStr = format(transaction.timestamp, 'dd/MM/yyyy HH:mm');
+    const shift = shifts?.find(s => s.id === transaction.shiftId);
+    const cashierName = shift?.openedByName || 'Operator';
 
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
+    // Build Items for Table
+    const printItems: { name: string, qty: string, price: string, total: string }[] = [];
+    
+    // 1. Rental/Package
+    rentalCharges.forEach(rc => {
+        let name = rc.description.replace(/^Sewa\s+/i, '');
+        let qty = "1";
+        if (name.includes("Stik Extra")) {
+            qty = name.split(" ")[0];
+            name = "Extra Stick";
+        }
+        printItems.push({
+            name: name.substring(0, 12),
+            qty,
+            price: (rc.amount / parseInt(qty)).toLocaleString('id-ID'),
+            total: rc.amount.toLocaleString('id-ID')
+        });
+    });
+
+    // 2. FnB Items
+    (transaction.fnbItems || []).forEach(f => {
+        printItems.push({
+            name: f.name.substring(0, 12),
+            qty: f.quantity.toString(),
+            price: f.price.toLocaleString('id-ID'),
+            total: (f.price * f.quantity).toLocaleString('id-ID')
+        });
+    });
+
     const html = `
       <html>
         <head>
-          <title>Nota - ${transaction.id}</title>
+          <title>Print Nota</title>
           <style>
             @page { margin: 0; size: 58mm auto; }
             body { 
-              width: 58mm; 
-              margin: 0; 
-              padding: 5px; 
+              width: 58mm; margin: 0; padding: 5px; 
               font-family: 'Courier New', Courier, monospace; 
-              font-size: 12px; 
-              line-height: 1.2;
-              color: #000;
+              font-size: 10px; line-height: 1.2; color: #000;
             }
             .center { text-align: center; }
             .right { text-align: right; }
             .bold { font-weight: bold; }
-            .border-top { border-top: 1px dashed #000; margin-top: 5px; padding-top: 5px; }
-            .margin-v { margin: 5px 0; }
-            table { width: 100%; border-collapse: collapse; }
+            .sep { border-top: 1px dashed #000; margin: 5px 0; }
+            table { width: 100%; border-collapse: collapse; margin: 5px 0; }
             .item-row td { padding: 2px 0; vertical-align: top; }
-            .footer { font-size: 10px; margin-top: 15px; }
           </style>
         </head>
         <body onload="window.print(); window.close();">
-          <div class="center bold" style="font-size: 14px;">${storeName.toUpperCase()}</div>
+          <div class="center bold" style="font-size: 12px;">${storeName.toUpperCase()}</div>
           <div class="center">${address}</div>
-          <div class="center">WA: ${phone}</div>
-          
-          <div class="border-top">
-            <div>ID: ${transaction.id.substring(0, 8).toUpperCase()}</div>
-            <div>TGL: ${dateStr}</div>
-            <div>UNIT: ${transaction.stationName.toUpperCase()}</div>
-            ${transaction.memberName ? `<div>MBR: ${transaction.memberName.toUpperCase()}</div>` : ''}
-          </div>
-
-          <div class="border-top">
-            <table>
-              ${items.map(item => `
-                <tr class="item-row">
-                  <td colspan="2">${item.description.replace('FnB: ', '').toUpperCase()}</td>
-                </tr>
-                <tr class="item-row">
-                  <td class="right" colspan="2">${formatCurrency(item.amount).replace('Rp', '')}</td>
-                </tr>
-              `).join('')}
-            </table>
-          </div>
-
-          <div class="border-top">
-            <table>
-              <tr>
-                <td>TOTAL</td>
-                <td class="right">${formatCurrency(bruto).replace('Rp', '')}</td>
+          <div class="sep"></div>
+          <div>Nota : ${transaction.id.substring(0, 8).toUpperCase()}</div>
+          <div>Tgl. Transaksi : ${dateStr}</div>
+          <div>Kasir : ${cashierName.toUpperCase()}</div>
+          <div class="sep"></div>
+          <table>
+            <tr class="bold">
+              <td width="40%">Item</td>
+              <td width="10%" class="center">Qty</td>
+              <td width="25%" class="right">Harga</td>
+              <td width="25%" class="right">Total</td>
+            </tr>
+            ${printItems.map(item => `
+              <tr class="item-row">
+                <td>${item.name.toUpperCase()}</td>
+                <td class="center">${item.qty}</td>
+                <td class="right">${item.price}</td>
+                <td class="right">${item.total}</td>
               </tr>
-              ${discount > 0 ? `
-              <tr>
-                <td>DISKON</td>
-                <td class="right">-${formatCurrency(discount).replace('Rp', '')}</td>
-              </tr>` : ''}
-              <tr class="bold">
-                <td style="font-size: 14px;">NETTO</td>
-                <td class="right" style="font-size: 14px;">${formatCurrency(netto).replace('Rp', '')}</td>
-              </tr>
-            </table>
-          </div>
-
-          <div class="center footer border-top">
-            <div class="bold">TERIMA KASIH</div>
-            <div>STABILITY IS THE CORE OF BUSINESS</div>
-            <div>XENONPLAY NEXUS SYSTEM</div>
-          </div>
+            `).join('')}
+          </table>
+          <div class="sep"></div>
+          <table>
+            <tr><td>Sub Total :</td><td class="right">${bruto.toLocaleString('id-ID')}</td></tr>
+            <tr><td>Diskon :</td><td class="right">-${discount.toLocaleString('id-ID')}</td></tr>
+            <tr class="bold"><td>Grand Total:</td><td class="right">${netto.toLocaleString('id-ID')}</td></tr>
+            <tr><td>Bayar :</td><td class="right">${(transaction.paidAmount || netto).toLocaleString('id-ID')}</td></tr>
+            <tr><td>Kembali :</td><td class="right">0</td></tr>
+          </table>
+          <div class="sep"></div>
+          <div class="center">Terimakasih Telah Bermain</div>
+          <div class="center italic">"Good Game, Well Played"</div>
           <div style="height: 20px;"></div>
         </body>
       </html>
@@ -259,61 +271,47 @@ export function TransactionDetailDialog({
                 </div>
             )}
 
-            {rentalCharges.length > 0 && (
-              <div className="space-y-3">
-                <h4 className='text-[10px] font-black uppercase text-muted-foreground tracking-widest'>Rincian Sewa TV</h4>
+            <div className="space-y-3">
+                <h4 className='text-[10px] font-black uppercase text-muted-foreground tracking-widest'>Rincian Tagihan</h4>
                 <div className="space-y-2">
-                    {rentalCharges.map((charge) => (
-                    <div key={charge.index} className='flex justify-between items-center bg-muted/50 p-3 rounded-lg border border-border'>
+                    {charges.map((charge, idx) => (
+                    <div key={idx} className='flex justify-between items-center bg-muted/50 p-3 rounded-lg border border-border'>
                         <div className="flex-1">
-                            <div className="flex items-center gap-2"><p className="text-xs font-bold uppercase">{charge.description}</p>{charge.isPaid && <CheckCircle2 className="h-3 w-3 text-emerald-500" />}</div>
-                            <p className="font-mono text-xs text-primary font-bold">{formatCurrency(charge.amount || 0)}</p>
+                            <div className="flex items-center gap-2">
+                                <p className="text-xs font-bold uppercase">{charge.description.replace('FnB: ', '')}</p>
+                                {charge.isPaid && <CheckCircle2 className="h-3 w-3 text-emerald-500" />}
+                            </div>
+                            <p className={cn("font-mono text-xs font-bold", charge.description.includes('FnB:') ? "text-emerald-600" : "text-primary")}>
+                                {formatCurrency(charge.amount || 0)}
+                            </p>
                         </div>
-                        {!charge.isPaid && onPayCharge && <Button variant="outline" size="sm" className="h-7 text-[9px] font-black uppercase" onClick={() => onPayCharge(charge.index)}>Bayar</Button>}
+                        {!charge.isPaid && onPayCharge && <Button variant="outline" size="sm" className="h-7 text-[9px] font-black uppercase" onClick={() => onPayCharge(idx)}>Bayar</Button>}
                     </div>
                     ))}
                 </div>
-              </div>
-            )}
-            
-            {fnbCharges.length > 0 && (
-              <div className="space-y-3">
-                <h4 className='text-[10px] font-black uppercase text-muted-foreground tracking-widest'>Rincian Kantin / Stok</h4>
-                <div className="space-y-2">
-                    {fnbCharges.map((charge) => (
-                    <div key={charge.index} className="flex justify-between items-center bg-muted/50 p-3 rounded-lg border border-border">
-                        <div className="flex-1">
-                            <div className="flex items-center gap-2"><p className="text-xs font-bold uppercase">{charge.description?.replace('FnB: ', '')}</p>{charge.isPaid && <CheckCircle2 className="h-3 w-3 text-emerald-500" />}</div>
-                            <p className="font-mono text-xs text-emerald-600 font-bold">{formatCurrency(charge.amount || 0)}</p>
-                        </div>
-                        {!charge.isPaid && onPayCharge && <Button variant="outline" size="sm" className="h-7 text-[9px] font-black uppercase" onClick={() => onPayCharge(charge.index)}>Bayar</Button>}
-                    </div>
-                    ))}
-                </div>
-              </div>
-            )}
+            </div>
           </div>
         </ScrollArea>
 
         <div className="p-6 pt-2 bg-muted/30 border-t shrink-0">
             <div className="space-y-2 mb-4">
-                <div className='flex justify-between text-xs opacity-60 font-bold'><span>TOTAL BRUTO</span><span className="font-mono">{formatCurrency(transaction.amount || 0)}</span></div>
+                <div className='flex justify-between text-xs opacity-60 font-bold'><span>TOTAL BRUTO</span><span className="font-mono">{formatCurrency(bruto)}</span></div>
                 {transaction.discount > 0 && <div className='flex justify-between text-xs text-amber-600 font-bold'><span>DISKON / REWARD</span><span className="font-mono">-{formatCurrency(transaction.discount)}</span></div>}
                 <Separator />
-                <div className='flex justify-between items-end'><span className="text-xs font-black uppercase">TOTAL TAGIHAN NETTO</span><span className="text-2xl font-black text-primary font-mono">{formatCurrency(outstandingAmount)}</span></div>
+                <div className='flex justify-between items-end'><span className="text-xs font-black uppercase">TOTAL TAGIHAN NETTO</span><span className="text-2xl font-black text-primary font-mono">{formatCurrency(outstandingAmount > 0 ? outstandingAmount : netto)}</span></div>
             </div>
             <div className="flex gap-2">
-                <Button variant="outline" className="flex-1 font-bold uppercase gap-2" onClick={handlePrint} disabled={isPrinting}>
+                <Button variant="outline" className="flex-1 font-bold uppercase gap-2 h-11" onClick={handlePrint} disabled={isPrinting}>
                     {isPrinting ? <Loader2 className="size-4 animate-spin" /> : <Printer className="size-4" />}
                     Cetak Nota
                 </Button>
                 {!isPaid && (
-                    <Button onClick={handleFinalPaid} className="flex-[1.5] font-black uppercase text-xs shadow-lg shadow-primary/20">
+                    <Button onClick={handleFinalPaid} className="flex-[1.5] font-black uppercase text-xs h-11 shadow-lg shadow-primary/20">
                         Bayar & Lunasi
                     </Button>
                 )}
                 {isPaid && (
-                    <DialogClose asChild><Button variant="secondary" className="flex-1 font-bold uppercase">Tutup</Button></DialogClose>
+                    <DialogClose asChild><Button variant="secondary" className="flex-1 font-bold uppercase h-11">Tutup</Button></DialogClose>
                 )}
             </div>
         </div>

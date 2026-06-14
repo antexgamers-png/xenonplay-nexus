@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import type { FnbItem } from '@/lib/types';
+import type { FnbItem, GeneralSettings, Shift } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, ShoppingCart, Plus, Minus, Trash2, CreditCard, RefreshCcw, AlertCircle, Banknote, Coins, X, Store } from 'lucide-react';
-import { useFirestore } from '@/firebase';
+import { Search, ShoppingCart, Plus, Minus, Trash2, CreditCard, RefreshCcw, AlertCircle, Banknote, Coins, X, Store, Printer, CheckCircle2 } from 'lucide-react';
+import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { createStandaloneFnbTransaction } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -32,7 +32,16 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+    DialogClose,
+} from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { format } from 'date-fns';
 
 interface FnbItemWithQuantity extends FnbItem {
   quantity: number;
@@ -54,13 +63,18 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
   const [isProcessing, setIsSubmitting] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isSuccessOpen, setIsSuccessOpen] = useState(false);
   
   // Payment calculator state
   const [cashReceived, setCashReceived] = useState<string>('0');
+  const [lastOrderDetails, setLastOrderDetails] = useState<any>(null);
   
   const firestore = useFirestore();
   const { toast } = useToast();
   const { activeShift, setIsOpeningDialog } = useShift();
+
+  const settingsRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'general') : null, [firestore]);
+  const { data: settings } = useDoc<GeneralSettings>(settingsRef);
 
   const filteredItems = useMemo(() => {
     return items.filter(item => 
@@ -107,7 +121,7 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
     if (isConfirmOpen) {
         setCashReceived('0');
     }
-  }, [isConfirmOpen, totalAmount]);
+  }, [isConfirmOpen]);
 
   const handleUpdateCart = (itemId: string, change: number) => {
     setCart(prev => {
@@ -137,21 +151,91 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
         quantity: i.quantity
       }));
       
-      await createStandaloneFnbTransaction(firestore, orderData, activeShift?.id);
+      const transaction = await createStandaloneFnbTransaction(firestore, orderData, activeShift?.id);
       
+      setLastOrderDetails({
+          id: transaction.id,
+          items: orderData,
+          total: totalAmount,
+          cash: cashAmountNum,
+          change: changeAmount,
+          cashier: activeShift?.openedByName || 'Operator',
+          timestamp: Date.now()
+      });
+
       toast({
         title: "Penjualan Berhasil",
-        description: `Total ${formatCurrency(totalAmount)} telah dibayarkan. Kembalian: ${formatCurrency(changeAmount)}`,
+        description: `Kembalian: ${formatCurrency(changeAmount)}`,
         variant: "success"
       });
+      
       setCart({});
       setIsConfirmOpen(false);
       setIsSheetOpen(false);
+      setIsSuccessOpen(true);
     } catch (e: any) {
       toast({ title: "Gagal Checkout", description: e.message, variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handlePrintReceipt = () => {
+      if (!lastOrderDetails) return;
+      
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) return;
+
+      const storeName = settings?.storeName || 'XENONPLAY';
+      const address = settings?.address || '';
+      const dateStr = format(lastOrderDetails.timestamp, 'dd/MM/yyyy HH:mm');
+
+      const html = `
+      <html>
+        <head>
+          <style>
+            @page { margin: 0; size: 58mm auto; }
+            body { width: 58mm; margin: 0; padding: 5px; font-family: 'Courier New', monospace; font-size: 10px; }
+            .center { text-align: center; } .right { text-align: right; } .bold { font-weight: bold; }
+            .sep { border-top: 1px dashed #000; margin: 5px 0; }
+            table { width: 100%; border-collapse: collapse; }
+          </style>
+        </head>
+        <body onload="window.print(); window.close();">
+          <div class="center bold">${storeName.toUpperCase()}</div>
+          <div class="center">${address}</div>
+          <div class="sep"></div>
+          <div>Nota : ${lastOrderDetails.id.substring(0,8).toUpperCase()}</div>
+          <div>Tgl. Transaksi : ${dateStr}</div>
+          <div>Kasir : ${lastOrderDetails.cashier.toUpperCase()}</div>
+          <div class="sep"></div>
+          <table>
+            <tr class="bold"><td>Item</td><td class="center">Qty</td><td class="right">Harga</td><td class="right">Total</td></tr>
+            ${lastOrderDetails.items.map((item: any) => `
+              <tr>
+                <td>${item.name.substring(0,10).toUpperCase()}</td>
+                <td class="center">${item.quantity}</td>
+                <td class="right">${item.price.toLocaleString('id-ID')}</td>
+                <td class="right">${(item.price * item.quantity).toLocaleString('id-ID')}</td>
+              </tr>
+            `).join('')}
+          </table>
+          <div class="sep"></div>
+          <table>
+            <tr><td>Sub Total :</td><td class="right">${lastOrderDetails.total.toLocaleString('id-ID')}</td></tr>
+            <tr><td>Diskon :</td><td class="right">0</td></tr>
+            <tr class="bold"><td>Grand Total:</td><td class="right">${lastOrderDetails.total.toLocaleString('id-ID')}</td></tr>
+            <tr><td>Bayar :</td><td class="right">${lastOrderDetails.cash.toLocaleString('id-ID')}</td></tr>
+            <tr><td>Kembali :</td><td class="right">${lastOrderDetails.change.toLocaleString('id-ID')}</td></tr>
+          </table>
+          <div class="sep"></div>
+          <div class="center">Terimakasih Telah Bermain</div>
+          <div class="center">"Good Game, Well Played"</div>
+        </body>
+      </html>`;
+
+      printWindow.document.write(html);
+      printWindow.document.close();
   };
 
   return (
@@ -168,7 +252,6 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
           />
         </div>
         
-        {/* LAYOUT LIST UNTUK MOBILE, GRID UNTUK DESKTOP */}
         <div className="flex flex-col sm:grid sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
           {filteredItems.map(item => (
             <Card 
@@ -179,7 +262,6 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
               )}
               onClick={() => handleUpdateCart(item.id, 1)}
             >
-              {/* Layout horizontal pada mobile untuk kenyamanan jari */}
               <div className="flex sm:flex-col items-center sm:items-start p-3 sm:p-4 gap-4 sm:gap-0">
                   <div className="flex-1 min-w-0 sm:mb-2">
                     <div className="flex justify-between items-start gap-2 mb-1">
@@ -212,22 +294,16 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
               </div>
             </Card>
           ))}
-          {filteredItems.length === 0 && (
-              <div className="col-span-full py-20 text-center opacity-30 flex flex-col items-center gap-4">
-                  <Store className="size-12" />
-                  <p className="text-xs font-black uppercase tracking-widest">Produk tidak ditemukan</p>
-              </div>
-          )}
         </div>
       </div>
 
-      {/* FLOATING CART BUTTON (OPTIMIZED FOR MOBILE) */}
+      {/* FLOATING CART BUTTON */}
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
         <SheetTrigger asChild>
             <Button 
                 size="lg" 
                 className={cn(
-                    "fixed bottom-24 right-4 left-4 sm:right-8 sm:left-auto h-16 sm:h-16 px-6 sm:px-8 rounded-2xl sm:rounded-3xl shadow-2xl shadow-primary/40 flex items-center justify-between sm:justify-start sm:gap-4 transition-all hover:scale-105 active:scale-95 z-40",
+                    "fixed bottom-24 right-4 left-4 sm:right-8 sm:left-auto h-16 px-6 rounded-2xl shadow-2xl z-40 transition-all",
                     totalItemsCount > 0 ? "animate-in slide-in-from-bottom-10" : "hidden"
                 )}
             >
@@ -243,14 +319,10 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
                         <span className="text-lg font-black font-mono">{formatCurrency(totalAmount)}</span>
                     </div>
                 </div>
-                <div className="bg-white/20 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest sm:hidden">
-                    Cek Out
-                </div>
             </Button>
         </SheetTrigger>
-        <SheetContent side="bottom" className="h-[85vh] sm:h-full sm:w-full sm:max-w-md bg-background border-t sm:border-l border-border p-0 flex flex-col rounded-t-[2.5rem] sm:rounded-none">
+        <SheetContent side="bottom" className="h-[85vh] sm:h-full sm:w-full sm:max-w-md bg-background border-t p-0 flex flex-col rounded-t-[2.5rem] sm:rounded-none">
           <SheetHeader className="p-6 pb-4 border-b bg-muted/20 shrink-0">
-            <div className="w-12 h-1.5 bg-muted-foreground/20 rounded-full mx-auto mb-4 sm:hidden" />
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <div className="size-10 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/20">
@@ -258,99 +330,71 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
                     </div>
                     <div>
                         <SheetTitle className="text-xl font-black uppercase tracking-tight">Keranjang</SheetTitle>
-                        <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">{totalItemsCount} item terpilih</p>
+                        <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">{totalItemsCount} item</p>
                     </div>
                 </div>
-                <Button variant="ghost" size="sm" className="h-8 text-[10px] font-black uppercase text-muted-foreground hover:text-destructive" onClick={() => setCart({})}>
-                    Reset
-                </Button>
+                <Button variant="ghost" size="sm" className="h-8 text-[10px] font-black" onClick={() => setCart({})}>Reset</Button>
             </div>
           </SheetHeader>
           
           <ScrollArea className="flex-1 p-6">
             <div className="space-y-3">
-                {cartItems.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-muted-foreground opacity-30">
-                    <ShoppingCart className="h-16 w-16 mb-4" />
-                    <p className="text-xs font-black uppercase tracking-widest">Keranjang Kosong</p>
-                </div>
-                ) : (
-                cartItems.map(item => (
-                    <div key={item.id} className="flex flex-col gap-3 p-4 rounded-2xl bg-muted/30 border border-border/50 animate-in fade-in slide-in-from-right-4 duration-300">
+                {cartItems.map(item => (
+                    <div key={item.id} className="flex flex-col gap-3 p-4 rounded-2xl bg-muted/30 border border-border/50">
                         <div className="flex justify-between items-start gap-4">
-                            <span className="text-xs font-black uppercase tracking-tight leading-tight flex-1">{item.name}</span>
-                            <span className="text-xs font-black font-mono text-primary shrink-0">{formatCurrency(item.sellPrice * item.quantity)}</span>
+                            <span className="text-xs font-black uppercase tracking-tight flex-1">{item.name}</span>
+                            <span className="text-xs font-black font-mono text-primary">{formatCurrency(item.sellPrice * item.quantity)}</span>
                         </div>
                         <div className="flex justify-between items-center">
-                            <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 gap-1.5" onClick={() => setCart(prev => { const n = {...prev}; delete n[item.id]; return n; })}>
-                                <Trash2 className="h-3.5 w-3.5" /> <span className="text-[9px] font-black uppercase">Hapus</span>
+                            <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-destructive" onClick={() => setCart(prev => { const n = {...prev}; delete n[item.id]; return n; })}>
+                                <Trash2 className="h-3.5 w-3.5 mr-1" /> <span className="text-[9px] font-black uppercase">Hapus</span>
                             </Button>
-                            <div className="flex items-center gap-4 bg-background p-1 rounded-xl border border-border/50 shadow-sm">
-                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-muted" onClick={() => handleUpdateCart(item.id, -1)}>
-                                    <Minus className="h-4 w-4" />
-                                </Button>
+                            <div className="flex items-center gap-4 bg-background p-1 rounded-xl border border-border/50">
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleUpdateCart(item.id, -1)}><Minus className="h-4 w-4" /></Button>
                                 <span className="text-sm font-black font-mono w-6 text-center">{item.quantity}</span>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-muted" onClick={() => handleUpdateCart(item.id, 1)}>
-                                    <Plus className="h-4 w-4" />
-                                </Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleUpdateCart(item.id, 1)}><Plus className="h-4 w-4" /></Button>
                             </div>
                         </div>
                     </div>
-                ))
-                )}
+                ))}
             </div>
           </ScrollArea>
 
-          <div className="p-6 bg-card border-t border-border space-y-6 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] shrink-0">
-            <div className="space-y-2">
-                <div className="flex justify-between items-end pt-2">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Tagihan Akhir</span>
-                    <span className="text-3xl font-black text-primary drop-shadow-[0_0_10px_rgba(59,130,246,0.2)] font-mono leading-none">
-                        {formatCurrency(totalAmount).replace(',00', '')}
-                    </span>
-                </div>
+          <div className="p-6 bg-card border-t border-border space-y-6 shrink-0">
+            <div className="flex justify-between items-end pt-2">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Tagihan Akhir</span>
+                <span className="text-3xl font-black text-primary font-mono leading-none">{formatCurrency(totalAmount).replace(',00', '')}</span>
             </div>
             
             <AlertDialog open={isConfirmOpen} onOpenChange={(val) => { if(val && !checkShift()) return; setIsConfirmOpen(val); }}>
                 <AlertDialogTrigger asChild>
-                <Button 
-                    className="w-full h-16 text-lg font-black uppercase tracking-widest gap-3 shadow-xl shadow-primary/30 rounded-2xl" 
-                    disabled={cartItems.length === 0 || isProcessing}
-                >
-                    <CreditCard className="h-6 w-6" />
-                    BAYAR SEKARANG
+                <Button className="w-full h-16 text-lg font-black uppercase tracking-widest gap-3 shadow-xl rounded-2xl" disabled={cartItems.length === 0 || isProcessing}>
+                    <CreditCard className="h-6 w-6" /> BAYAR SEKARANG
                 </Button>
                 </AlertDialogTrigger>
-                <AlertDialogContent className="max-w-2xl bg-background border-border max-h-[90vh] overflow-y-auto">
+                <AlertDialogContent className="max-w-2xl bg-background border-border">
                 <AlertDialogHeader>
-                    <AlertDialogTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
-                    <CreditCard className="h-5 w-5 text-primary" />
-                    Pembayaran Tunai
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
-                    Masukkan jumlah uang yang diterima dari pelanggan.
-                    </AlertDialogDescription>
+                    <AlertDialogTitle className="text-xl font-black uppercase flex items-center gap-2"><CreditCard className="h-5 w-5 text-primary" /> Pembayaran Tunai</AlertDialogTitle>
+                    <AlertDialogDescription>Masukkan jumlah uang tunai yang diterima.</AlertDialogDescription>
                 </AlertDialogHeader>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
                     <div className="space-y-4">
-                        <div className="rounded-xl border border-border bg-muted/30 overflow-hidden flex flex-col">
-                            <div className="p-3 bg-muted/50 border-b border-border flex justify-between items-center">
-                                <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Detail Item</p>
+                        <div className="rounded-xl border border-border bg-muted/30 overflow-hidden">
+                            <div className="p-3 bg-muted/50 border-b flex justify-between items-center">
+                                <p className="text-[10px] font-black uppercase text-muted-foreground">Detail Item</p>
                             </div>
-                            <ScrollArea className="max-h-[150px]">
-                                <div className="p-3 space-y-2">
+                            <ScrollArea className="max-h-[150px] p-3 space-y-2">
                                 {cartItems.map(item => (
                                     <div key={item.id} className="flex justify-between text-[11px]">
-                                    <span className="text-muted-foreground line-clamp-1 flex-1">{item.name} <span className="font-bold text-foreground">x{item.quantity}</span></span>
-                                    <span className="font-mono ml-2">{formatCurrency(item.sellPrice * item.quantity)}</span>
+                                        <span className="truncate flex-1">{item.name} x{item.quantity}</span>
+                                        <span className="font-mono font-bold ml-2">{formatCurrency(item.sellPrice * item.quantity)}</span>
                                     </div>
                                 ))}
-                                </div>
                             </ScrollArea>
-                            <div className="p-4 bg-primary/5 border-t border-border">
+                            <div className="p-4 bg-primary/5 border-t">
                                 <div className="flex justify-between items-center">
-                                    <span className="text-xs font-black uppercase text-primary">Total Bayar</span>
+                                    <span className="text-xs font-black uppercase text-primary">Total</span>
                                     <span className="text-xl font-black text-primary font-mono">{formatCurrency(totalAmount)}</span>
                                 </div>
                             </div>
@@ -359,28 +403,22 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
 
                     <div className="space-y-6">
                         <div className="space-y-2">
-                            <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Uang Diterima (Cash)</Label>
+                            <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Uang Tunai</Label>
                             <div className="relative">
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-muted-foreground text-lg">Rp</span>
-                                <Input type="number" className="h-16 pl-12 text-3xl font-black bg-muted border-border focus:ring-primary shadow-inner" value={cashReceived} onChange={(e) => setCashReceived(e.target.value)} autoFocus />
+                                <Input type="number" className="h-16 pl-12 text-3xl font-black bg-muted border-border" value={cashReceived} onChange={(e) => setCashReceived(e.target.value)} autoFocus />
                             </div>
                         </div>
-
-                        <div className="space-y-2">
-                            <div className="grid grid-cols-3 gap-2">
-                                {QUICK_DENOMINATIONS.map(denom => (
-                                    <Button key={denom} variant="outline" size="sm" className="h-10 text-xs font-bold border-border hover:bg-primary/10" onClick={() => setCashReceived(denom.toString())}>
-                                        {denom >= 1000 ? `${denom/1000}rb` : denom}
-                                    </Button>
-                                ))}
-                                <Button variant="outline" size="sm" className="h-10 text-xs font-black border-primary/30 text-primary bg-primary/5" onClick={() => setCashReceived(totalAmount.toString())}>Uang Pas</Button>
-                            </div>
+                        <div className="grid grid-cols-3 gap-2">
+                            {QUICK_DENOMINATIONS.map(denom => (
+                                <Button key={denom} variant="outline" size="sm" className="h-10 text-xs font-bold" onClick={() => setCashReceived(denom.toString())}>{denom >= 1000 ? `${denom/1000}rb` : denom}</Button>
+                            ))}
+                            <Button variant="outline" size="sm" className="h-10 text-xs font-black text-primary" onClick={() => setCashReceived(totalAmount.toString())}>Uang Pas</Button>
                         </div>
-
-                        <div className={cn("p-5 rounded-2xl border-2 transition-all duration-500 flex justify-between items-center", isCashEnough ? "bg-emerald-500/10 border-emerald-500/30" : "bg-red-500/5 border-red-500/20")}>
-                            <div className="space-y-0.5">
-                                <span className={cn("text-[10px] font-black uppercase tracking-widest", isCashEnough ? "text-emerald-600" : "text-red-600")}>{isCashEnough ? 'Kembalian' : 'Kurang'}</span>
-                                <p className={cn("text-2xl font-black font-mono leading-none", isCashEnough ? "text-emerald-600" : "text-red-600")}>{formatCurrency(isCashEnough ? changeAmount : Math.abs(cashAmountNum - totalAmount))}</p>
+                        <div className={cn("p-5 rounded-2xl border-2 flex justify-between items-center", isCashEnough ? "bg-emerald-500/10 border-emerald-500/30" : "bg-red-500/5 border-red-500/20")}>
+                            <div>
+                                <span className={cn("text-[10px] font-black uppercase", isCashEnough ? "text-emerald-600" : "text-red-600")}>{isCashEnough ? 'Kembalian' : 'Kurang'}</span>
+                                <p className={cn("text-2xl font-black font-mono", isCashEnough ? "text-emerald-600" : "text-red-600")}>{formatCurrency(isCashEnough ? changeAmount : Math.abs(cashAmountNum - totalAmount))}</p>
                             </div>
                             <div className={cn("p-3 rounded-xl", isCashEnough ? "bg-emerald-500/20 text-emerald-600" : "bg-red-500/20 text-red-600")}>
                                 {isCashEnough ? <Coins className="h-6 w-6" /> : <AlertCircle className="h-6 w-6" />}
@@ -389,18 +427,10 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
                     </div>
                 </div>
 
-                <AlertDialogFooter className="gap-2 border-t border-border pt-4 mt-2">
-                    <AlertDialogCancel className="font-bold h-12 px-6 rounded-xl">Batal</AlertDialogCancel>
-                    <AlertDialogAction 
-                    onClick={handleCheckout} 
-                    className={cn(
-                        "font-black uppercase tracking-widest px-10 h-12 flex-1 shadow-lg transition-all rounded-xl",
-                        isCashEnough ? "bg-primary text-white hover:bg-primary/90 shadow-primary/20" : "bg-muted text-muted-foreground cursor-not-allowed"
-                    )}
-                    disabled={isProcessing || !isCashEnough}
-                    >
-                    {isProcessing ? <RefreshCcw className="h-4 w-4 animate-spin mr-2" /> : <Banknote className="h-4 w-4 mr-2" />}
-                    Selesaikan Penjualan
+                <AlertDialogFooter className="gap-2 border-t pt-4">
+                    <AlertDialogCancel className="font-bold h-12 rounded-xl">Batal</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleCheckout} className={cn("h-12 flex-1 rounded-xl font-black uppercase", isCashEnough ? "bg-primary shadow-primary/20" : "bg-muted text-muted-foreground")} disabled={isProcessing || !isCashEnough}>
+                        {isProcessing ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : <Banknote className="h-4 w-4 mr-2" />} LUNASI PEMBAYARAN
                     </AlertDialogAction>
                 </AlertDialogFooter>
                 </AlertDialogContent>
@@ -408,6 +438,28 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* SUCCESS DIALOG WITH PRINT OPTION */}
+      <Dialog open={isSuccessOpen} onOpenChange={setIsSuccessOpen}>
+        <DialogContent className="max-w-sm rounded-[2rem] p-0 overflow-hidden">
+            <div className="bg-emerald-500 h-2 w-full" />
+            <div className="p-8 text-center space-y-6">
+                <div className="size-20 rounded-[2.5rem] bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto border-4 border-emerald-500/20 shadow-xl"><CheckCircle2 className="size-10" /></div>
+                <div className="space-y-2">
+                    <h3 className="text-2xl font-black uppercase tracking-tight">Pembayaran Sukses</h3>
+                    <p className="text-xs text-muted-foreground font-bold uppercase">Kembalian: <span className="text-emerald-600 font-mono">{formatCurrency(lastOrderDetails?.change || 0)}</span></p>
+                </div>
+                <div className="flex flex-col gap-2 pt-4">
+                    <Button onClick={handlePrintReceipt} className="w-full h-14 rounded-2xl font-black uppercase tracking-widest gap-3 shadow-lg shadow-primary/30">
+                        <Printer className="size-5" /> Cetak Nota Fisik
+                    </Button>
+                    <DialogClose asChild>
+                        <Button variant="ghost" className="w-full h-12 font-bold uppercase text-[10px]">Tutup</Button>
+                    </DialogClose>
+                </div>
+            </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
