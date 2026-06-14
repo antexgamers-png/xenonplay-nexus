@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -85,7 +84,7 @@ export function TransactionDetailDialog({
     const storeName = settings?.storeName || 'XENONPLAY';
     const address = settings?.address || '';
     const dateStr = format(transaction.timestamp, 'dd/MM/yyyy');
-    const timeStr = format(transaction.timestamp, 'HH:mm:ss');
+    const timeStr = format(transaction.timestamp, 'HH:mm');
     const shift = shifts?.find(s => s.id === transaction.shiftId);
     const cashierName = shift?.openedByName || 'Operator';
 
@@ -105,7 +104,7 @@ export function TransactionDetailDialog({
         });
     });
 
-    // 2. Tambahkan baris FnB (dari daftar terstruktur agar tidak duplikat)
+    // 2. Tambahkan baris FnB
     fnbItems.forEach(f => {
         printLines.push({
             name: f.name.toUpperCase(),
@@ -123,21 +122,22 @@ export function TransactionDetailDialog({
           <style>
             @page { margin: 0; size: 58mm auto; }
             body { 
-              width: 58mm; margin: 0; padding: 4px 2px; 
+              width: 58mm; margin: 0; padding: 5px 2px; 
               font-family: 'Courier New', Courier, monospace; 
               font-size: 8px; line-height: 1.1; color: #000;
               background: #fff;
+              -webkit-print-color-adjust: exact;
             }
             .center { text-align: center; }
             .right { text-align: right; }
             .bold { font-weight: bold; }
-            .sep { border-top: 1px dashed #000; margin: 4px 0; }
-            .item-block { margin-bottom: 3px; }
+            .sep { border-top: 1px dashed #000; margin: 5px 0; }
+            .item-block { margin-bottom: 4px; }
             .item-name { font-weight: bold; display: block; }
             .flex { display: flex; justify-content: space-between; }
-            .logo { width: 35px; height: auto; object-fit: contain; filter: grayscale(1) contrast(1.5); margin: 0 auto 3px; display: block; }
-            .summary-row { display: flex; justify-content: space-between; margin: 1px 0; }
-            .total-row { display: flex; justify-content: space-between; margin: 3px 0; font-weight: bold; font-size: 9px; }
+            .logo { width: 40px; height: auto; object-fit: contain; filter: grayscale(1) contrast(2); margin: 0 auto 4px; display: block; }
+            .summary-row { display: flex; justify-content: space-between; margin: 2px 0; }
+            .total-row { display: flex; justify-content: space-between; margin: 4px 0; font-weight: bold; font-size: 9px; border-top: 1px solid #000; padding-top: 2px; }
           </style>
         </head>
         <body onload="window.print(); window.close();">
@@ -191,7 +191,7 @@ export function TransactionDetailDialog({
           ` : ''}
 
           <div class="total-row">
-            <span>Total</span>
+            <span>TOTAL</span>
             <span class="right">Rp ${netto.toLocaleString('id-ID')}</span>
           </div>
 
@@ -206,7 +206,7 @@ export function TransactionDetailDialog({
 
           <div class="sep"></div>
           <div class="center" style="font-size: 7.5px;">Terima kasih telah berbelanja di toko kami</div>
-          <div class="center bold" style="margin-top: 1px;">"Good Game, Well Played"</div>
+          <div class="center bold" style="margin-top: 2px;">"Good Game, Well Played"</div>
           <div style="height: 15px;"></div>
         </body>
       </html>
