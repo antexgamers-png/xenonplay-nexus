@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -11,16 +10,18 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import { Button } from '../ui/button';
-import type { Transaction, Member } from '@/lib/types';
+import type { Transaction, Member, GeneralSettings } from '@/lib/types';
 import { ScrollArea } from '../ui/scroll-area';
 import { Separator } from '../ui/separator';
 import { Badge } from '../ui/badge';
 import { cn, formatCurrency } from '@/lib/utils';
-import { ShoppingCart, Gamepad2, Ticket, CheckCircle2, AlertCircle, Search, UserCheck, X } from 'lucide-react';
+import { ShoppingCart, Gamepad2, Ticket, CheckCircle2, AlertCircle, Search, UserCheck, X, Printer, Loader2 } from 'lucide-react';
 import { useState, useMemo } from 'react';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { useCollection, useFirestore, useMemoFirebase, useDoc } from '@/firebase';
+import { collection, doc } from 'firebase/firestore';
 import { Input } from '../ui/input';
+import { format } from 'date-fns';
+import { id as idLocale } from 'date-fns/locale';
 
 interface TransactionDetailDialogProps {
   isOpen: boolean;
@@ -39,10 +40,14 @@ export function TransactionDetailDialog({
 }: TransactionDetailDialogProps) {
   const [memberSearch, setMemberSearch] = useState('');
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const [isPrinting, setIsPrinting] = useState(false);
   const firestore = useFirestore();
 
   const membersQuery = useMemoFirebase(() => !firestore ? null : collection(firestore, 'members'), [firestore]);
+  const settingsRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'general') : null, [firestore]);
+  
   const { data: members } = useCollection<Member>(membersQuery);
+  const { data: settings } = useDoc<GeneralSettings>(settingsRef);
 
   const filteredMembers = useMemo(() => {
     if (!memberSearch) return [];
@@ -71,6 +76,103 @@ export function TransactionDetailDialog({
       onMarkAsPaid(selectedMember);
       setSelectedMember(null);
       setMemberSearch('');
+  };
+
+  const handlePrint = () => {
+    setIsPrinting(true);
+    const storeName = settings?.storeName || 'XENONPLAY';
+    const address = settings?.address || '';
+    const phone = settings?.phone || '';
+    const dateStr = format(transaction.timestamp, 'dd/MM/yy HH:mm');
+    const items = transaction.additionalCharges || [];
+    const bruto = transaction.amount || 0;
+    const discount = transaction.discount || 0;
+    const netto = Math.max(0, bruto - discount);
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const html = `
+      <html>
+        <head>
+          <title>Nota - ${transaction.id}</title>
+          <style>
+            @page { margin: 0; size: 58mm auto; }
+            body { 
+              width: 58mm; 
+              margin: 0; 
+              padding: 5px; 
+              font-family: 'Courier New', Courier, monospace; 
+              font-size: 12px; 
+              line-height: 1.2;
+              color: #000;
+            }
+            .center { text-align: center; }
+            .right { text-align: right; }
+            .bold { font-weight: bold; }
+            .border-top { border-top: 1px dashed #000; margin-top: 5px; padding-top: 5px; }
+            .margin-v { margin: 5px 0; }
+            table { width: 100%; border-collapse: collapse; }
+            .item-row td { padding: 2px 0; vertical-align: top; }
+            .footer { font-size: 10px; margin-top: 15px; }
+          </style>
+        </head>
+        <body onload="window.print(); window.close();">
+          <div class="center bold" style="font-size: 14px;">${storeName.toUpperCase()}</div>
+          <div class="center">${address}</div>
+          <div class="center">WA: ${phone}</div>
+          
+          <div class="border-top">
+            <div>ID: ${transaction.id.substring(0, 8).toUpperCase()}</div>
+            <div>TGL: ${dateStr}</div>
+            <div>UNIT: ${transaction.stationName.toUpperCase()}</div>
+            ${transaction.memberName ? `<div>MBR: ${transaction.memberName.toUpperCase()}</div>` : ''}
+          </div>
+
+          <div class="border-top">
+            <table>
+              ${items.map(item => `
+                <tr class="item-row">
+                  <td colspan="2">${item.description.replace('FnB: ', '').toUpperCase()}</td>
+                </tr>
+                <tr class="item-row">
+                  <td class="right" colspan="2">${formatCurrency(item.amount).replace('Rp', '')}</td>
+                </tr>
+              `).join('')}
+            </table>
+          </div>
+
+          <div class="border-top">
+            <table>
+              <tr>
+                <td>TOTAL</td>
+                <td class="right">${formatCurrency(bruto).replace('Rp', '')}</td>
+              </tr>
+              ${discount > 0 ? `
+              <tr>
+                <td>DISKON</td>
+                <td class="right">-${formatCurrency(discount).replace('Rp', '')}</td>
+              </tr>` : ''}
+              <tr class="bold">
+                <td style="font-size: 14px;">NETTO</td>
+                <td class="right" style="font-size: 14px;">${formatCurrency(netto).replace('Rp', '')}</td>
+              </tr>
+            </table>
+          </div>
+
+          <div class="center footer border-top">
+            <div class="bold">TERIMA KASIH</div>
+            <div>STABILITY IS THE CORE OF BUSINESS</div>
+            <div>XENONPLAY NEXUS SYSTEM</div>
+          </div>
+          <div style="height: 20px;"></div>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+    setIsPrinting(false);
   };
 
   return (
@@ -201,11 +303,17 @@ export function TransactionDetailDialog({
                 <div className='flex justify-between items-end'><span className="text-xs font-black uppercase">TOTAL TAGIHAN NETTO</span><span className="text-2xl font-black text-primary font-mono">{formatCurrency(outstandingAmount)}</span></div>
             </div>
             <div className="flex gap-2">
-                <DialogClose asChild><Button variant="outline" className="flex-1 font-bold uppercase">Tutup</Button></DialogClose>
+                <Button variant="outline" className="flex-1 font-bold uppercase gap-2" onClick={handlePrint} disabled={isPrinting}>
+                    {isPrinting ? <Loader2 className="size-4 animate-spin" /> : <Printer className="size-4" />}
+                    Cetak Nota
+                </Button>
                 {!isPaid && (
                     <Button onClick={handleFinalPaid} className="flex-[1.5] font-black uppercase text-xs shadow-lg shadow-primary/20">
                         Bayar & Lunasi
                     </Button>
+                )}
+                {isPaid && (
+                    <DialogClose asChild><Button variant="secondary" className="flex-1 font-bold uppercase">Tutup</Button></DialogClose>
                 )}
             </div>
         </div>
