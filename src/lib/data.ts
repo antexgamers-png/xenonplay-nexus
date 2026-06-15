@@ -203,7 +203,12 @@ export async function createTransaction(db: Firestore, data: any) {
     const discount = data.discount || 0;
     const extraStickFee = (data.extraSticks || 0) * 1000;
     const baseAmount = data.amount || 0;
-    const finalBruto = baseAmount + extraStickFee;
+    
+    // KRUSIAL: Hitung total harga item FnB yang dipilih di awal (jika ada)
+    const fnbTotal = (data.fnbItems || []).reduce((sum: number, f: any) => sum + (f.price * f.quantity), 0);
+    
+    // Bruto harus menjumlahkan Rental + Stik Extra + FnB
+    const finalBruto = baseAmount + extraStickFee + fnbTotal;
     const finalNetto = Math.max(0, finalBruto - discount);
     
     const initialDesc = data.packageName || `Sewa ${formatDuration(data.durationMinutes)}`;
@@ -310,7 +315,6 @@ export async function addItemsToTransaction(db: Firestore, transactionId: string
         const netAdd = Math.max(0, totalAmount - (discount || 0));
         const newPaid = isPaid ? (tData.paidAmount || 0) + netAdd : (tData.paidAmount || 0);
         
-        // Gabungkan item FnB baru ke list yang sudah ada
         const existingFnb = tData.fnbItems || [];
         const updatedFnb = [...existingFnb];
         items.forEach(newItem => {
@@ -337,7 +341,6 @@ export async function addItemsToTransaction(db: Firestore, transactionId: string
         });
         if (activeShiftId && isPaid && netAdd > 0) txn.update(doc(db, 'shifts', activeShiftId), { totalSales: increment(netAdd), expectedBalance: increment(netAdd) });
         
-        // Potong stok
         for (const i of items) {
             txn.update(doc(db, 'fnbItems', i.id), { stock: increment(-i.quantity) });
         }
