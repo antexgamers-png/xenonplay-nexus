@@ -345,11 +345,11 @@ export default function PengaturanPage() {
                                 <div className="text-center space-y-1 mb-4">
                                     <div className="flex justify-center mb-2">
                                         <Image 
-                                            src="/xenonplay-logo.png" 
+                                            src="/xplogo-monochrome.png" 
                                             alt="Logo" 
                                             width={40} 
                                             height={40} 
-                                            className="grayscale contrast-200 brightness-50"
+                                            className="contrast-200"
                                         />
                                     </div>
                                     <div className="font-bold text-[10px] uppercase leading-none">{formData.storeName || 'NAMA TOKO'}</div>

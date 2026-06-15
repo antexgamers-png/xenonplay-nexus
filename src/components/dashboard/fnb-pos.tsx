@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -32,7 +31,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from '@/components/ui/sheet';
+} from '@/sheet';
 import {
     Dialog,
     DialogContent,
@@ -218,7 +217,7 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
             .item-block { margin-bottom: 4px; }
             .item-name { font-weight: bold; display: block; }
             .flex { display: flex; justify-content: space-between; }
-            .logo { width: 40px; height: auto; object-fit: contain; filter: grayscale(1) contrast(2); margin: 0 auto 4px; display: block; }
+            .logo { width: 40px; height: auto; object-fit: contain; margin: 0 auto 4px; display: block; }
             .summary-row { display: flex; justify-content: space-between; margin: 2px 0; }
             .total-row { display: flex; justify-content: space-between; margin: 4px 0; font-weight: bold; font-size: 9px; border-top: 1px solid #000; padding-top: 2px; }
             .pre-wrap { white-space: pre-wrap; }
@@ -226,7 +225,7 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
         </head>
         <body onload="window.print(); window.close();">
           <div class="center">
-            <img src="/xenonplay-logo.png" class="logo" />
+            <img src="/xplogo-monochrome.png" class="logo" />
             <div class="bold" style="font-size: 9px;">${storeName.toUpperCase()}</div>
             <div style="font-size: 7.5px;">${address}</div>
             <div style="margin-top: 2px;">${headerMsg}</div>
