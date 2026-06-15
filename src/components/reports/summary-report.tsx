@@ -61,16 +61,17 @@ export function SummaryReport({
     sortedTransactions.forEach(t => {
       const dateKey = format(t.timestamp, 'dd MMM', { locale: id });
       
-      const rentalAmount = t.additionalCharges
+      const rentalAmount = (t.additionalCharges || [])
         .filter(c => !c.description.includes('FnB:'))
         .reduce((sum, c) => sum + (c.amount || 0), 0);
         
-      const fnbAmount = t.additionalCharges
+      const fnbAmount = (t.additionalCharges || [])
         .filter(c => c.description.includes('FnB:'))
         .reduce((sum, c) => sum + (c.amount || 0), 0);
 
       const discount = t.discount || 0;
-      const netIncome = (rentalAmount + fnbAmount) - discount;
+      // Net Income = (Rental + FnB) - Discount
+      const netIncome = Math.max(0, (rentalAmount + fnbAmount) - discount);
 
       if (!dailyMap[dateKey]) {
         dailyMap[dateKey] = { date: dateKey, income: 0, expense: 0, profit: 0 };

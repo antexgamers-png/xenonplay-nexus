@@ -110,14 +110,33 @@ export function StationGrid({
     if (!station || !firestore) return;
     const now = Date.now();
     const endTime = now + rule.duration * 60 * 1000;
+
+    // Merge manual selected items with bundling items from rule
+    const allFnbItems = [...selectedFnb];
+    if (rule.items && rule.items.length > 0) {
+        rule.items.forEach(bundleItem => {
+            const existingIdx = allFnbItems.findIndex(i => i.id === bundleItem.itemId);
+            if (existingIdx >= 0) {
+                allFnbItems[existingIdx].quantity += bundleItem.quantity;
+            } else {
+                allFnbItems.push({
+                    id: bundleItem.itemId,
+                    name: bundleItem.name,
+                    price: 0, // Bundling items are inclusive (0 added price)
+                    quantity: bundleItem.quantity
+                });
+            }
+        });
+    }
+
     try {
         const transaction = await createTransaction(firestore, {
             stationId: station.id, 
             stationName: station.name, 
-            packageName: rule.name, // Simpan nama paket asli
+            packageName: rule.name,
             durationMinutes: rule.duration,
             amount: rule.price, 
-            fnbItems: selectedFnb, 
+            fnbItems: allFnbItems, 
             isPaid, 
             memberId: member?.id || null,
             memberName: member?.name || null, 
@@ -188,7 +207,24 @@ export function StationGrid({
   const handleAddTime = async (sId: string, tId: string, rule: PricingRule, isPaid: boolean, discount: number = 0) => {
     if (!checkShift()) return;
     if(!firestore) return;
+    
+    // Check for bundling items in the "add time" rule too
+    const allFnbItems = [];
+    if (rule.items && rule.items.length > 0) {
+        rule.items.forEach(bundleItem => {
+            allFnbItems.push({
+                id: bundleItem.itemId,
+                name: bundleItem.name,
+                price: 0,
+                quantity: bundleItem.quantity
+            });
+        });
+    }
+
     try {
+        if (allFnbItems.length > 0) {
+            await addItemsToTransaction(firestore, tId, allFnbItems, 0, true, 0, activeShift?.id);
+        }
         await addTimeToTransaction(firestore, tId, sId, rule.duration, rule.price, isPaid, discount, activeShift?.id, rule.name);
         toast({ title: 'Durasi Berhasil Ditambah', variant: "success" });
     } catch (e: any) { 

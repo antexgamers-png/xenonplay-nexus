@@ -114,13 +114,17 @@ export function TransactionClient({ transactions, stations }: TransactionClientP
   }, [transactions, date]);
 
   const stats = useMemo(() => {
+    // KRUSIAL: Pemasukan harus dikurangi diskon untuk akurasi audit
     const totalCollected = dateFilteredTransactions
         .filter(t => t.status === 'paid')
-        .reduce((sum, t) => sum + (t.amount || 0), 0);
+        .reduce((sum, t) => sum + (Math.max(0, (t.amount || 0) - (t.discount || 0))), 0);
     
     const totalReceivables = dateFilteredTransactions
         .filter(t => t.status === 'unpaid')
-        .reduce((sum, t) => sum + ((t.amount || 0) - (t.paidAmount || 0)), 0);
+        .reduce((sum, t) => {
+            const netto = Math.max(0, (t.amount || 0) - (t.discount || 0));
+            return sum + (netto - (t.paidAmount || 0));
+        }, 0);
     
     const unpaidCount = dateFilteredTransactions.filter(t => t.status === 'unpaid').length;
 
@@ -171,11 +175,9 @@ export function TransactionClient({ transactions, stations }: TransactionClientP
         const shift = allShifts?.find(s => s.id === t.shiftId);
         const operatorName = shift?.openedByName || 'operator';
         
-        // Logika Ekstraksi Item yang sangat bersih untuk Excel
         const itemDetails = (t.additionalCharges || [])
             .map(c => {
                 let desc = c.description || '';
-                // Hapus semua prefix teknis agar hanya tersisa Nama Paket atau Nama Barang asli
                 desc = desc.replace(/^Sewa\s+/i, '');
                 desc = desc.replace(/^FnB:\s+/i, '');
                 desc = desc.replace(/^Tambah\s+FnB:\s+/i, '');
@@ -184,7 +186,7 @@ export function TransactionClient({ transactions, stations }: TransactionClientP
                 desc = desc.replace(/^Klaim\s+Voucher:\s+/i, '');
                 return desc.trim();
             })
-            .filter((val, index, self) => val && self.indexOf(val) === index) // Hanya ambil yang unik
+            .filter((val, index, self) => val && self.indexOf(val) === index)
             .join(', ');
 
         const bruto = t.amount || 0;

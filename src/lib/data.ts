@@ -204,10 +204,7 @@ export async function createTransaction(db: Firestore, data: any) {
     const extraStickFee = (data.extraSticks || 0) * 1000;
     const baseAmount = data.amount || 0;
     
-    // KRUSIAL: Hitung total harga item FnB yang dipilih di awal (jika ada)
     const fnbTotal = (data.fnbItems || []).reduce((sum: number, f: any) => sum + (f.price * f.quantity), 0);
-    
-    // Bruto harus menjumlahkan Rental + Stik Extra + FnB
     const finalBruto = baseAmount + extraStickFee + fnbTotal;
     const finalNetto = Math.max(0, finalBruto - discount);
     
@@ -216,7 +213,6 @@ export async function createTransaction(db: Firestore, data: any) {
     
     if (extraStickFee > 0) additionalCharges.push({ description: `${data.extraSticks} Stik Extra`, amount: extraStickFee, timestamp: now, isPaid });
 
-    // Tambahkan item kantin ke daftar biaya tambahan dengan prefix FnB:
     if (data.fnbItems && data.fnbItems.length > 0) {
         data.fnbItems.forEach((f: any) => {
             additionalCharges.push({ 
@@ -255,6 +251,15 @@ export async function createTransaction(db: Firestore, data: any) {
             memberRef = doc(db, 'members', data.memberId);
             memberSnap = await txn.get(memberRef);
         }
+        
+        // Stock Deduction for ALL fnbItems (including bundling items)
+        if (data.fnbItems && data.fnbItems.length > 0) {
+            for (const item of data.fnbItems) {
+                const itemRef = doc(db, 'fnbItems', item.id);
+                txn.update(itemRef, { stock: increment(-item.quantity) });
+            }
+        }
+
         txn.set(docRef, newTransaction);
         if (memberSnap && memberRef) processLoyaltyInTransaction(txn, memberSnap, docRef, memberRef);
         if (data.activeShiftId && isPaid && finalNetto > 0) {
