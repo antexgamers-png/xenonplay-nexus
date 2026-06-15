@@ -199,6 +199,7 @@ export async function createTransaction(db: Firestore, data: any) {
     const extraStickFee = (data.extraSticks || 0) * 1000;
     const baseAmount = data.amount || 0;
     
+    // Hitung total FnB (baik manual maupun bundling dengan harga 0)
     const fnbTotal = (data.fnbItems || []).reduce((sum: number, f: any) => sum + (f.price * f.quantity), 0);
     const finalBruto = baseAmount + extraStickFee + fnbTotal;
     const finalNetto = Math.max(0, finalBruto - discount);

@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { Transaction, FnbItem, Station, Expense } from '@/lib/types';
@@ -62,11 +61,11 @@ export function SummaryReport({
       const dateKey = format(t.timestamp, 'dd MMM', { locale: id });
       
       const rentalAmount = (t.additionalCharges || [])
-        .filter(c => !c.description.includes('FnB:'))
+        .filter(c => c && c.description && !c.description.includes('FnB:'))
         .reduce((sum, c) => sum + (c.amount || 0), 0);
         
       const fnbAmount = (t.additionalCharges || [])
-        .filter(c => c.description.includes('FnB:'))
+        .filter(c => c && c.description && c.description.includes('FnB:'))
         .reduce((sum, c) => sum + (c.amount || 0), 0);
 
       const discount = t.discount || 0;

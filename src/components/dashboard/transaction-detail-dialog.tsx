@@ -202,7 +202,7 @@ export function TransactionDetailDialog({
 
           <div class="summary-row">
             <span>Bayar (Cash)</span>
-            <span class="right">Rp ${(transaction.paidAmount || netto).toLocaleString('id-ID')}</span>
+            <span class="right">${(transaction.paidAmount || netto).toLocaleString('id-ID')}</span>
           </div>
           <div class="summary-row">
             <span>Kembali</span>
@@ -257,7 +257,7 @@ export function TransactionDetailDialog({
                         </div>
                     ) : selectedMember ? (
                         <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/30 flex justify-between items-center animate-in zoom-in-95">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-3">
                                 <UserCheck className="size-4 text-emerald-600" />
                                 <span className="text-xs font-bold uppercase">{selectedMember.name}</span>
                             </div>
