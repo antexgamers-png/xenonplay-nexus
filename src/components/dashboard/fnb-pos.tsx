@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Search, ShoppingCart, Plus, Minus, Trash2, CreditCard, RefreshCcw, AlertCircle, Banknote, Coins, X, Store, Printer, CheckCircle2 } from 'lucide-react';
-import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { createStandaloneFnbTransaction } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -31,7 +31,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from '@/sheet';
+} from '@/components/ui/sheet';
 import {
     Dialog,
     DialogContent,
