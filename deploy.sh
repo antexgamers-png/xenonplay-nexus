@@ -1,7 +1,7 @@
 
 #!/bin/bash
 
-# XenonPlay Nexus - Ultimate Sync & Deploy (v2.0)
+# XenonPlay Nexus - Ultimate Sync & Deploy (v2.1)
 # Script ini melakukan Build, Deploy ke Hosting, dan Push ke GitHub secara berurutan.
 # Dirancang untuk menjaga riwayat versi (History) tetap utuh.
 
@@ -41,6 +41,10 @@ if [ ! -d ".git" ]; then
     git branch -M main
 fi
 
+# Tarik perubahan terbaru dari GitHub sebelum push (Menghindari rejected error)
+echo "📥 Menarik perubahan terbaru dari GitHub (Auto-Sync)..."
+git pull origin main --rebase || echo "⚠️ Tidak bisa menarik data, mungkin repo masih kosong. Melanjutkan..."
+
 # Tambahkan perubahan, buat commit dengan timestamp, dan push
 git add .
 
@@ -49,7 +53,7 @@ COMMIT_MSG="Deployment Sync: $(date +'%Y-%m-%d %H:%M:%S')"
 git commit -m "$COMMIT_MSG" || echo "✅ Tidak ada perubahan kode baru yang perlu di-commit."
 
 echo "📤 Melakukan Push ke Main Branch..."
-# Push normal (tanpa --force) untuk menjaga integritas riwayat commit terdahulu
+# Push normal untuk menjaga integritas riwayat commit terdahulu
 git push origin main
 
 echo "--------------------------------------------------"
