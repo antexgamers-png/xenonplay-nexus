@@ -67,7 +67,6 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
   
-  // Payment calculator state
   const [cashReceived, setCashReceived] = useState<string>('0');
   const [lastOrderDetails, setLastOrderDetails] = useState<any>(null);
   
@@ -350,7 +349,6 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
         </div>
       </div>
 
-      {/* FLOATING CART BUTTON */}
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
         <SheetTrigger asChild>
             <Button 
@@ -492,7 +490,6 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
         </SheetContent>
       </Sheet>
 
-      {/* SUCCESS DIALOG WITH PRINT OPTION */}
       <Dialog open={isSuccessOpen} onOpenChange={setIsSuccessOpen}>
         <DialogContent className="max-w-sm rounded-[2rem] p-0 overflow-hidden">
             <div className="bg-emerald-500 h-2 w-full" />

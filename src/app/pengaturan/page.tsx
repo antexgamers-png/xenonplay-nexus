@@ -75,7 +75,6 @@ export default function PengaturanPage() {
 
   const [formData, setFormData] = useState<GeneralSettings>(DEFAULT_FORM_DATA);
 
-  // Sinkronisasi awal data dari Firestore ke state lokal
   useEffect(() => {
     if (currentSettings) {
       setFormData({
@@ -85,7 +84,6 @@ export default function PengaturanPage() {
     }
   }, [currentSettings]);
 
-  // Deteksi Perubahan per Kategori
   const hasBusinessChanges = useMemo(() => {
     if (!currentSettings) return false;
     return formData.storeName !== (currentSettings.storeName || DEFAULT_FORM_DATA.storeName) ||
@@ -153,7 +151,7 @@ export default function PengaturanPage() {
             nightThemeStart: currentSettings.nightThemeStart || DEFAULT_FORM_DATA.nightThemeStart,
         }));
     }
-    toast({ title: 'Perubahan Dibatalkan', variant: 'default' });
+    toast({ title: 'Perubahan Dibatalkan' });
   };
 
   const handleReset = async (type: 'transactions' | 'expenses' | 'shifts' | 'members') => {
@@ -216,7 +214,6 @@ export default function PengaturanPage() {
             </TabsTrigger>
         </TabsList>
 
-        {/* TAB 1: PROFIL BISNIS */}
         <TabsContent value="business" className="animate-in fade-in slide-in-from-bottom-2">
             <Card className="rounded-[2rem] overflow-hidden border-border shadow-sm max-w-3xl">
                 <CardHeader className="bg-muted/20 border-b">
@@ -268,7 +265,6 @@ export default function PengaturanPage() {
             </Card>
         </TabsContent>
 
-        {/* TAB 2: PRINTER & NOTA */}
         <TabsContent value="printer" className="animate-in fade-in slide-in-from-bottom-2">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                 <div className="lg:col-span-7 space-y-6">
@@ -334,7 +330,6 @@ export default function PengaturanPage() {
                             </div>
                         </CardHeader>
                         <CardContent className="p-8 flex justify-center bg-slate-200/50">
-                            {/* SIMULASI KERTAS THERMAL */}
                             <div 
                                 className={cn(
                                     "bg-white text-black shadow-2xl p-5 font-mono text-[8px] leading-tight transition-all duration-500",
@@ -431,7 +426,6 @@ export default function PengaturanPage() {
             </div>
         </TabsContent>
 
-        {/* TAB 3: TEMA VISUAL */}
         <TabsContent value="theme" className="animate-in fade-in slide-in-from-bottom-2">
             <Card className="rounded-[2rem] border-border overflow-hidden shadow-sm max-w-3xl">
                 <CardHeader className="bg-muted/20 border-b">
@@ -497,7 +491,6 @@ export default function PengaturanPage() {
             </Card>
         </TabsContent>
 
-        {/* TAB 4: ZONA BAHAYA */}
         <TabsContent value="danger" className="animate-in fade-in slide-in-from-bottom-2">
             <Card className="rounded-[2rem] border-red-500/20 bg-red-500/[0.02] overflow-hidden shadow-sm max-w-4xl">
                 <CardHeader className="bg-red-500/5 border-b border-red-500/10">
@@ -601,7 +594,7 @@ function ResetButton({ label, onConfirm, isLoading }: { label: string, onConfirm
                         Tindakan ini akan menghapus data tersebut secara **PERMANEN**. Data yang sudah dihapus tidak dapat dikembalikan.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
-                <AlertDialogFooter className="gap-2">
+                <AlertDialogFooter>
                     <AlertDialogCancel className="font-bold uppercase text-[10px] rounded-xl border-border">Batal</AlertDialogCancel>
                     <AlertDialogAction 
                         onClick={onConfirm} 

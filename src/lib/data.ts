@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -18,10 +17,6 @@ import {
 } from 'firebase/firestore';
 import type { Station, Transaction, PricingRule, FnbItem, GeneralSettings, Member, Shift, CreditVoucher, Expense, PointRedemption, LandingSettings, Reward, Reservation, MemberRequest } from './types';
 import { formatDuration } from './utils';
-
-/**
- * XENONPLAY NEXUS - Core Data Mutation Engine
- */
 
 function processLoyaltyInTransaction(txn: any, memberSnap: any, transactionRef: any, mRef: any) {
     if (!memberSnap.exists()) return;
@@ -252,7 +247,6 @@ export async function createTransaction(db: Firestore, data: any) {
             memberSnap = await txn.get(memberRef);
         }
         
-        // Stock Deduction for ALL fnbItems (including bundling items)
         if (data.fnbItems && data.fnbItems.length > 0) {
             for (const item of data.fnbItems) {
                 const itemRef = doc(db, 'fnbItems', item.id);

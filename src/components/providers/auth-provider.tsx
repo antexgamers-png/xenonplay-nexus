@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { UserRole, UserProfile } from '@/lib/types';
@@ -7,12 +6,8 @@ import React, { useEffect, createContext, useContext, useState, useRef, useCallb
 import { useUser } from '@/firebase/provider';
 import { doc, getDoc, setDoc, collection, getDocs, limit, query, onSnapshot, where } from 'firebase/firestore';
 import { useFirestore, useAuth as useFirebaseAuth } from '@/firebase';
-import { AppLayout } from '@/components/layout/app-layout'; // Corrected path based on typical structure, but checking project files it should be '@/components/app-layout'
-// The actual import from project files is '@/components/app-layout'
-import LoginPage from '@/app/login/page';
 import { usePathname, useRouter } from 'next/navigation';
 import { signInAnonymously, signOut } from 'firebase/auth';
-import { ShiftProvider } from './shift-provider';
 import { useToast } from '@/hooks/use-toast';
 
 type AuthContextType = {
@@ -22,51 +17,34 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// KONFIGURASI SESI (OPTIMAL UNTUK OPERASIONAL KASIR)
-const IDLE_TIMEOUT_MS = 12 * 60 * 60 * 1000; // 12 Jam Diam -> Logout
-const MAX_SESSION_AGE_MS = 24 * 60 * 60 * 1000; // 24 Jam Maksimal Sesi
-const THROTTLE_PING_MS = 15 * 60 * 1000; // Update lastLogin tiap 15 menit
+const IDLE_TIMEOUT_MS = 12 * 60 * 60 * 1000;
+const MAX_SESSION_AGE_MS = 24 * 60 * 60 * 1000;
+const THROTTLE_PING_MS = 15 * 60 * 1000;
 const SAFETY_RELEASE_MS = 5000;
-
-const FullPageLoader = () => (
-    <div className="fixed inset-0 z-[9999] flex h-screen w-screen items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-            <div className="relative">
-                <div className="h-16 w-16 rounded-full bg-muted animate-pulse" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                </div>
-            </div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground animate-pulse">Menghubungkan ke Nexus...</p>
-        </div>
-    </div>
-);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<UserRole | null>(null);
   const [isRoleLoading, setIsRoleLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
-  const router = useRouter();
-  const anonymousTriggered = useRef(false);
-  const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const { toast } = useToast();
-
-  const firestore = useFirestore();
   const auth = useFirebaseAuth();
   const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
+  const { toast } = useToast();
+  const anonymousTriggered = useRef(false);
+  const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const normalizedPath = (pathname || '/').replace(/\/$/, '') || '/';
-  const isPublicRoute = 
-    normalizedPath === '/' ||
-    normalizedPath === '/login' ||
-    normalizedPath === '/tv-landing' || 
-    normalizedPath === '/public-display' ||
-    normalizedPath === '/price-list' ||
-    normalizedPath === '/welcome' ||
-    normalizedPath === '/check-member';
+  const isPublicRoute = (path: string) => {
+    const normalized = path.replace(/\/$/, '') || '/';
+    return normalized === '/' ||
+           normalized === '/login' ||
+           normalized === '/tv-landing' || 
+           normalized === '/public-display' ||
+           normalized === '/price-list' ||
+           normalized === '/welcome' ||
+           normalized === '/check-member';
+  };
 
-  // SAFETY TIMEOUT: Hilangkan loading screen jika database lambat
   useEffect(() => {
     setMounted(true);
     const timer = setTimeout(() => {
@@ -75,9 +53,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(timer);
   }, [isRoleLoading]);
 
-  // LOGIC: Pengecekan Kadaluarsa Sesi (Hard Expiry)
   const checkSessionExpiry = useCallback(async (uid: string) => {
-    if (!firestore || isPublicRoute) return;
+    if (!firestore || isPublicRoute(pathname || '')) return;
     try {
         const snap = await getDoc(doc(firestore, 'users', uid));
         if (snap.exists()) {
@@ -91,46 +68,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     } catch (e) { console.error("Session check fail:", e); }
     return false;
-  }, [firestore, isPublicRoute, auth, toast]);
+  }, [firestore, pathname, auth, toast]);
 
-  // MONITOR: Konflik Sesi & Visibilitas
-  useEffect(() => {
-      if (!firestore || !user || user.isAnonymous) return;
-
-      const userDocRef = doc(firestore, 'users', user.uid);
-      
-      const unsubscribe = onSnapshot(userDocRef, (snap) => {
-          if (!snap.exists()) return;
-          const data = snap.data() as UserProfile;
-          const mySessionId = localStorage.getItem('xenon_session_id');
-          
-          if (data.currentSessionId && mySessionId && data.currentSessionId !== mySessionId) {
-              console.log("[Auth] Session conflict detected. Logging out.");
-              toast({ title: "Sesi Dialihkan", description: "Akun ini sedang digunakan di perangkat lain.", variant: "destructive" });
-              signOut(auth);
-          }
-      });
-
-      const handleVisibility = () => {
-          if (document.visibilityState === 'visible') {
-              setTimeout(() => {
-                if (auth.currentUser) checkSessionExpiry(auth.currentUser.uid);
-              }, 2000);
-          }
-      };
-      document.addEventListener('visibilitychange', handleVisibility);
-
-      return () => {
-          unsubscribe();
-          document.removeEventListener('visibilitychange', handleVisibility);
-      };
-  }, [user, firestore, auth, toast, checkSessionExpiry]);
-
-  // LOGIC: Rolling Activity & Idle Timeout
   const resetIdleTimer = useCallback(() => {
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
       
-      if (user && !user.isAnonymous && !isPublicRoute) {
+      if (user && !user.isAnonymous && !isPublicRoute(pathname || '')) {
           const lastPing = parseInt(localStorage.getItem('xenon_last_ping') || '0');
           const now = Date.now();
           
@@ -144,11 +87,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               signOut(auth);
           }, IDLE_TIMEOUT_MS);
       }
-  }, [user, auth, isPublicRoute, toast, firestore]);
+  }, [user, pathname, toast, firestore, auth]);
 
   useEffect(() => {
       const events = ['mousedown', 'keydown', 'touchstart', 'scroll'];
-      if (user && !user.isAnonymous && !isPublicRoute) {
+      if (user && !user.isAnonymous && !isPublicRoute(pathname || '')) {
           events.forEach(e => window.addEventListener(e, resetIdleTimer));
           resetIdleTimer();
       }
@@ -156,14 +99,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           events.forEach(e => window.removeEventListener(e, resetIdleTimer));
           if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
       };
-  }, [user, isPublicRoute, resetIdleTimer]);
+  }, [user, pathname, resetIdleTimer]);
 
   useEffect(() => {
     if (!mounted || isUserLoading) return;
     
     if (!user) {
         setRole(null);
-        if (isPublicRoute && auth && !anonymousTriggered.current) {
+        if (isPublicRoute(pathname || '') && auth && !anonymousTriggered.current) {
             anonymousTriggered.current = true;
             signInAnonymously(auth).catch(() => setIsRoleLoading(false));
             return;
@@ -188,21 +131,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const userDoc = await getDoc(userDocRef);
         const userData = userDoc.exists() ? userDoc.data() as UserProfile : null;
         
-        // KRUSIAL: Jika dokumen ada DAN sudah punya role, gunakan itu.
         if (userData?.role) {
           setRole(userData.role);
           if (!localStorage.getItem('xenon_session_id') && userData.currentSessionId) {
               localStorage.setItem('xenon_session_id', userData.currentSessionId);
           }
         } 
-        // KRUSIAL: Jika dokumen tidak ada ATAU role hilang (akibat race condition di LoginPage)
         else if (user.email) {
-          // JANGAN gunakan isFirstUser dengan limit(1), karena LoginPage mungkin sudah membuat 1 dokumen tanpa role.
-          // Sebagai gantinya, cek apakah ada user LAIN yang sudah memiliki role 'admin'.
           const adminQuery = query(collection(firestore, 'users'), where('role', '==', 'admin'), limit(1));
           const adminSnap = await getDocs(adminQuery);
           
-          // Jika sistem benar-benar belum punya Admin sama sekali, maka user ini adalah Owner.
           const newRole: UserRole = adminSnap.empty ? 'admin' : 'staff';
           const mySessionId = localStorage.getItem('xenon_session_id') || Math.random().toString(36).substring(2, 15);
           
@@ -230,22 +168,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
     fetchUserRole();
-  }, [user, isUserLoading, mounted, firestore, isPublicRoute, auth, checkSessionExpiry]);
-
-  if (!mounted) return null;
-  if (isPublicRoute) return <>{children}</>;
-  if (isUserLoading || (user && !user.isAnonymous && isRoleLoading)) return <FullPageLoader />;
-  
-  // Checking typical component structure from project files
-  const { AppLayout } = require('@/components/app-layout');
-
-  if (!user || user.isAnonymous) return <LoginPage />;
+  }, [user, isUserLoading, mounted, firestore, pathname, auth, checkSessionExpiry]);
 
   return (
     <AuthContext.Provider value={{ role, isRoleLoading }}>
-      <ShiftProvider role={role} isRoleLoading={isRoleLoading}>
-        <AppLayout>{children}</AppLayout>
-      </ShiftProvider>
+      {children}
     </AuthContext.Provider>
   );
 }

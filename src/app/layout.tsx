@@ -7,6 +7,7 @@ import { ThemeProvider } from '@/components/providers/theme-provider';
 import { NotificationProvider } from '@/components/providers/notification-provider';
 import { WatchdogProvider } from '@/components/providers/watchdog-provider';
 import { ThemeSync } from '@/components/theme-sync';
+import { AuthGuard } from '@/components/auth-guard';
 
 export const metadata: Metadata = {
   title: 'XenonPlay Manager',
@@ -19,7 +20,6 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: '/favicon.ico', sizes: 'any' },
       { url: '/xenonplay-logo.png', type: 'image/png' },
     ],
     apple: [
@@ -59,7 +59,9 @@ export default function RootLayout({
             <NotificationProvider>
               <AuthProvider>
                 <WatchdogProvider>
-                  {children}
+                  <AuthGuard>
+                    {children}
+                  </AuthGuard>
                 </WatchdogProvider>
               </AuthProvider>
             </NotificationProvider>
