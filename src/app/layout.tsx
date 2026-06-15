@@ -7,7 +7,6 @@ import { ThemeProvider } from '@/components/providers/theme-provider';
 import { NotificationProvider } from '@/components/providers/notification-provider';
 import { WatchdogProvider } from '@/components/providers/watchdog-provider';
 import { ThemeSync } from '@/components/theme-sync';
-import { SpeedInsights } from '@vercel/speed-insights/next';
 
 export const metadata: Metadata = {
   title: 'XenonPlay Manager',
@@ -66,7 +65,6 @@ export default function RootLayout({
             </NotificationProvider>
           </FirebaseClientProvider>
           <Toaster />
-          <SpeedInsights />
         </ThemeProvider>
       </body>
     </html>
