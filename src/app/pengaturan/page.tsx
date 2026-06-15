@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,7 +14,6 @@ import {
     Trash2, 
     AlertTriangle, 
     ShieldAlert, 
-    CheckCircle2, 
     History, 
     Users, 
     Wallet, 
@@ -22,10 +21,9 @@ import {
     Palette, 
     Clock, 
     Printer, 
-    FileText, 
     Eye,
     Settings2,
-    MonitorSmartphone
+    RotateCcw
 } from 'lucide-react';
 import type { GeneralSettings } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -54,6 +52,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Image from 'next/image';
 import { cn, formatCurrency } from '@/lib/utils';
 
+const DEFAULT_FORM_DATA: GeneralSettings = {
+  storeName: 'XenonPlay Manager',
+  address: '',
+  phone: '',
+  themeMode: 'light',
+  dayThemeStart: '06:00',
+  nightThemeStart: '18:00',
+  receiptPaperSize: '58mm',
+  receiptHeader: 'Selamat datang di toko kami',
+  receiptFooter: 'Terima kasih telah berkunjung!'
+};
+
 export default function PengaturanPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -63,32 +73,39 @@ export default function PengaturanPage() {
   const settingsRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'general') : null, [firestore]);
   const { data: currentSettings, isLoading } = useDoc<GeneralSettings>(settingsRef);
 
-  const [formData, setFormData] = useState<GeneralSettings>({
-    storeName: 'XenonPlay Manager',
-    address: '',
-    phone: '',
-    themeMode: 'light',
-    dayThemeStart: '06:00',
-    nightThemeStart: '18:00',
-    receiptPaperSize: '58mm',
-    receiptHeader: 'Selamat datang di toko kami',
-    receiptFooter: 'Terima kasih telah berkunjung!'
-  });
+  const [formData, setFormData] = useState<GeneralSettings>(DEFAULT_FORM_DATA);
 
+  // Sinkronisasi awal data dari Firestore ke state lokal
   useEffect(() => {
     if (currentSettings) {
       setFormData({
-          ...formData,
+          ...DEFAULT_FORM_DATA,
           ...currentSettings,
-          themeMode: currentSettings.themeMode || 'light',
-          dayThemeStart: currentSettings.dayThemeStart || '06:00',
-          nightThemeStart: currentSettings.nightThemeStart || '18:00',
-          receiptPaperSize: currentSettings.receiptPaperSize || '58mm',
-          receiptHeader: currentSettings.receiptHeader || 'Selamat datang di toko kami',
-          receiptFooter: currentSettings.receiptFooter || 'Terimakasih Telah Bermain\n"Good Game, Well Played"'
       });
     }
   }, [currentSettings]);
+
+  // Deteksi Perubahan per Kategori
+  const hasBusinessChanges = useMemo(() => {
+    if (!currentSettings) return false;
+    return formData.storeName !== (currentSettings.storeName || DEFAULT_FORM_DATA.storeName) ||
+           formData.address !== (currentSettings.address || DEFAULT_FORM_DATA.address) ||
+           formData.phone !== (currentSettings.phone || DEFAULT_FORM_DATA.phone);
+  }, [formData, currentSettings]);
+
+  const hasPrinterChanges = useMemo(() => {
+    if (!currentSettings) return false;
+    return formData.receiptPaperSize !== (currentSettings.receiptPaperSize || DEFAULT_FORM_DATA.receiptPaperSize) ||
+           formData.receiptHeader !== (currentSettings.receiptHeader || DEFAULT_FORM_DATA.receiptHeader) ||
+           formData.receiptFooter !== (currentSettings.receiptFooter || DEFAULT_FORM_DATA.receiptFooter);
+  }, [formData, currentSettings]);
+
+  const hasThemeChanges = useMemo(() => {
+    if (!currentSettings) return false;
+    return formData.themeMode !== (currentSettings.themeMode || DEFAULT_FORM_DATA.themeMode) ||
+           formData.dayThemeStart !== (currentSettings.dayThemeStart || DEFAULT_FORM_DATA.dayThemeStart) ||
+           formData.nightThemeStart !== (currentSettings.nightThemeStart || DEFAULT_FORM_DATA.nightThemeStart);
+  }, [formData, currentSettings]);
 
   const handleSave = async () => {
     if (!firestore) return;
@@ -109,6 +126,34 @@ export default function PengaturanPage() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleUndo = (type: 'business' | 'printer' | 'theme') => {
+    if (!currentSettings) return;
+    
+    if (type === 'business') {
+        setFormData(prev => ({
+            ...prev,
+            storeName: currentSettings.storeName || DEFAULT_FORM_DATA.storeName,
+            address: currentSettings.address || DEFAULT_FORM_DATA.address,
+            phone: currentSettings.phone || DEFAULT_FORM_DATA.phone,
+        }));
+    } else if (type === 'printer') {
+        setFormData(prev => ({
+            ...prev,
+            receiptPaperSize: currentSettings.receiptPaperSize || DEFAULT_FORM_DATA.receiptPaperSize,
+            receiptHeader: currentSettings.receiptHeader || DEFAULT_FORM_DATA.receiptHeader,
+            receiptFooter: currentSettings.receiptFooter || DEFAULT_FORM_DATA.receiptFooter,
+        }));
+    } else if (type === 'theme') {
+        setFormData(prev => ({
+            ...prev,
+            themeMode: currentSettings.themeMode || DEFAULT_FORM_DATA.themeMode,
+            dayThemeStart: currentSettings.dayThemeStart || DEFAULT_FORM_DATA.dayThemeStart,
+            nightThemeStart: currentSettings.nightThemeStart || DEFAULT_FORM_DATA.nightThemeStart,
+        }));
+    }
+    toast({ title: 'Perubahan Dibatalkan', variant: 'default' });
   };
 
   const handleReset = async (type: 'transactions' | 'expenses' | 'shifts' | 'members') => {
@@ -153,10 +198,6 @@ export default function PengaturanPage() {
             </div>
             <h1 className="text-3xl font-black uppercase tracking-tight text-foreground">Pengaturan <span className="text-primary">Umum</span></h1>
         </div>
-        <Button onClick={handleSave} disabled={isSaving} className="gap-2 font-black uppercase tracking-widest px-8 h-12 shadow-lg shadow-primary/30 rounded-xl">
-            {isSaving ? <Save className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Simpan Perubahan
-        </Button>
       </header>
 
       <Tabs defaultValue="business" className="w-full">
@@ -216,6 +257,14 @@ export default function PengaturanPage() {
                         </div>
                     </div>
                 </CardContent>
+                <CardFooter className="bg-muted/10 border-t p-4 flex justify-end gap-3">
+                    <Button variant="ghost" size="sm" onClick={() => handleUndo('business')} disabled={!hasBusinessChanges || isSaving} className="font-bold text-[10px] uppercase gap-2">
+                        <RotateCcw className="size-3" /> Urungkan
+                    </Button>
+                    <Button size="sm" onClick={handleSave} disabled={!hasBusinessChanges || isSaving} className="font-black uppercase text-[10px] tracking-widest px-8 rounded-xl shadow-lg shadow-primary/20">
+                        {isSaving ? 'Menyimpan...' : 'Simpan Profil'}
+                    </Button>
+                </CardFooter>
             </Card>
         </TabsContent>
 
@@ -265,6 +314,14 @@ export default function PengaturanPage() {
                                 />
                             </div>
                         </CardContent>
+                        <CardFooter className="bg-muted/10 border-t p-4 flex justify-end gap-3">
+                            <Button variant="ghost" size="sm" onClick={() => handleUndo('printer')} disabled={!hasPrinterChanges || isSaving} className="font-bold text-[10px] uppercase gap-2">
+                                <RotateCcw className="size-3" /> Urungkan
+                            </Button>
+                            <Button size="sm" onClick={handleSave} disabled={!hasPrinterChanges || isSaving} className="font-black uppercase text-[10px] tracking-widest px-8 rounded-xl shadow-lg shadow-primary/20">
+                                {isSaving ? 'Menyimpan...' : 'Simpan Layout'}
+                            </Button>
+                        </CardFooter>
                     </Card>
                 </div>
 
@@ -429,6 +486,14 @@ export default function PengaturanPage() {
                         )}
                     </div>
                 </CardContent>
+                <CardFooter className="bg-muted/10 border-t p-4 flex justify-end gap-3">
+                    <Button variant="ghost" size="sm" onClick={() => handleUndo('theme')} disabled={!hasThemeChanges || isSaving} className="font-bold text-[10px] uppercase gap-2">
+                        <RotateCcw className="size-3" /> Urungkan
+                    </Button>
+                    <Button size="sm" onClick={handleSave} disabled={!hasThemeChanges || isSaving} className="font-black uppercase text-[10px] tracking-widest px-8 rounded-xl shadow-lg shadow-primary/20">
+                        {isSaving ? 'Menyimpan...' : 'Simpan Tema'}
+                    </Button>
+                </CardFooter>
             </Card>
         </TabsContent>
 
