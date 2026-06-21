@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -20,7 +21,6 @@ import {
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
-  AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
@@ -109,7 +109,7 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
     if (!activeShift) {
       toast({
         title: "Shift Belum Dibuka",
-        description: "Harap buka shift kasir terlebih dahulu untuk melakukan penjualan.",
+        description: "Buka laci kasir dulu ya sebelum mulai jualan.",
         variant: "destructive"
       });
       setIsOpeningDialog(true);
@@ -132,7 +132,7 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
       
       if (next < 0) return prev;
       if (item && next > item.stock) {
-        toast({ title: "Stok Terbatas", description: `Hanya tersedia ${item.stock} pcs`, variant: "destructive" });
+        toast({ title: "Stok Habis!", description: `Hanya sisa ${item.stock} pcs lagi di kantin.`, variant: "destructive" });
         return prev;
       }
       
@@ -165,8 +165,8 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
       });
 
       toast({
-        title: "Penjualan Berhasil",
-        description: `Kembalian: ${formatCurrency(changeAmount)}`,
+        title: "Penjualan Berhasil!",
+        description: `Kembalian pelanggan: ${formatCurrency(changeAmount)}`,
         variant: "success"
       });
       
@@ -175,7 +175,7 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
       setIsSheetOpen(false);
       setIsSuccessOpen(true);
     } catch (e: any) {
-      toast({ title: "Gagal Checkout", description: e.message, variant: "destructive" });
+      toast({ title: "Waduh, Gagal!", description: e.message, variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
@@ -273,7 +273,7 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
 
           <div class="summary-row">
             <span>Bayar (Cash)</span>
-            <span class="right">Rp ${lastOrderDetails.cash.toLocaleString('id-ID')}</span>
+            <span class="right">${lastOrderDetails.cash.toLocaleString('id-ID')}</span>
           </div>
           <div class="summary-row">
             <span>Kembali</span>
@@ -297,7 +297,7 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
         <div className="relative max-w-2xl mx-auto w-full group">
           <Search className="absolute left-4 top-4 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
           <Input 
-            placeholder="Cari makanan atau minuman..." 
+            placeholder="Cari amunisi mabar (snack/minuman)..." 
             className="pl-12 h-14 bg-card border-border text-base sm:text-lg rounded-2xl shadow-sm focus:ring-primary/20"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -328,12 +328,12 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
                     </div>
                     <div className="flex items-baseline gap-1.5">
                         <p className="text-primary font-black text-sm sm:text-lg leading-none">{formatCurrency(item.sellPrice)}</p>
-                        <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-tighter sm:hidden">Stok: {item.stock}</p>
+                        <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-tighter sm:hidden">Sisa: {item.stock}</p>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between mt-0 sm:mt-3 shrink-0 sm:w-full">
-                    <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest hidden sm:block">Stok: {item.stock}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest hidden sm:block">Sisa: {item.stock}</p>
                     <div className="size-10 sm:size-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
                         <Plus className="size-5 sm:size-4" />
                     </div>
@@ -366,7 +366,7 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
                         </span>
                     </div>
                     <div className="flex flex-col items-start leading-none">
-                        <span className="text-[10px] font-black uppercase tracking-widest opacity-70">Ringkasan</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest opacity-70">Total Belanja</span>
                         <span className="text-lg font-black font-mono">{formatCurrency(totalAmount)}</span>
                     </div>
                 </div>
@@ -380,11 +380,11 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
                         <ShoppingCart className="size-5" />
                     </div>
                     <div>
-                        <SheetTitle className="text-xl font-black uppercase tracking-tight">Keranjang</SheetTitle>
-                        <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">{totalItemsCount} item</p>
+                        <SheetTitle className="text-xl font-black uppercase tracking-tight">Daftar Belanja</SheetTitle>
+                        <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">{totalItemsCount} item terpilih</p>
                     </div>
                 </div>
-                <Button variant="ghost" size="sm" className="h-8 text-[10px] font-black" onClick={() => setCart({})}>Reset</Button>
+                <Button variant="ghost" size="sm" className="h-8 text-[10px] font-black" onClick={() => setCart({})}>Kosongkan</Button>
             </div>
           </SheetHeader>
           
@@ -398,7 +398,7 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
                         </div>
                         <div className="flex justify-between items-center">
                             <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-destructive" onClick={() => setCart(prev => { const n = {...prev}; delete n[item.id]; return n; })}>
-                                <Trash2 className="h-3.5 w-3.5 mr-1" /> <span className="text-[9px] font-black uppercase">Hapus</span>
+                                <Trash2 className="h-3.5 w-3.5 mr-1" /> <span className="text-[9px] font-black uppercase">Batal</span>
                             </Button>
                             <div className="flex items-center gap-4 bg-background p-1 rounded-xl border border-border/50">
                                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleUpdateCart(item.id, -1)}><Minus className="h-4 w-4" /></Button>
@@ -426,26 +426,26 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
                 <AlertDialogContent className="max-w-2xl bg-background border-border">
                 <AlertDialogHeader>
                     <AlertDialogTitle className="text-xl font-black uppercase flex items-center gap-2"><CreditCard className="h-5 w-5 text-primary" /> Pembayaran Tunai</AlertDialogTitle>
-                    <AlertDialogDescription>Masukkan jumlah uang tunai yang diterima.</AlertDialogDescription>
+                    <AlertDialogDescription>Masukkan jumlah uang tunai yang diterima dari pelanggan.</AlertDialogDescription>
                 </AlertDialogHeader>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
                     <div className="space-y-4">
                         <div className="rounded-xl border border-border bg-muted/30 overflow-hidden">
                             <div className="p-3 bg-muted/50 border-b flex justify-between items-center">
-                                <p className="text-[10px] font-black uppercase text-muted-foreground">Detail Item</p>
+                                <p className="text-[10px] font-black uppercase text-muted-foreground">Detail Amunisi</p>
                             </div>
                             <ScrollArea className="max-h-[150px] p-3 space-y-2">
                                 {cartItems.map(item => (
                                     <div key={item.id} className="flex justify-between text-[11px]">
-                                        <span className="truncate flex-1">{item.name} x{item.quantity}</span>
+                                        <span className="truncate flex-1 uppercase font-bold">{item.name} x{item.quantity}</span>
                                         <span className="font-mono font-bold ml-2">{formatCurrency(item.sellPrice * item.quantity)}</span>
                                     </div>
                                 ))}
                             </ScrollArea>
                             <div className="p-4 bg-primary/5 border-t">
                                 <div className="flex justify-between items-center">
-                                    <span className="text-xs font-black uppercase text-primary">Total</span>
+                                    <span className="text-xs font-black uppercase text-primary">Total Harus Bayar</span>
                                     <span className="text-xl font-black text-primary font-mono">{formatCurrency(totalAmount)}</span>
                                 </div>
                             </div>
@@ -454,7 +454,7 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
 
                     <div className="space-y-6">
                         <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Uang Tunai</Label>
+                            <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Uang Tunai Diterima</Label>
                             <div className="relative">
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-muted-foreground text-lg">Rp</span>
                                 <Input type="number" className="h-16 pl-12 text-3xl font-black bg-muted border-border" value={cashReceived} onChange={(e) => setCashReceived(e.target.value)} autoFocus />
@@ -468,7 +468,7 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
                         </div>
                         <div className={cn("p-5 rounded-2xl border-2 flex justify-between items-center", isCashEnough ? "bg-emerald-500/10 border-emerald-500/30" : "bg-red-500/5 border-red-500/20")}>
                             <div>
-                                <span className={cn("text-[10px] font-black uppercase", isCashEnough ? "text-emerald-600" : "text-red-600")}>{isCashEnough ? 'Kembalian' : 'Kurang'}</span>
+                                <span className={cn("text-[10px] font-black uppercase", isCashEnough ? "text-emerald-600" : "text-red-600")}>{isCashEnough ? 'Kembalian' : 'Masih Kurang'}</span>
                                 <p className={cn("text-2xl font-black font-mono", isCashEnough ? "text-emerald-600" : "text-red-600")}>{formatCurrency(isCashEnough ? changeAmount : Math.abs(cashAmountNum - totalAmount))}</p>
                             </div>
                             <div className={cn("p-3 rounded-xl", isCashEnough ? "bg-emerald-500/20 text-emerald-600" : "bg-red-500/20 text-red-600")}>
@@ -497,15 +497,15 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
                 <div className="size-20 rounded-[2.5rem] bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto border-4 border-emerald-500/20 shadow-xl"><CheckCircle2 className="size-10" /></div>
                 
                 <DialogHeader>
-                    <DialogTitle className="text-2xl font-black uppercase tracking-tight text-center">Pembayaran Sukses</DialogTitle>
+                    <DialogTitle className="text-2xl font-black uppercase tracking-tight text-center">Transaksi Selesai!</DialogTitle>
                     <DialogDescription className="text-center text-xs text-muted-foreground font-bold uppercase">
-                        Kembalian: <span className="text-emerald-600 font-mono">{formatCurrency(lastOrderDetails?.change || 0)}</span>
+                        Kembalian pelanggan: <span className="text-emerald-600 font-mono">{formatCurrency(lastOrderDetails?.change || 0)}</span>
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="flex flex-col gap-2 pt-4">
                     <Button onClick={handlePrintReceipt} className="w-full h-14 rounded-2xl font-black uppercase tracking-widest gap-3 shadow-lg shadow-primary/20">
-                        <Printer className="size-5" /> Cetak Nota Fisik
+                        <Printer className="size-5" /> Cetak Nota Belanja
                     </Button>
                     <DialogClose asChild>
                         <Button variant="ghost" className="w-full h-12 font-bold uppercase text-[10px]">Tutup</Button>

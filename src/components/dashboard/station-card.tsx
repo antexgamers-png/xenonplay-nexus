@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { Station, PricingRule, FnbItem, Transaction, Member } from '@/lib/types';
@@ -125,7 +126,7 @@ function CountdownTimer({
 
   return (
     <div className="flex flex-col items-center">
-      <span className="text-[9px] font-black tracking-[0.3em] text-muted-foreground/50 mb-1 uppercase">Sisa Waktu</span>
+      <span className="text-[9px] font-black tracking-[0.3em] text-muted-foreground/50 mb-1 uppercase">Sisa Waktu Mabar</span>
       <div className={cn(
         "font-black font-mono tracking-tighter leading-none tabular-nums",
         "text-4xl lg:text-[clamp(1.8rem,3vw,3.2rem)]",
@@ -192,8 +193,8 @@ export function StationCard({
   const checkShift = () => {
     if (!activeShift) {
       toast({
-        title: "Shift Belum Dibuka",
-        description: "Harap buka shift kasir terlebih dahulu untuk melakukan transaksi.",
+        title: "Laci Masih Terkunci",
+        description: "Harap buka shift kasir terlebih dahulu untuk memulai mabar.",
         variant: "destructive"
       });
       setIsOpeningDialog(true);
@@ -209,7 +210,7 @@ export function StationCard({
       await triggerADBAction(firestore, id, action, user?.uid, user?.displayName || user?.email || 'Sistem');
       toast({ title: `Sinyal ${action.toUpperCase()} Terkirim`, variant: "success" });
     } catch (e: any) {
-      toast({ title: "Gagal mengirim sinyal", variant: "destructive" });
+      toast({ title: "Gagal memicu hardware", variant: "destructive" });
     } finally {
       setIsExecuting(false);
     }
@@ -224,22 +225,23 @@ export function StationCard({
           setGeneratedCode(code);
           setShowVoucherResult(true);
           toast({
-              title: "Kredit Berhasil",
-              description: "Sisa waktu telah dikonversi menjadi voucher.",
+              title: "Kredit Berhasil Disimpan",
+              description: "Sisa waktu telah kami ubah jadi kode voucher.",
               variant: "success",
           });
       } catch (e: any) {
-          toast({ title: "Gagal Menyimpan Kredit", description: e.message, variant: "destructive" });
+          toast({ title: "Gagal simpan kredit", description: e.message, variant: "destructive" });
       } finally {
           setIsCrediting(false);
       }
   }
 
   const handleCopyCode = () => {
+      if (!generatedVoucher) return;
       navigator.clipboard.writeText(generatedCode);
       setHasCopied(true);
       setTimeout(() => setHasCopied(false), 2000);
-      toast({ title: "Kode Tersalin", variant: "success" });
+      toast({ title: "Kode voucher tersalin!", variant: "success" });
   };
 
   return (
@@ -275,7 +277,7 @@ export function StationCard({
                     "text-[8px] font-black uppercase tracking-widest leading-none",
                     isOnline ? "text-emerald-600/80" : "text-red-500/60"
                 )}>
-                  {isOnline ? 'Bridge Online' : 'Offline'}
+                  {isOnline ? 'Bridge Terhubung' : 'Bridge Putus'}
                 </span>
               </div>
             </div>
@@ -298,7 +300,7 @@ export function StationCard({
                         size="icon" 
                         className="h-9 w-full rounded-xl bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all" 
                         onClick={() => handleRemoteAction('wake')}
-                        title="Wake Up"
+                        title="Bangunkan TV"
                     >
                         <Power className="h-4 w-4" />
                     </Button>
@@ -307,7 +309,7 @@ export function StationCard({
                         size="icon" 
                         className="h-9 w-full rounded-xl bg-red-500/20 text-red-500 hover:bg-red-500/10" 
                         onClick={() => handleRemoteAction('sleep')}
-                        title="Sleep"
+                        title="Tidurkan TV"
                     >
                         <Moon className="h-4 w-4" />
                     </Button>
@@ -322,7 +324,7 @@ export function StationCard({
                             <Home className="h-3.5 w-3.5" />
                         </Button>
                     </div>
-                    <div className="text-[7px] font-black text-center text-white/20 tracking-widest py-0.5">CONTROL</div>
+                    <div className="text-[7px] font-black text-center text-white/20 tracking-widest py-0.5">KONTROL TV</div>
                     <div className="flex gap-1">
                         <Button variant="ghost" size="icon" className="h-8 flex-1 rounded-lg text-white hover:bg-white/10" onClick={() => handleRemoteAction('vol_down')}>
                             <Minus className="h-3 w-3" />
@@ -334,7 +336,7 @@ export function StationCard({
                   </div>
 
                   <Button variant="ghost" size="sm" className="h-8 w-full rounded-xl bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-white text-[9px] font-black uppercase tracking-widest" onClick={() => handleRemoteAction('hdmi')}>
-                      <Zap className="h-3 w-3 mr-1.5" /> HDMI
+                      <Zap className="h-3 w-3 mr-1.5" /> PINDAH HDMI
                   </Button>
                 </div>
               </PopoverContent>
@@ -355,16 +357,16 @@ export function StationCard({
                 className="text-center animate-in fade-in zoom-in duration-500 cursor-pointer group/bill hover:scale-105 transition-transform" 
                 onClick={() => { if(checkShift()) setIsDetailOpen(true); }}
             >
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-600/50 mb-1">Tagihan Gantung</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-600/50 mb-1">Tagihan Belum Lunas</p>
               <div className="text-2xl lg:text-xl font-black text-amber-600 font-mono tracking-tighter leading-none">{formatCurrency(outstanding)}</div>
-              <p className="text-[8px] font-bold text-amber-600/40 mt-2 uppercase tracking-widest group-hover/bill:text-amber-500 transition-colors underline underline-offset-2">Klik Untuk Bayar</p>
+              <p className="text-[8px] font-bold text-amber-600/40 mt-2 uppercase tracking-widest group-hover/bill:text-amber-500 transition-colors underline underline-offset-2">Klik Untuk Bayar Sekarang</p>
             </div>
           ) : (
             <div className="flex flex-col items-center gap-2 opacity-20 group-hover:opacity-40 transition-opacity duration-700">
               <div className="size-12 lg:size-8 border-2 border-muted-foreground/30 rounded-full flex items-center justify-center">
                 <Activity className="size-6 lg:size-4" />
               </div>
-              <span className="text-[10px] lg:text-[9px] font-black uppercase tracking-[0.4em]">Unit Ready</span>
+              <span className="text-[10px] lg:text-[9px] font-black uppercase tracking-[0.4em]">Unit Siaga</span>
             </div>
           )}
         </div>
@@ -392,11 +394,11 @@ export function StationCard({
                     <AlertDialogContent>
                         <AlertDialogHeader>
                             <AlertDialogTitle className="text-xl font-black uppercase flex items-center gap-2"><Ticket className="h-5 w-5 text-amber-500" /> Simpan Sisa Waktu?</AlertDialogTitle>
-                            <AlertDialogDescription>Sesi di unit <b>{name}</b> akan dihentikan sekarang. Sisa waktu akan dikonversi menjadi kode voucher yang bisa dipakai ulang.</AlertDialogDescription>
+                            <AlertDialogDescription className="text-sm font-medium">Sesi di unit <b>{name}</b> akan kami hentikan sekarang, dan sisa waktunya akan kami jadikan kode voucher untuk dipakai nanti.</AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                            <AlertDialogCancel>Batal</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleSaveCredit} className="bg-amber-600 hover:bg-amber-700 font-bold uppercase tracking-widest">Ya, Simpan Kredit</AlertDialogAction>
+                            <AlertDialogCancel className="font-bold uppercase tracking-widest text-[10px]">Batal</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleSaveCredit} className="bg-amber-600 hover:bg-amber-700 font-bold uppercase tracking-widest text-[10px]">Ya, Jadikan Voucher</AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
@@ -417,16 +419,16 @@ export function StationCard({
                 
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="sm" className="flex-[1.5] h-12 lg:h-9 text-[10px] lg:text-[9px] font-black uppercase tracking-[0.2em] rounded-xl shadow-lg shadow-destructive/20 bg-gradient-to-br from-red-500 to-red-700">Selesai</Button>
+                        <Button variant="destructive" size="sm" className="flex-[1.5] h-12 lg:h-9 text-[10px] lg:text-[9px] font-black uppercase tracking-[0.2em] rounded-xl shadow-lg shadow-destructive/20 bg-gradient-to-br from-red-500 to-red-700">Stop Mabar</Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                         <AlertDialogHeader>
-                            <AlertDialogTitle className="text-xl font-black uppercase flex items-center gap-2 text-destructive"><AlertTriangle className="h-5 w-5" /> Hentikan Sesi Bermain?</AlertDialogTitle>
-                            <AlertDialogDescription className="text-sm font-medium">Apakah Anda yakin ingin menghentikan sesi di unit <b>{name}</b>? Unit TV akan dikembalikan ke layar utama dan timer akan berhenti.</AlertDialogDescription>
+                            <AlertDialogTitle className="text-xl font-black uppercase flex items-center gap-2 text-destructive"><AlertTriangle className="h-5 w-5" /> Selesaikan Sesi Bermain?</AlertDialogTitle>
+                            <AlertDialogDescription className="text-sm font-medium">Yakin ingin menyudahi mabar di unit <b>{name}</b>? Hardware TV akan kami kembalikan ke layar siaga.</AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                            <AlertDialogCancel className="font-bold uppercase tracking-widest text-[10px]">Batal</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => onStopSession(id)} className="bg-red-600 hover:bg-red-700 font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-red-600/20">Ya, Selesaikan Sesi</AlertDialogAction>
+                            <AlertDialogCancel className="font-bold uppercase tracking-widest text-[10px]">Belum, Lanjut</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => onStopSession(id)} className="bg-red-600 hover:bg-red-700 font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-red-600/20">Ya, Selesaikan Sekarang</AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
@@ -440,7 +442,7 @@ export function StationCard({
                 disabled={outstanding > 0} 
                 onClick={() => { if(checkShift()) setIsStartDialogOpen(true); }}
               >
-                <Zap className="size-3.5 lg:size-3 mr-2 fill-current" /> {outstanding > 0 ? 'Tagihan Gantung' : 'Mulai Sesi'}
+                <Zap className="size-3.5 lg:size-3 mr-2 fill-current" /> {outstanding > 0 ? 'Ada Tagihan Gantung' : 'Mulai Mabar'}
               </Button>
             )}
           </div>
@@ -501,9 +503,9 @@ export function StationCard({
                                 <div className="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-amber-500/10 text-amber-600 text-[10px] font-black uppercase">{hasCopied ? <Check className="size-3" /> : <Copy className="size-3" />}{hasCopied ? 'Tersalin' : 'Klik Untuk Salin'}</div>
                             </div>
                         </div>
-                        <p className="text-[10px] text-muted-foreground italic leading-relaxed">Berikan kode ini kepada pelanggan.<br/>Berlaku untuk unit tipe <b>{type}</b>.</p>
+                        <p className="text-[10px] text-muted-foreground italic leading-relaxed text-center">Berikan kode ini kepada pelanggan.<br/>Bisa dipakai di unit tipe <b>{type}</b> mana saja.</p>
                     </div>
-                    <div className="mt-8"><DialogClose asChild><Button className="w-full h-12 font-black uppercase tracking-widest bg-amber-600 hover:bg-amber-700 shadow-lg shadow-amber-600/20 rounded-xl">Selesai</Button></DialogClose></div>
+                    <div className="mt-8"><DialogClose asChild><Button className="w-full h-12 font-black uppercase tracking-widest bg-amber-600 hover:bg-amber-700 shadow-lg shadow-amber-600/20 rounded-xl">Mantap, Selesai</Button></DialogClose></div>
                 </div>
             </DialogContent>
         </Dialog>

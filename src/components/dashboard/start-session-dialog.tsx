@@ -117,7 +117,6 @@ export function StartSessionDialog({
   const isOpen = controlledIsOpen ?? internalIsOpen;
   const onOpenChange = controlledOnOpenChange ?? setInternalIsOpen;
 
-  // Real-time HH/Begadang Check
   const currentHour = new Date().getHours();
   const isHappyHour = currentHour >= 8 && currentHour < 13;
   const isBegadang = currentHour >= 22 || currentHour < 6;
@@ -165,7 +164,7 @@ export function StartSessionDialog({
 
   const handleNextStep = () => {
     if (step === 2 && !isAddingTime && !selectedRule) {
-      toast({ title: 'Pilih Paket', description: 'Silakan pilih paket waktu terlebih dahulu.', variant: 'destructive' });
+      toast({ title: 'Pilih Paket Dulu', description: 'Silakan pilih durasi mabar yang diinginkan.', variant: 'destructive' });
       return;
     }
     setStep(s => s + 1);
@@ -183,7 +182,7 @@ export function StartSessionDialog({
         const newQuantity = Math.max(0, currentQuantity + change);
         const item = fnbItems.find(f => f.id === itemId);
         if (item && newQuantity > item.stock) {
-            toast({ title: 'Stok Habis', description: `Sisa ${item.stock} unit.`, variant: 'destructive' });
+            toast({ title: 'Stok Habis!', description: `Waduh, sisa ${item.stock} unit saja.`, variant: 'destructive' });
             return { ...prev, [itemId]: item.stock };
         }
         return { ...prev, [itemId]: newQuantity };
@@ -211,14 +210,14 @@ export function StartSessionDialog({
             <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                     <DialogTitle className="text-xl font-black tracking-tighter uppercase leading-none">
-                        {isAddingTime ? 'Update Sesi' : 'Konfigurasi Sesi'}
+                        {isAddingTime ? 'Tambah Durasi / Item' : 'Siapkan Sesi Mabar'}
                     </DialogTitle>
                     <div className="flex items-center gap-2">
                         <Badge variant="outline" className="text-[8px] font-black uppercase border-primary/20 bg-primary/5 text-primary tracking-widest px-1.5 h-4">
                             UNIT {stationType}
                         </Badge>
                         {!isAddingTime && (
-                            <span className="text-[9px] font-black text-muted-foreground/40 uppercase tracking-[0.2em]">Tahap {step}/3</span>
+                            <span className="text-[9px] font-black text-muted-foreground/40 uppercase tracking-[0.2em]">Langkah {step}/3</span>
                         )}
                     </div>
                 </div>
@@ -243,7 +242,7 @@ export function StartSessionDialog({
                             <div className="relative">
                                 <Search className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
                                 <Input 
-                                    placeholder="Cari Member (Nama/Nomor HP)..." 
+                                    placeholder="Cari Sultan Member (Nama/Nomor HP)..." 
                                     className="pl-10 h-11 bg-muted/40 border-transparent focus:ring-primary/20 rounded-xl text-sm"
                                     value={memberSearch}
                                     onChange={(e) => setMemberSearch(e.target.value)}
@@ -281,11 +280,11 @@ export function StartSessionDialog({
                                             <UserCheck className="h-5 w-5" />
                                         </div>
                                         <div>
-                                            <p className="text-[9px] font-black uppercase text-amber-600 tracking-widest">Pelanggan</p>
+                                            <p className="text-[9px] font-black uppercase text-amber-600 tracking-widest">Sultan Member</p>
                                             <p className="font-black text-lg uppercase tracking-tight leading-none">{selectedMember.name}</p>
                                         </div>
                                     </div>
-                                    <Button variant="ghost" size="sm" onClick={() => setSelectedMember(null)} className="h-8 rounded-lg text-[10px] font-black uppercase text-muted-foreground hover:text-red-500">Ganti</Button>
+                                    <Button variant="ghost" size="sm" onClick={() => setSelectedMember(null)} className="h-8 rounded-lg text-[10px] font-black uppercase text-muted-foreground hover:text-red-500">Ganti Member</Button>
                                 </div>
                             ) : (
                                 <div className="p-8 border-2 border-dashed border-border/40 rounded-3xl flex flex-col items-center justify-center opacity-40">
@@ -299,9 +298,9 @@ export function StartSessionDialog({
                             <div className="bg-muted/30 rounded-2xl p-3 border border-border/50">
                                 <div className="flex justify-between items-center mb-2">
                                     <p className="text-[8px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
-                                        <Award className="size-2.5 text-amber-500" /> Loyalty Progres
+                                        <Award className="size-2.5 text-amber-500" /> Progres Loyalitas
                                     </p>
-                                    <span className="text-[8px] font-bold text-muted-foreground">{selectedMember.stamps}/10</span>
+                                    <span className="text-[8px] font-bold text-muted-foreground">{selectedMember.stamps}/10 Stamp</span>
                                 </div>
                                 <div className="flex gap-1 justify-between">
                                     {Array.from({ length: 10 }).map((_, i) => (
@@ -320,13 +319,13 @@ export function StartSessionDialog({
                         <Tabs defaultValue="time" className="w-full">
                             <TabsList className="grid w-full grid-cols-3 h-10 bg-muted/50 p-1 rounded-xl mb-4">
                                 <TabsTrigger value="time" className="rounded-lg data-[state=active]:bg-background font-black uppercase text-[9px] tracking-widest gap-1.5">
-                                    <Clock className="h-3 w-3"/> Waktu
+                                    <Clock className="h-3 w-3"/> Durasi
                                 </TabsTrigger>
                                 <TabsTrigger value="fnb" className="rounded-lg data-[state=active]:bg-background font-black uppercase text-[9px] tracking-widest gap-1.5">
-                                    <ShoppingCart className="h-3 w-3"/> Kantin
+                                    <ShoppingCart className="h-3 w-3"/> Amunisi
                                 </TabsTrigger>
                                 <TabsTrigger value="extra" className="rounded-lg data-[state=active]:bg-background font-black uppercase text-[9px] tracking-widest gap-1.5">
-                                    <Gamepad2 className="h-3 w-3"/> Opsi
+                                    <Gamepad2 className="h-3 w-3"/> Opsi Stik
                                 </TabsTrigger>
                             </TabsList>
                             
@@ -336,7 +335,7 @@ export function StartSessionDialog({
                                         <div className="mb-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-3 animate-pulse">
                                             <Sparkles className="size-4 text-amber-600" />
                                             <p className="text-[10px] font-black uppercase text-amber-700 leading-tight">
-                                                {isHappyHour ? "HAPPY HOUR AKTIF! HARGA LEBIH MURAH." : "PAKET BEGADANG TERSEDIA!"}
+                                                {isHappyHour ? "HAPPY HOUR LAGI AKTIF! HARGA LEBIH MURAH." : "MANTAP, PAKET BEGADANG TERSEDIA!"}
                                             </p>
                                         </div>
                                     )}
@@ -379,7 +378,7 @@ export function StartSessionDialog({
                                             )}>
                                                 <div className="flex-1 min-w-0 pr-2">
                                                     <p className='font-black uppercase tracking-tight text-[11px] truncate'>{item.name}</p>
-                                                    <p className='text-[9px] font-mono text-muted-foreground'>{formatCurrency(item.sellPrice)} • <span className='font-bold text-emerald-600'>Stok {item.stock}</span></p>
+                                                    <p className='text-[9px] font-mono text-muted-foreground'>{formatCurrency(item.sellPrice)} • <span className='font-bold text-emerald-600'>Sisa {item.stock} pcs</span></p>
                                                 </div>
                                                 <div className='flex items-center gap-2 bg-background p-1 rounded-lg border shadow-sm shrink-0'>
                                                     <Button size='icon' variant='ghost' className='h-6 w-6' onClick={() => handleFnbQuantityChange(item.id, -1)} disabled={(selectedFnb[item.id] || 0) === 0}>
@@ -401,7 +400,7 @@ export function StartSessionDialog({
                                     <div className="flex items-center justify-between">
                                         <div className="space-y-0.5">
                                             <Label className="text-xs font-black uppercase tracking-widest">Stik Tambahan</Label>
-                                            <p className="text-[10px] text-muted-foreground">Biaya Rp1.000 / stik extra (3 & 4)</p>
+                                            <p className="text-[10px] text-muted-foreground">Biaya Rp1.000 per stik ekstra (Stik 3 & 4)</p>
                                         </div>
                                         <div className="flex items-center gap-3 bg-background p-1 rounded-xl border shadow-sm">
                                             <Button size='icon' variant='ghost' className='h-8 w-8' onClick={() => setExtraSticks(Math.max(0, extraSticks - 1))} disabled={extraSticks === 0}>
@@ -415,8 +414,8 @@ export function StartSessionDialog({
                                     </div>
                                     <div className="p-3 rounded-xl bg-primary/5 border border-primary/10 flex items-start gap-3">
                                         <Info className="size-4 text-primary shrink-0 mt-0.5" />
-                                        <p className="text-[10px] text-primary/80 leading-relaxed italic">
-                                            "Target Riset: Pemain ekstra (stik 3/4) meningkatkan margin profit 100% tanpa beban listrik tambahan."
+                                        <p className="text-[10px] text-primary/80 leading-relaxed italic uppercase font-bold">
+                                            Tips: Pemain stik 3/4 biasanya mabar lebih seru, tawarkan paket bundling minum agar omzet makin maksimal!
                                         </p>
                                     </div>
                                 </div>
@@ -431,7 +430,7 @@ export function StartSessionDialog({
                             <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
                             <div className="flex items-center gap-2 mb-4 text-muted-foreground">
                                 <ReceiptText className="size-3.5" />
-                                <span className="text-[9px] font-black uppercase tracking-widest">Rincian Nota Digital</span>
+                                <span className="text-[9px] font-black uppercase tracking-widest">Detail Nota Sementara</span>
                             </div>
                             
                             <ScrollArea className="max-h-[140px] mb-4">
@@ -444,7 +443,7 @@ export function StartSessionDialog({
                                     )}
                                     {extraSticks > 0 && (
                                         <div className="flex justify-between items-center text-[11px] text-emerald-600">
-                                            <span className="uppercase font-medium">Biaya Tambahan {extraSticks} Stik</span>
+                                            <span className="uppercase font-medium">{extraSticks} Stik Ekstra</span>
                                             <span className="font-mono font-bold">+{formatCurrency(extraSticks * 1000)}</span>
                                         </div>
                                     )}
@@ -462,7 +461,7 @@ export function StartSessionDialog({
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between">
                                     <div className="relative">
-                                        <Label className="text-[8px] font-black uppercase text-amber-500 absolute -top-3 left-0">Potongan Diskon</Label>
+                                        <Label className="text-[8px] font-black uppercase text-amber-500 absolute -top-3 left-0">Potongan Harga (Diskon)</Label>
                                         <div className="flex items-center gap-1.5 mt-1">
                                             <span className="text-[10px] font-black text-muted-foreground/60">RP</span>
                                             <Input 
@@ -474,7 +473,7 @@ export function StartSessionDialog({
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-[9px] font-black text-primary uppercase tracking-[0.2em] mb-0.5">Total Akhir</p>
+                                        <p className="text-[9px] font-black text-primary uppercase tracking-[0.2em] mb-0.5">Total Bayar</p>
                                         <p className="text-2xl font-black text-primary font-mono tracking-tighter leading-none">
                                             {formatCurrency(finalTotal).replace(',00', '')}
                                         </p>
@@ -489,7 +488,7 @@ export function StartSessionDialog({
                                         className="size-4 border-primary"
                                     />
                                     <label htmlFor="paid-status" className="text-[9px] font-black uppercase text-primary cursor-pointer tracking-wider">
-                                        Konfirmasi Bayar Lunas Sekarang
+                                        Langsung Lunasi Pembayaran Sekarang
                                     </label>
                                 </div>
                             </div>
@@ -501,7 +500,7 @@ export function StartSessionDialog({
                             </div>
                             <div className="flex-1 min-w-0">
                                 <p className="text-[8px] font-black text-muted-foreground uppercase">Atas Nama</p>
-                                <p className="text-xs font-bold uppercase truncate">{selectedMember?.name || 'Tamu Umum'}</p>
+                                <p className="text-xs font-bold uppercase truncate">{selectedMember?.name || 'Tamu Guest'}</p>
                             </div>
                         </div>
                     </motion.div>
@@ -519,17 +518,17 @@ export function StartSessionDialog({
                             </Button>
                         ) : (
                             <DialogClose asChild>
-                                <Button variant="ghost" className="flex-1 h-11 rounded-xl font-black uppercase text-[10px] tracking-widest">Batal</Button>
+                                <Button variant="ghost" className="flex-1 h-11 rounded-xl font-black uppercase text-[10px] tracking-widest">Nggak Jadi</Button>
                             </DialogClose>
                         )}
                         
                         {step < 3 ? (
                             <Button onClick={handleNextStep} className="flex-[2] h-11 rounded-xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-primary/20">
-                                Lanjutkan <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                                Lanjut <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                             </Button>
                         ) : (
                             <Button onClick={handleConfirm} disabled={totalBeforeDiscount <= 0} className="flex-[2] h-11 rounded-xl font-black uppercase text-[10px] tracking-widest bg-primary hover:bg-primary/90 shadow-xl shadow-primary/30 gap-2">
-                                <Zap className="size-3.5 fill-current" /> Aktifkan Unit
+                                <Zap className="size-3.5 fill-current" /> Gass, Aktifkan Unit!
                             </Button>
                         )}
                     </div>

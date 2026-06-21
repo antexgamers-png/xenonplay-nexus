@@ -71,10 +71,10 @@ export function ShiftProvider({ children, role, isRoleLoading }: ShiftProviderPr
     try {
       const displayName = user.displayName || (user.email ? user.email.split('@')[0] : 'Operator');
       await openShift(firestore, user.uid, displayName, initialBalance);
-      toast({ title: "Shift Berhasil Dibuka", description: "Selamat bekerja, jaga integritas laci kasir!", variant: "success" });
+      toast({ title: "Buka Shift Berhasil", description: "Selamat bekerja, jaga integritas laci kasir ya!", variant: "success" });
       setIsOpeningDialog(false);
     } catch (e: any) {
-      toast({ title: "Gagal Buka Shift", description: e.message, variant: "destructive" });
+      toast({ title: "Gagal buka laci", description: e.message, variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
@@ -84,9 +84,9 @@ export function ShiftProvider({ children, role, isRoleLoading }: ShiftProviderPr
     if (!firestore || !activeShift) return;
     try {
       await closeShift(firestore, activeShift.id, actualBalance, notes);
-      toast({ title: "Shift Ditutup", description: "Laporan sesi kerja Anda telah tersimpan.", variant: "success" });
+      toast({ title: "Shift Ditutup", description: "Mantap, laporan kerja kamu sudah tersimpan aman.", variant: "success" });
     } catch (e: any) {
-      toast({ title: "Gagal Tutup Shift", description: e.message, variant: "destructive" });
+      toast({ title: "Gagal tutup shift", description: e.message, variant: "destructive" });
       throw e;
     }
   };
@@ -116,8 +116,8 @@ export function ShiftProvider({ children, role, isRoleLoading }: ShiftProviderPr
                     <Banknote className="h-6 w-6 text-primary-foreground" />
                 </div>
                 <div>
-                    <DialogTitle className="text-2xl font-black uppercase tracking-tight">Buka Shift Kasir</DialogTitle>
-                    <DialogDescription>Sistem Akuntansi XenonPlay</DialogDescription>
+                    <DialogTitle className="text-2xl font-black uppercase tracking-tight">Persiapan Laci Kasir</DialogTitle>
+                    <DialogDescription>Sistem Akuntansi XenonPlay Nexus</DialogDescription>
                 </div>
             </div>
           </DialogHeader>
@@ -127,13 +127,13 @@ export function ShiftProvider({ children, role, isRoleLoading }: ShiftProviderPr
                 <div className="flex items-center gap-3 p-3 rounded-xl bg-muted border border-border">
                     <UserCheck className="size-4 text-primary" />
                     <div>
-                        <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Petugas Bertanggung Jawab</p>
+                        <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Petugas Yang Bertanggung Jawab</p>
                         <p className="text-sm font-bold uppercase">{user?.email}</p>
                     </div>
                 </div>
 
                 <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Modal Awal (Uang Tunai di Laci)</Label>
+                    <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Uang Modal Awal (Cek Laci Sekarang)</Label>
                     <div className="relative">
                         <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-muted-foreground">Rp</span>
                         <Input 
@@ -144,14 +144,14 @@ export function ShiftProvider({ children, role, isRoleLoading }: ShiftProviderPr
                             autoFocus
                         />
                     </div>
-                    <p className="text-[10px] text-muted-foreground italic px-1">Hitung uang di laci kasir sekarang dan masukkan nilainya.</p>
+                    <p className="text-[10px] text-muted-foreground italic px-1 text-center">Hitung uang tunai di laci kasir sekarang dan masukkan nominalnya.</p>
                 </div>
             </div>
 
             <div className="bg-blue-500/5 border border-blue-500/20 p-4 rounded-2xl flex items-start gap-3">
                 <Calculator className="h-5 w-5 text-blue-500 shrink-0" />
-                <p className="text-xs text-blue-600 leading-relaxed">
-                    Setiap transaksi yang dibayar selama shift ini akan dilacak otomatis. Anda wajib melakukan **Tutup Shift** saat jam kerja berakhir.
+                <p className="text-xs text-blue-600 leading-relaxed font-medium">
+                    Semua transaksi yang dibayar akan dilacak otomatis oleh sistem. Jangan lupa lakukan **Tutup Shift** saat jam kerja kamu berakhir ya.
                 </p>
             </div>
 
@@ -160,7 +160,7 @@ export function ShiftProvider({ children, role, isRoleLoading }: ShiftProviderPr
                     <LogOut className="mr-2 h-4 w-4" /> Keluar
                 </Button>
                 <Button type="submit" className="flex-[2] h-14 font-black uppercase tracking-widest shadow-xl shadow-primary/20 text-lg" disabled={isProcessing}>
-                    {isProcessing ? 'Memproses...' : 'Buka Shift'}
+                    {isProcessing ? 'Sabar Ya...' : 'Buka Laci & Mulai Kerja'}
                 </Button>
             </div>
           </form>

@@ -72,8 +72,8 @@ export function StationGrid({
   const checkShift = () => {
     if (!activeShift) {
       toast({
-        title: "Shift Belum Dibuka",
-        description: "Harap buka shift kasir terlebih dahulu untuk melakukan tindakan ini.",
+        title: "Tindakan Ditolak",
+        description: "Harap buka shift laci kasir terlebih dahulu untuk melakukan tindakan ini.",
         variant: "destructive"
       });
       setIsOpeningDialog(true);
@@ -95,7 +95,7 @@ export function StationGrid({
                 stationName: currentStation.name,
                 type: 'session-ended',
                 priority: 'medium',
-                message: 'Sesi berakhir otomatis. TV dikembalikan ke menu utama.',
+                message: 'Waktu habis. TV otomatis dikembalikan ke menu siaga.',
                 transactionId: currentStation.current_transaction_id
              });
         }
@@ -111,7 +111,6 @@ export function StationGrid({
     const now = Date.now();
     const endTime = now + rule.duration * 60 * 1000;
 
-    // Merge manual selected items with bundling items from rule
     const allFnbItems = [...selectedFnb];
     if (rule.items && rule.items.length > 0) {
         rule.items.forEach(bundleItem => {
@@ -122,7 +121,7 @@ export function StationGrid({
                 allFnbItems.push({
                     id: bundleItem.itemId,
                     name: bundleItem.name,
-                    price: 0, // Bundling items are inclusive (0 added price)
+                    price: 0,
                     quantity: bundleItem.quantity
                 });
             }
@@ -154,9 +153,9 @@ export function StationGrid({
             last_action: 'start',
             last_action_timestamp: now
         });
-        toast({ title: 'Sesi Berhasil Dimulai', description: `${station.name} siap dimainkan.`, variant: "success" });
+        toast({ title: 'Mantap, Mabar Dimulai!', description: `${station.name} sudah aktif.`, variant: "success" });
     } catch(e: any) {
-        toast({ title: 'Gagal Memulai Sesi', description: e.message, variant: 'destructive' });
+        toast({ title: 'Waduh, Gagal Mulai', description: e.message, variant: 'destructive' });
     }
   };
 
@@ -174,7 +173,7 @@ export function StationGrid({
                 userName: user.displayName || user.email || 'Operator',
                 action: 'MANUAL_STOP',
                 target: stationId,
-                details: 'Operator menghentikan sesi secara manual dari dashboard.',
+                details: 'Operator menghentikan sesi secara manual.',
                 timestamp: now
             });
         }
@@ -187,9 +186,9 @@ export function StationGrid({
             last_action_timestamp: now
         });
 
-        toast({ title: 'Sesi Dihentikan', description: 'Sistem telah dinonaktifkan dan sinyal stop dikirim ke hardware.', variant: "success" });
+        toast({ title: 'Sesi Dihentikan', description: 'Unit TV telah kami bersihkan dan dikembalikan ke menu siaga.', variant: "success" });
     } catch(e: any) {
-        toast({ title: 'Gagal Mengaktifkan Unit', description: e.message, variant: 'destructive' });
+        toast({ title: 'Gagal stop sesi', description: e.message, variant: 'destructive' });
     }
   };
 
@@ -198,9 +197,9 @@ export function StationGrid({
     if (!firestore) return;
     try {
         await addItemsToTransaction(firestore, tId, items, items.reduce((s, i) => s + i.price * i.quantity, 0), isPaid, discount, activeShift?.id);
-        toast({ title: 'Pesanan Berhasil Ditambah', variant: "success" });
+        toast({ title: 'Amunisi Ditambahkan!', variant: "success" });
     } catch (e: any) { 
-        toast({ title: 'Gagal Tambah Pesanan', description: e.message, variant: 'destructive' }); 
+        toast({ title: 'Gagal tambah amunisi', description: e.message, variant: 'destructive' }); 
     }
   };
 
@@ -208,7 +207,6 @@ export function StationGrid({
     if (!checkShift()) return;
     if(!firestore) return;
     
-    // Check for bundling items in the "add time" rule too
     const allFnbItems = [];
     if (rule.items && rule.items.length > 0) {
         rule.items.forEach(bundleItem => {
@@ -226,9 +224,9 @@ export function StationGrid({
             await addItemsToTransaction(firestore, tId, allFnbItems, 0, true, 0, activeShift?.id);
         }
         await addTimeToTransaction(firestore, tId, sId, rule.duration, rule.price, isPaid, discount, activeShift?.id, rule.name);
-        toast({ title: 'Durasi Berhasil Ditambah', variant: "success" });
+        toast({ title: 'Durasi Main Ditambah!', variant: "success" });
     } catch (e: any) { 
-        toast({ title: 'Gagal Tambah Waktu', description: e.message, variant: 'destructive' }); 
+        toast({ title: 'Gagal tambah waktu', description: e.message, variant: 'destructive' }); 
     }
   };
 
@@ -238,7 +236,7 @@ export function StationGrid({
          await moveStation(firestore, sourceId, targetId, transactionId);
          toast({ title: "Berhasil Pindah Unit", variant: "success" });
      } catch (e: any) { 
-         toast({ title: "Gagal Pindah Unit", description: e.message, variant: "destructive" }); 
+         toast({ title: "Gagal pindah unit", description: e.message, variant: "destructive" }); 
      }
   };
 
@@ -251,9 +249,9 @@ export function StationGrid({
         if (stationToClear && !stationToClear.is_active) {
             await updateDoc(doc(firestore, 'stations', stationToClear.id), { current_transaction_id: null });
         }
-        toast({ title: 'Pembayaran Lunas', description: 'Transaksi telah masuk dalam laporan.', variant: "success" });
+        toast({ title: 'Sudah Lunas!', description: 'Transaksi telah kami catat dalam laporan cuan.', variant: "success" });
     } catch (e: any) { 
-        toast({ title: 'Gagal Melunasi', description: e.message, variant: 'destructive' }); 
+        toast({ title: 'Gagal melunasi', description: e.message, variant: 'destructive' }); 
     }
   };
 
@@ -275,9 +273,9 @@ export function StationGrid({
              }
          });
          await batch.commit();
-         toast({ title: "Jeda Darurat Aktif", description: "Seluruh unit aktif telah dijeda.", variant: "success" });
+         toast({ title: "Emergency Pause!", description: "Seluruh unit aktif telah kami bekukan sementara.", variant: "success" });
      } catch (e: any) { 
-         toast({ title: "Gagal Mengaktifkan Jeda", description: e.message, variant: "destructive" }); 
+         toast({ title: "Gagal jeda darurat", description: e.message, variant: "destructive" }); 
      }
      finally { setIsEmergencyLoading(false); }
   };
@@ -290,13 +288,13 @@ export function StationGrid({
          const q = query(collection(firestore, 'vouchers'), where('code', '==', claimCode.toUpperCase()), where('status', '==', 'active'));
          const snap = await getDocs(q);
          if (snap.empty) { 
-            toast({ title: "Kode Tidak Valid", description: "Voucher tidak ditemukan atau sudah terpakai.", variant: "destructive" }); 
+            toast({ title: "Voucher Tidak Dikenali", description: "Coba cek lagi kodenya atau mungkin sudah terpakai.", variant: "destructive" }); 
             return; 
          }
          const voucher = snap.docs[0].data() as CreditVoucher;
          setVerifiedVoucher({ ...voucher, id: snap.docs[0].id });
      } catch (e: any) { 
-        toast({ title: "Gagal Verifikasi Kode", description: e.message, variant: "destructive" }); 
+        toast({ title: "Gagal verifikasi kode", description: e.message, variant: "destructive" }); 
      }
      finally { setIsClaiming(false); }
   };
@@ -342,14 +340,14 @@ export function StationGrid({
          });
          
          await batch.commit();
-         toast({ title: "Voucher Berhasil Diklaim", description: `Sesi ${targetStation.name} telah dimulai.`, variant: "success" });
+         toast({ title: "Voucher Berhasil Cair!", description: `Sesi ${targetStation.name} siap dimainkan.`, variant: "success" });
          
          setVerifiedVoucher(null);
          setClaimCode('');
          setSelectedStationId(null);
          setIsClaimOpen(false);
      } catch (e: any) { 
-        toast({ title: "Gagal Klaim Voucher", description: e.message, variant: "destructive" }); 
+        toast({ title: "Gagal tukar voucher", description: e.message, variant: "destructive" }); 
      }
      finally { setIsClaiming(false); }
   };
@@ -399,17 +397,17 @@ export function StationGrid({
           } 
       }}>
           <DialogContent className="max-w-md">
-              <DialogHeader><DialogTitle className="text-xl font-black uppercase flex items-center gap-2"><Ticket className="h-5 w-5 text-primary" /> Tukar Voucher Kredit</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle className="text-xl font-black uppercase flex items-center gap-2"><Ticket className="h-5 w-5 text-primary" /> Cairkan Voucher Mabar</DialogTitle></DialogHeader>
               <div className="py-4 space-y-4">
                   {!verifiedVoucher ? (
                       <div className="space-y-4">
                         <Input 
-                            placeholder="Masukkan Kode Voucher..." 
+                            placeholder="Ketik Kode Voucher Di Sini..." 
                             className="h-14 text-2xl font-black text-center uppercase tracking-widest bg-muted" 
                             value={claimCode} 
                             onChange={(e) => setClaimCode(e.target.value)} 
                         />
-                        <Button variant="ghost" size="sm" className="w-full text-[10px] font-black uppercase tracking-widest opacity-50" onClick={() => setIsHistoryOpen(true)}>Lihat Riwayat Voucher</Button>
+                        <Button variant="ghost" size="sm" className="w-full text-[10px] font-black uppercase tracking-widest opacity-50" onClick={() => setIsHistoryOpen(true)}>Lihat Stok Voucher Tersedia</Button>
                       </div>
                   ) : (
                       <div className="space-y-4">
@@ -417,7 +415,7 @@ export function StationGrid({
                               <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-1">Durasi Terdeteksi</p>
                               <p className="text-2xl font-black text-emerald-700">{verifiedVoucher.durationMinutes} Menit ({verifiedVoucher.stationType})</p>
                           </div>
-                          <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-1">Pilih Unit Standby</p>
+                          <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-1">Pilih Unit Yang Masih Kosong</p>
                           <ScrollArea className="h-[200px]">
                               <div className="grid gap-2 pr-4">
                                   {eligibleStations.map(s => (
@@ -433,7 +431,7 @@ export function StationGrid({
                                   ))}
                                   {eligibleStations.length === 0 && (
                                       <div className="py-10 text-center border-2 border-dashed rounded-xl opacity-50">
-                                          <p className="text-xs font-bold uppercase tracking-widest">Tidak ada unit {verifiedVoucher.stationType} kosong</p>
+                                          <p className="text-xs font-bold uppercase tracking-widest">Waduh, Unit {verifiedVoucher.stationType} lagi penuh semua</p>
                                       </div>
                                   )}
                               </div>
@@ -445,7 +443,7 @@ export function StationGrid({
                   {!verifiedVoucher ? (
                       <Button className="w-full h-12 font-black uppercase tracking-widest shadow-lg shadow-primary/20" onClick={handleCheckVoucher} disabled={!claimCode || isClaiming}>Verifikasi Kode</Button>
                   ) : (
-                      <Button className="w-full h-12 font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 bg-emerald-600 hover:bg-emerald-700" onClick={handleFinalClaim} disabled={!selectedStationId || isClaiming}>Mulai Dengan Voucher</Button>
+                      <Button className="w-full h-12 font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 bg-emerald-600 hover:bg-emerald-700" onClick={handleFinalClaim} disabled={!selectedStationId || isClaiming}>Mulai Mabar Sekarang</Button>
                   )}
               </DialogFooter>
           </DialogContent>

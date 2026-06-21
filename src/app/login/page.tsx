@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -31,7 +32,6 @@ export default function LoginPage() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
 
-  // Redirect jika sudah login
   useEffect(() => {
     if (!isUserLoading && user && !user.isAnonymous) {
       router.push('/nexus');
@@ -44,11 +44,9 @@ export default function LoginPage() {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
-      // Generate Unique Session ID untuk perangkat ini
       const newSessionId = Math.random().toString(36).substring(2, 15);
       localStorage.setItem('xenon_session_id', newSessionId);
 
-      // Gunakan setDoc dengan merge: true agar tidak error jika dokumen user belum ada (misal setelah reset data)
       if (firestore) {
           const userDocRef = doc(firestore, 'users', userCredential.user.uid);
           await setDoc(userDocRef, {
@@ -62,8 +60,8 @@ export default function LoginPage() {
       router.push('/nexus');
     } catch (error: any) {
       toast({
-        title: 'Login Gagal',
-        description: 'Email atau password salah. Silakan hubungi Admin jika Anda belum memiliki akun.',
+        title: 'Gagal Masuk',
+        description: 'Waduh, email atau password kamu salah. Coba diingat lagi ya!',
         variant: 'destructive',
       });
     } finally {
@@ -82,7 +80,7 @@ export default function LoginPage() {
       <div className="absolute top-8 left-8 z-20">
           <Link href="/">
             <Button variant="ghost" className="gap-2 font-bold uppercase text-[10px] tracking-widest text-muted-foreground hover:text-foreground">
-                <ArrowLeft className="size-4" /> Kembali ke Beranda
+                <ArrowLeft className="size-4" /> Balik ke Halaman Depan
             </Button>
           </Link>
       </div>
@@ -107,13 +105,13 @@ export default function LoginPage() {
             XenonPlay <span className="text-primary">Nexus</span>
           </CardTitle>
           <CardDescription className="text-[10px] font-black uppercase tracking-[0.3em] mt-3 text-muted-foreground">
-            Operator Secure Access
+            Akses Masuk Khusus Operator
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
           <form onSubmit={handleLogin} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-[10px] font-black uppercase tracking-widest ml-1">Email Operator</Label>
+              <Label htmlFor="email" className="text-[10px] font-black uppercase tracking-widest ml-1">Email Kamu</Label>
               <Input
                 id="email"
                 type="email"
@@ -131,6 +129,7 @@ export default function LoginPage() {
                 id="password"
                 type="password"
                 required
+                placeholder="Sstt... rahasia"
                 className="h-12 rounded-2xl bg-muted border-transparent focus:ring-primary shadow-inner"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -143,12 +142,12 @@ export default function LoginPage() {
               ) : (
                 <LogIn className="h-5 w-5" />
               )}
-              {isLoading ? 'Memproses...' : 'Masuk Sekarang'}
+              {isLoading ? 'Sedang Masuk...' : 'Masuk Sekarang'}
             </Button>
             
             <div className="mt-8 p-4 rounded-3xl bg-muted border border-dashed border-border">
                 <p className="text-[9px] text-center text-muted-foreground uppercase font-black tracking-tighter leading-relaxed">
-                    Sistem Manajemen Keamanan Tinggi.<br/>Hubungi IT Admin jika lupa kredensial.
+                    Sistem Keamanan Pusat.<br/>Lupa password? Hubungi Admin ya.
                 </p>
             </div>
           </form>

@@ -41,7 +41,7 @@ export default function DashboardPage() {
       <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 shrink-0 px-1 lg:px-0">
         <div>
           <h1 className="text-2xl font-black tracking-tight uppercase">Dashboard Nexus</h1>
-          <p className="text-muted-foreground text-[10px] uppercase font-bold tracking-widest">Kontrol Unit Real-Time</p>
+          <p className="text-muted-foreground text-[10px] uppercase font-bold tracking-widest">Pantau & Kontrol Unit Real-Time</p>
         </div>
       </header>
 

@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -52,47 +53,47 @@ import { Badge } from './ui/badge';
 
 const navGroups = [
   {
-    label: 'Pusat Kontrol',
+    label: 'Pusat Kendali Utama',
     items: [
       { href: '/nexus', label: 'Dashboard Utama', icon: LayoutDashboard },
-      { href: '/shifts', label: 'Shift & Kasir', icon: ClockArrowUp },
+      { href: '/shifts', label: 'Kasir & Laci Shift', icon: ClockArrowUp },
       { href: '/reservations', label: 'Booking & Reservasi', icon: CalendarCheck },
-      { href: '/members', label: 'Data Member', icon: Users },
+      { href: '/members', label: 'Data Sultan Member', icon: Users },
     ],
   },
   {
-    label: 'Administrasi',
+    label: 'Manajemen & Cuan',
     roles: ['admin'],
     items: [
       { href: '/transactions', label: 'Riwayat Transaksi', icon: ArrowRightLeft },
       { href: '/expenses', label: 'Biaya Pengeluaran', icon: Wallet },
       { href: '/reports', label: 'Laporan Keuangan', icon: BarChart3 },
-      { href: '/master-data', label: 'Harga & Stok', icon: Database },
+      { href: '/master-data', label: 'Atur Harga & Stok', icon: Database },
     ],
   },
   {
-    label: 'Layar TV Publik',
+    label: 'Layar TV Monitor',
     items: [
-      { href: '/public-display', label: 'Monitor Rental', icon: MonitorIcon },
-      { href: '/welcome', label: 'Welcome Screen', icon: Sparkles },
-      { href: '/tv-landing', label: 'Status Standby (End)', icon: Tv },
+      { href: '/public-display', label: 'Status TV Publik', icon: MonitorIcon },
+      { href: '/welcome', label: 'Halaman Welcome', icon: Sparkles },
+      { href: '/tv-landing', label: 'Halaman Selesai', icon: Tv },
     ],
   },
   {
-    label: 'Konfigurasi Sistem',
+    label: 'Pengaturan Sistem',
     roles: ['admin'],
     items: [
-      { href: '/users', label: 'Manajemen Staff', icon: UserCog },
-      { href: '/pengaturan/landing', label: 'Editor Beranda', icon: LayoutTemplate },
+      { href: '/users', label: 'Kelola Tim Staff', icon: UserCog },
+      { href: '/pengaturan/landing', label: 'Edit Tampilan Depan', icon: LayoutTemplate },
       { href: '/pengaturan/hadiah', label: 'Katalog Hadiah', icon: Gift },
       { 
-        label: 'Integrasi Hardware', 
+        label: 'Koneksi Hardware', 
         icon: MonitorSmartphone,
         subItems: [
-            { href: '/integrasi/stasiun', label: 'Pengaturan IP TV', icon: MonitorSmartphone },
-            { href: '/integrasi/cctv', label: 'Monitoring CCTV', icon: Camera },
+            { href: '/integrasi/stasiun', label: 'Setup IP TV', icon: MonitorSmartphone },
+            { href: '/integrasi/cctv', label: 'Pantau CCTV', icon: Camera },
             { href: '/panduan', label: 'Panduan Master', icon: BookText },
-            { href: '/simulasi-adb', label: 'Simulator Control', icon: MonitorSmartphone },
+            { href: '/simulasi-adb', label: 'Simulator Kontrol', icon: MonitorSmartphone },
         ]
       },
       { href: '/pengaturan', label: 'Pengaturan Umum', icon: Settings },

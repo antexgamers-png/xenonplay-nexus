@@ -45,7 +45,7 @@ export function VoucherPos() {
 
     const checkShift = () => {
         if (!activeShift) {
-            toast({ title: "Shift Belum Dibuka", description: "Buka shift kasir untuk membuat voucher.", variant: "destructive" });
+            toast({ title: "Akses Terkunci", description: "Harap buka shift laci kasir sebelum membuat voucher.", variant: "destructive" });
             setIsOpeningDialog(true);
             return false;
         }
@@ -66,9 +66,9 @@ export function VoucherPos() {
 
             setLastCode(code);
             setFormData(prev => ({ ...prev, note: '' }));
-            toast({ title: "Voucher Berhasil Dibuat", variant: "success" });
+            toast({ title: "Voucher Berhasil Dibuat!", variant: "success" });
         } catch (err: any) {
-            toast({ title: "Gagal Membuat Voucher", description: err.message, variant: "destructive" });
+            toast({ title: "Gagal membuat voucher", description: err.message, variant: "destructive" });
         } finally {
             setIsCreating(false);
         }
@@ -78,7 +78,7 @@ export function VoucherPos() {
         navigator.clipboard.writeText(code);
         setHasCopied(true);
         setTimeout(() => setHasCopied(false), 2000);
-        toast({ title: "Kode Tersalin", variant: "success" });
+        toast({ title: "Kode voucher tersalin!", variant: "success" });
     };
 
     return (
@@ -91,7 +91,7 @@ export function VoucherPos() {
                             <Ticket className="size-4 text-primary" /> Buat Voucher Baru
                         </CardTitle>
                         <CardDescription className="text-[10px] uppercase font-bold text-primary/60">
-                            Cetak kode waktu untuk pelanggan
+                            Cetak kode waktu untuk hadiah mabar
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="p-6 pt-8 space-y-6">
@@ -116,7 +116,7 @@ export function VoucherPos() {
                             </div>
 
                             <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Tipe Console</Label>
+                                <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Tipe Unit</Label>
                                 <div className="relative">
                                     <Monitor className="absolute left-3.5 top-3.5 size-4 text-muted-foreground" />
                                     <Select value={formData.type} onValueChange={(val) => setFormData({...formData, type: val})}>
@@ -124,10 +124,10 @@ export function VoucherPos() {
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="All">Berlaku Semua (All)</SelectItem>
-                                            <SelectItem value="PS5">Khusus PS5</SelectItem>
-                                            <SelectItem value="PS4">Khusus PS4</SelectItem>
-                                            <SelectItem value="PS3">Khusus PS3</SelectItem>
+                                            <SelectItem value="All">Berlaku Untuk Semua</SelectItem>
+                                            <SelectItem value="PS5">Khusus PS5 Core</SelectItem>
+                                            <SelectItem value="PS4">Khusus PS4 Core</SelectItem>
+                                            <SelectItem value="PS3">Khusus PS3 Core</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -138,7 +138,7 @@ export function VoucherPos() {
                                 <div className="relative">
                                     <FileText className="absolute left-3.5 top-3.5 size-4 text-muted-foreground" />
                                     <Input 
-                                        placeholder="Misal: Hadiah Giveaway..." 
+                                        placeholder="Misal: Hadiah Lomba, Bonus Sultan..." 
                                         className="h-11 pl-10 rounded-xl bg-background text-sm font-medium" 
                                         value={formData.note}
                                         onChange={(e) => setFormData({...formData, note: e.target.value})}
@@ -152,13 +152,13 @@ export function VoucherPos() {
                                 className="w-full h-12 rounded-xl font-black uppercase tracking-widest text-xs gap-2 shadow-lg shadow-primary/20"
                             >
                                 {isCreating ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
-                                Buat Kode Voucher
+                                Buat Kode Voucher Sekarang
                             </Button>
                         </form>
 
                         {lastCode && (
                             <div className="p-4 rounded-2xl bg-emerald-500/5 border-2 border-dashed border-emerald-500/20 animate-in zoom-in duration-500">
-                                <p className="text-[8px] font-black uppercase text-emerald-600 tracking-[0.3em] text-center mb-2">Voucher Terakhir Dibuat</p>
+                                <p className="text-[8px] font-black uppercase text-emerald-600 tracking-[0.3em] text-center mb-2">Voucher Baru Siap Pakai</p>
                                 <div className="flex items-center justify-between bg-card p-3 rounded-xl border border-emerald-500/10 shadow-sm">
                                     <span className="text-xl font-black font-mono tracking-widest text-emerald-600">{lastCode}</span>
                                     <Button size="icon" variant="ghost" className="h-8 w-8 text-emerald-600" onClick={() => handleCopy(lastCode)}>
@@ -173,7 +173,7 @@ export function VoucherPos() {
                 <div className="p-5 rounded-2xl bg-amber-500/5 border border-amber-500/10 flex items-start gap-3">
                     <Zap className="size-4 text-amber-600 shrink-0 mt-0.5" />
                     <p className="text-[9px] text-amber-700 leading-relaxed font-bold uppercase">
-                        Voucher manual tidak menambah "Omzet Lunas" pada laporan laci kasir saat dibuat, namun akan mengurangi "Sisa Waktu" stasiun saat ditukarkan.
+                        Voucher ini tidak menambah saldo laci kasir saat dibuat, tapi akan otomatis mengurangi durasi sewa saat ditukarkan nanti.
                     </p>
                 </div>
             </div>
@@ -187,8 +187,8 @@ export function VoucherPos() {
                                 <History className="size-5" />
                             </div>
                             <div>
-                                <CardTitle className="text-lg font-black uppercase tracking-tight">Riwayat Voucher</CardTitle>
-                                <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Daftar penggunaan dan stok voucher</p>
+                                <CardTitle className="text-lg font-black uppercase tracking-tight">Daftar Voucher</CardTitle>
+                                <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Pantau penggunaan kode mabar</p>
                             </div>
                         </div>
                     </CardHeader>
@@ -197,10 +197,10 @@ export function VoucherPos() {
                             <Table>
                                 <TableHeader className="bg-muted/30 sticky top-0 z-10">
                                     <TableRow className="border-border hover:bg-transparent h-10">
-                                        <TableHead className="text-[9px] font-black uppercase text-muted-foreground tracking-widest px-6">Kode & Info</TableHead>
+                                        <TableHead className="text-[9px] font-black uppercase text-muted-foreground tracking-widest px-6">Kode & Deskripsi</TableHead>
                                         <TableHead className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">Durasi & Tipe</TableHead>
                                         <TableHead className="text-[9px] font-black uppercase text-muted-foreground tracking-widest text-center">Status</TableHead>
-                                        <TableHead className="text-[9px] font-black uppercase text-muted-foreground tracking-widest text-right px-6">Tgl Buat</TableHead>
+                                        <TableHead className="text-[9px] font-black uppercase text-muted-foreground tracking-widest text-right px-6">Dibuat Pada</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -225,7 +225,7 @@ export function VoucherPos() {
                                                 <TableCell>
                                                     <div className="flex flex-col">
                                                         <span className="font-bold text-xs">{formatDuration(v.durationMinutes)}</span>
-                                                        <Badge variant="outline" className="w-fit h-4 text-[8px] font-black border-primary/20 bg-primary/5 text-primary mt-1">{v.stationType}</Badge>
+                                                        <Badge variant="outline" className="w-fit h-4 text-[8px] font-black border-primary/20 bg-primary/5 text-primary mt-1">{v.stationType === 'All' ? 'SEMUA UNIT' : v.stationType}</Badge>
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="text-center">
@@ -233,7 +233,7 @@ export function VoucherPos() {
                                                         "text-[9px] font-black border-none px-2 h-5",
                                                         v.status === 'active' ? "bg-emerald-500/10 text-emerald-600" : "bg-red-500/10 text-red-500"
                                                     )}>
-                                                        {v.status === 'active' ? 'READY' : 'USED'}
+                                                        {v.status === 'active' ? 'AKTIF' : 'TERPAKAI'}
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell className="text-right px-6">
@@ -248,7 +248,7 @@ export function VoucherPos() {
                                         <TableRow>
                                             <TableCell colSpan={4} className="h-40 text-center flex flex-col items-center justify-center gap-3 opacity-30">
                                                 <Ticket className="size-10 text-muted-foreground" />
-                                                <p className="text-xs font-black uppercase tracking-[0.3em]">Belum ada data</p>
+                                                <p className="text-xs font-black uppercase tracking-[0.3em]">Belum ada riwayat voucher</p>
                                             </TableCell>
                                         </TableRow>
                                     )}
