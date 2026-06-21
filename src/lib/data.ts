@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -18,6 +19,10 @@ import {
 import type { Station, Transaction, PricingRule, FnbItem, GeneralSettings, Member, Shift, CreditVoucher, Expense, PointRedemption, LandingSettings, Reward, Reservation, MemberRequest } from './types';
 import { formatDuration } from './utils';
 
+/**
+ * Memproses reward stempel dan poin secara otomatis dalam transaksi.
+ * Logika: 1 Sesi = 1 Stempel. 10 Stempel = 5 Poin bonus.
+ */
 function processLoyaltyInTransaction(txn: any, memberSnap: any, transactionRef: any, mRef: any) {
     if (!memberSnap.exists()) return;
     
@@ -48,20 +53,26 @@ export async function convertSessionToCredit(db: Firestore, stationId: string, t
         const sData = sSnap.data() as Station;
         const tData = tSnap.data() as Transaction;
         if (tData.status !== 'paid') throw new Error("Sesi harus lunas (Paid) sebelum bisa dikonversi ke Kredit.");
+        
         let currentUses = 0;
         if (tData.claimCode) {
             const vSnap = await transaction.get(doc(db, 'vouchers', tData.claimCode));
             if (vSnap.exists()) currentUses = vSnap.data().usesCount || 0;
         }
         if (currentUses >= 2) throw new Error("Batas maksimal kredit voucher telah tercapai (Max 2x).");
+
         const now = Date.now();
         const remainingMs = Math.max(0, (sData.end_time || 0) - now);
         const remainingMins = Math.floor(remainingMs / 60000);
+        
         if (remainingMins < 5) throw new Error("Sisa waktu terlalu sedikit untuk dikreditkan.");
+        
         const code = `XP-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
         const vRef = doc(db, 'vouchers', code);
+        
         transaction.set(vRef, { id: code, code, durationMinutes: remainingMins, stationType: sData.type, status: 'active', usesCount: currentUses + 1, createdAt: now, originalTransactionId: transactionId });
         transaction.update(doc(db, 'stations', stationId), { is_active: false, is_paused: false, start_time: null, end_time: null, current_transaction_id: null, last_action: 'stop', last_action_timestamp: now });
+        
         return code;
     });
 }
@@ -248,6 +259,7 @@ export async function createTransaction(db: Firestore, data: any) {
             memberSnap = await txn.get(memberRef);
         }
         
+        // Audit Stok: Kurangi stok untuk semua item yang keluar
         if (data.fnbItems && data.fnbItems.length > 0) {
             for (const item of data.fnbItems) {
                 const itemRef = doc(db, 'fnbItems', item.id);
@@ -257,6 +269,8 @@ export async function createTransaction(db: Firestore, data: any) {
 
         txn.set(docRef, newTransaction);
         if (memberSnap && memberRef) processLoyaltyInTransaction(txn, memberSnap, docRef, memberRef);
+        
+        // Audit Shift: Tambahkan ke saldo laci jika dibayar sekarang
         if (data.activeShiftId && isPaid && finalNetto > 0) {
             const shiftRef = doc(db, 'shifts', data.activeShiftId);
             txn.update(shiftRef, { totalSales: increment(finalNetto), expectedBalance: increment(finalNetto) });
@@ -310,6 +324,7 @@ export async function addItemsToTransaction(db: Firestore, transactionId: string
         const tSnap = await txn.get(tRef);
         if (!tSnap.exists()) return;
         const tData = tSnap.data() as Transaction;
+        
         const newBruto = (tData.amount || 0) + totalAmount;
         const newDiscount = (tData.discount || 0) + (discount || 0);
         const netAdd = Math.max(0, totalAmount - (discount || 0));
@@ -339,7 +354,10 @@ export async function addItemsToTransaction(db: Firestore, transactionId: string
                 }))
             ]
         });
-        if (activeShiftId && isPaid && netAdd > 0) txn.update(doc(db, 'shifts', activeShiftId), { totalSales: increment(netAdd), expectedBalance: increment(netAdd) });
+        
+        if (activeShiftId && isPaid && netAdd > 0) {
+            txn.update(doc(db, 'shifts', activeShiftId), { totalSales: increment(netAdd), expectedBalance: increment(netAdd) });
+        }
         
         for (const i of items) {
             txn.update(doc(db, 'fnbItems', i.id), { stock: increment(-i.quantity) });
@@ -353,15 +371,19 @@ export async function addTimeToTransaction(db: Firestore, transactionId: string,
         const tSnap = await txn.get(tRef);
         const sRef = doc(db, 'stations', stationId);
         const sSnap = await txn.get(sRef);
+        
         if (!tSnap.exists() || !sSnap.exists()) return;
+        
         const tData = tSnap.data() as Transaction;
         const sData = sSnap.data() as Station;
+        
         let memberSnap = null;
         let memberRef = null;
         if (tData.memberId && isPaid && stationId !== 'pos' && !tData.isLoyaltyProcessed) {
             memberRef = doc(db, 'members', tData.memberId);
             memberSnap = await txn.get(memberRef);
         }
+
         const newBruto = (tData.amount || 0) + price;
         const newDiscount = (tData.discount || 0) + (discount || 0);
         const netAdd = Math.max(0, price - (discount || 0));
@@ -370,12 +392,20 @@ export async function addTimeToTransaction(db: Firestore, transactionId: string,
         const desc = packageName || `Sewa Tambahan ${formatDuration(duration)}`;
         
         txn.update(tRef, {
-            durationMinutes: (tData.durationMinutes || 0) + duration, amount: newBruto, discount: newDiscount, paidAmount: newPaid, status: (newBruto - newDiscount) > newPaid ? 'unpaid' : 'paid',
+            durationMinutes: (tData.durationMinutes || 0) + duration, 
+            amount: newBruto, 
+            discount: newDiscount, 
+            paidAmount: newPaid, 
+            status: (newBruto - newDiscount) > newPaid ? 'unpaid' : 'paid',
             additionalCharges: [...(tData.additionalCharges || []), { description: desc, amount: price, timestamp: Date.now(), isPaid }]
         });
+
         txn.update(sRef, { end_time: (sData.end_time || Date.now()) + duration * 60000 });
+        
         if (memberSnap && memberRef) processLoyaltyInTransaction(txn, memberSnap, tRef, memberRef);
-        if (activeShiftId && isPaid && netAdd > 0) txn.update(doc(db, 'shifts', activeShiftId), { totalSales: increment(netAdd), expectedBalance: increment(netAdd) });
+        if (activeShiftId && isPaid && netAdd > 0) {
+            txn.update(doc(db, 'shifts', activeShiftId), { totalSales: increment(netAdd), expectedBalance: increment(netAdd) });
+        }
     });
 }
 
@@ -385,18 +415,30 @@ export async function markTransactionAsPaid(db: Firestore, tId: string, activeSh
         const tSnap = await txn.get(tRef);
         if (!tSnap.exists()) throw new Error("Transaksi tidak ditemukan.");
         const tData = tSnap.data() as Transaction;
+        
         const finalMemberId = member ? member.id : tData.memberId;
         let memberSnap = null;
         let memberRef = null;
+        
         if (finalMemberId && tData.stationId !== 'pos' && !tData.isLoyaltyProcessed) {
             memberRef = doc(db, 'members', finalMemberId);
             memberSnap = await txn.get(memberRef);
         }
+
         const net = Math.max(0, tData.amount - tData.discount);
         const unpaid = Math.max(0, net - tData.paidAmount);
         const finalMemberName = member ? member.name : tData.memberName;
-        txn.update(tRef, { status: 'paid', paidAmount: net, memberId: finalMemberId || null, memberName: finalMemberName || null, additionalCharges: (tData.additionalCharges || []).map(c => ({ ...c, isPaid: true })) });
+
+        txn.update(tRef, { 
+            status: 'paid', 
+            paidAmount: net, 
+            memberId: finalMemberId || null, 
+            memberName: finalMemberName || null, 
+            additionalCharges: (tData.additionalCharges || []).map(c => ({ ...c, isPaid: true })) 
+        });
+
         if (memberSnap && memberRef) processLoyaltyInTransaction(txn, memberSnap, tRef, memberRef);
+        
         if (activeShiftId && unpaid > 0) {
             const shiftRef = doc(db, 'shifts', activeShiftId);
             txn.update(shiftRef, { totalSales: increment(unpaid), expectedBalance: increment(unpaid) });
