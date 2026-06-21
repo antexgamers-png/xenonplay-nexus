@@ -1,12 +1,14 @@
+
 'use client';
 import { StationGrid } from '@/components/dashboard/station-grid';
 import { FnbPos } from '@/components/dashboard/fnb-pos';
+import { VoucherPos } from '@/components/dashboard/voucher-pos';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { Station, PricingRule, FnbItem } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/components/providers/auth-provider';
-import { Gamepad2, ShoppingCart } from 'lucide-react';
+import { Gamepad2, ShoppingCart, Ticket } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function DashboardPage() {
@@ -44,20 +46,27 @@ export default function DashboardPage() {
       </header>
 
       <Tabs defaultValue="rental" className="flex flex-col">
-        <TabsList className="inline-flex items-center justify-start h-10 bg-muted/50 backdrop-blur-md border p-1 mb-4 rounded-xl shrink-0 w-fit mx-1 lg:ml-0">
+        <TabsList className="inline-flex items-center justify-start h-10 bg-muted/50 backdrop-blur-md border p-1 mb-4 rounded-xl shrink-0 w-fit mx-1 lg:ml-0 overflow-x-auto max-w-full">
           <TabsTrigger 
             value="rental" 
-            className="data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm px-4 py-1.5 rounded-lg transition-all text-[10px] font-black uppercase tracking-widest gap-2 h-full"
+            className="data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm px-4 py-1.5 rounded-lg transition-all text-[10px] font-black uppercase tracking-widest gap-2 h-full whitespace-nowrap"
           >
             <Gamepad2 className="h-3 w-3" />
             Monitor Rental
           </TabsTrigger>
           <TabsTrigger 
             value="kasir" 
-            className="data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm px-4 py-1.5 rounded-lg transition-all text-[10px] font-black uppercase tracking-widest gap-2 h-full"
+            className="data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm px-4 py-1.5 rounded-lg transition-all text-[10px] font-black uppercase tracking-widest gap-2 h-full whitespace-nowrap"
           >
             <ShoppingCart className="h-3 w-3" />
             Kasir Kantin
+          </TabsTrigger>
+          <TabsTrigger 
+            value="voucher" 
+            className="data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm px-4 py-1.5 rounded-lg transition-all text-[10px] font-black uppercase tracking-widest gap-2 h-full whitespace-nowrap"
+          >
+            <Ticket className="h-3 w-3" />
+            Voucher Mabar
           </TabsTrigger>
         </TabsList>
 
@@ -87,6 +96,17 @@ export default function DashboardPage() {
             </div>
           ) : (
             fnbItems && <FnbPos items={fnbItems} />
+          )}
+        </TabsContent>
+
+        <TabsContent value="voucher" className="mt-0 outline-none pb-20 lg:pb-0">
+          {isLoading ? (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <Skeleton className="lg:col-span-1 h-[400px]" />
+              <Skeleton className="lg:col-span-2 h-[400px]" />
+            </div>
+          ) : (
+            <VoucherPos />
           )}
         </TabsContent>
       </Tabs>

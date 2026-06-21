@@ -45,6 +45,26 @@ export async function triggerADBAction(db: Firestore, stationId: string, action:
   return await updateDoc(stationRef, { last_action: action, last_action_timestamp: Date.now() });
 }
 
+export async function createManualVoucher(db: Firestore, data: { durationMinutes: number, stationType: string, note?: string }, activeShiftId?: string | null) {
+    const code = `XP-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+    const docRef = doc(db, 'vouchers', code);
+    const now = Date.now();
+    
+    await setDoc(docRef, {
+        id: code,
+        code,
+        durationMinutes: data.durationMinutes,
+        stationType: data.stationType,
+        status: 'active',
+        usesCount: 0,
+        createdAt: now,
+        description: data.note || 'Voucher Manual',
+        shiftId: activeShiftId || null
+    });
+    
+    return code;
+}
+
 export async function convertSessionToCredit(db: Firestore, stationId: string, transactionId: string) {
     return await runTransaction(db, async (transaction) => {
         const sSnap = await transaction.get(doc(db, 'stations', stationId));
