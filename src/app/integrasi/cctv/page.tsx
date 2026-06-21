@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,7 @@ import {
     Wifi, 
     Settings, 
     Maximize, 
+    Minimize,
     RefreshCcw, 
     AlertCircle,
     Info,
@@ -29,11 +30,41 @@ export default function CCTVPage() {
   const [streamUrl, setStreamUrl] = useState('http://localhost:8090'); // Default Agent DVR local port
   const [isLive, setIsLive] = useState(false);
   const [isConfiguring, setIsConfiguring] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const playerRef = useRef<HTMLDivElement>(null);
 
   const handleTestConnection = () => {
       setIsLive(true);
       toast({ title: "Mencoba Menghubungkan", description: `Menghubungi server Agent DVR di ${streamUrl}...`, variant: "default" });
   };
+
+  const toggleFullscreen = () => {
+    if (!playerRef.current) return;
+
+    if (!document.fullscreenElement) {
+      playerRef.current.requestFullscreen().then(() => {
+        setIsFullscreen(true);
+      }).catch((err) => {
+        toast({
+            title: "Gagal Fullscreen",
+            description: "Browser Anda memblokir permintaan layar penuh.",
+            variant: "destructive"
+        });
+      });
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    }
+  };
+
+  // Sinkronisasi state saat user keluar fullscreen via tombol ESC
+  if (typeof document !== 'undefined') {
+    document.onfullscreenchange = () => {
+        setIsFullscreen(!!document.fullscreenElement);
+    };
+  }
 
   return (
     <div className="flex flex-col gap-8 pb-20">
@@ -89,7 +120,13 @@ export default function CCTVPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* MAIN PLAYER */}
           <div className="lg:col-span-9 space-y-6">
-              <Card className="rounded-[2.5rem] overflow-hidden border-border bg-black shadow-2xl relative aspect-video group">
+              <Card 
+                ref={playerRef}
+                className={cn(
+                    "overflow-hidden border-border bg-black shadow-2xl relative aspect-video group",
+                    isFullscreen ? "rounded-none" : "rounded-[2.5rem]"
+                )}
+              >
                   {isLive ? (
                       <iframe 
                         src={streamUrl}
@@ -115,8 +152,13 @@ export default function CCTVPage() {
                       <Badge className="bg-red-600 text-white border-none font-black text-[9px] tracking-widest px-3 h-6 flex items-center gap-1.5">
                           <div className="size-1.5 rounded-full bg-white animate-pulse" /> LIVE
                       </Badge>
-                      <Button variant="secondary" size="icon" className="size-8 rounded-lg bg-white/10 backdrop-blur-md border-white/10 text-white hover:bg-white/20">
-                          <Maximize className="size-4" />
+                      <Button 
+                        variant="secondary" 
+                        size="icon" 
+                        onClick={toggleFullscreen}
+                        className="size-8 rounded-lg bg-white/10 backdrop-blur-md border-white/10 text-white hover:bg-white/20"
+                      >
+                          {isFullscreen ? <Minimize className="size-4" /> : <Maximize className="size-4" />}
                       </Button>
                   </div>
               </Card>
