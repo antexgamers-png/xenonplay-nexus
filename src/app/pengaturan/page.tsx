@@ -189,7 +189,7 @@ export default function PengaturanPage() {
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-1 lg:px-0">
         <div>
             <div className="flex items-center gap-2 mb-1">
-                <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+                <div className="p-1 rounded-lg bg-primary/10 text-primary">
                     <Settings2 className="size-4" />
                 </div>
                 <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">System Configuration</span>
