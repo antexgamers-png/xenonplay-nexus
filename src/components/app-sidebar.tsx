@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -22,7 +21,8 @@ import {
   CalendarCheck,
   Sparkles,
   ShieldCheck,
-  Shield
+  Shield,
+  Camera
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -90,6 +90,7 @@ const navGroups = [
         icon: MonitorSmartphone,
         subItems: [
             { href: '/integrasi/stasiun', label: 'Pengaturan IP TV', icon: MonitorSmartphone },
+            { href: '/integrasi/cctv', label: 'Monitoring CCTV', icon: Camera },
             { href: '/panduan', label: 'Panduan Master', icon: BookText },
             { href: '/simulasi-adb', label: 'Simulator Control', icon: MonitorSmartphone },
         ]
