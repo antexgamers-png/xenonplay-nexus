@@ -21,6 +21,7 @@ import {
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
+  AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
@@ -108,7 +109,7 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
   const checkShift = () => {
     if (!activeShift) {
       toast({
-        title: "Shift Belum Dibuka",
+        title: "Laci Masih Terkunci",
         description: "Buka laci kasir dulu ya sebelum mulai jualan.",
         variant: "destructive"
       });
