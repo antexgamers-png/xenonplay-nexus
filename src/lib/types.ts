@@ -1,4 +1,3 @@
-
 export type UserRole = 'admin' | 'staff';
 
 export interface UserProfile {
@@ -30,6 +29,12 @@ export interface Station {
   last_action?: string | null;
   last_action_timestamp?: number | null;
   last_heartbeat?: any;
+}
+
+export interface WifiPackage {
+  id: string;
+  name: string;
+  price: number;
 }
 
 export interface Transaction {
@@ -124,6 +129,7 @@ export interface GeneralSettings {
   receiptFooter?: string;
   receiptFontSize?: number;
   receiptFontWeight?: string;
+  wifiInstructions?: string;
 }
 
 export interface LandingSettings {
@@ -168,4 +174,19 @@ export interface Notification {
   isRead: boolean;
   transactionId?: string | null;
   metadata?: any;
+}
+
+export interface Shift {
+  id: string;
+  status: 'open' | 'closed';
+  openedBy: string;
+  openedByName: string;
+  openedAt: number;
+  closedAt?: number;
+  initialBalance: number;
+  totalSales: number;
+  expectedBalance: number;
+  actualBalance?: number;
+  difference?: number;
+  notes?: string;
 }

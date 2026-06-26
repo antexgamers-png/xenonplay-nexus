@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "UserProfile": {
@@ -35,10 +34,20 @@
         "last_action_timestamp": { "type": "number" }
       }
     },
+    "WifiPackage": {
+      "title": "WifiPackage",
+      "type": "object",
+      "description": "Daftar harga paket kupon Wi-Fi Hotspot.",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "price": { "type": "number" }
+      }
+    },
     "Transaction": {
       "title": "Transaction",
       "type": "object",
-      "description": "Log keuangan untuk setiap sesi bermain atau penjualan kantin.",
+      "description": "Log keuangan untuk setiap sesi bermain, penjualan kantin, atau kupon wifi.",
       "properties": {
         "id": { "type": "string" },
         "stationId": { "type": "string" },
@@ -55,31 +64,6 @@
         "claimCode": { "type": "string" }
       }
     },
-    "CreditVoucher": {
-      "title": "CreditVoucher",
-      "type": "object",
-      "description": "Voucher sisa waktu yang dihasilkan dari penghentian sesi dini.",
-      "properties": {
-        "id": { "type": "string" },
-        "code": { "type": "string" },
-        "durationMinutes": { "type": "number" },
-        "stationType": { "type": "string" },
-        "status": { "type": "string" },
-        "createdAt": { "type": "number" }
-      }
-    },
-    "PointRedemption": {
-      "title": "PointRedemption",
-      "type": "object",
-      "description": "Log penukaran poin member untuk hadiah.",
-      "properties": {
-        "id": { "type": "string" },
-        "memberId": { "type": "string" },
-        "rewardLabel": { "type": "string" },
-        "pointsRedeemed": { "type": "number" },
-        "timestamp": { "type": "number" }
-      }
-    },
     "Member": {
         "title": "Member",
         "type": "object",
@@ -92,33 +76,16 @@
             "joinDate": { "type": "number" },
             "lastActivity": { "type": "number" }
         }
-    },
-    "MemberRequest": {
-        "title": "MemberRequest",
-        "type": "object",
-        "description": "Permohonan pendaftaran member baru dari landing page.",
-        "properties": {
-            "id": { "type": "string" },
-            "name": { "type": "string" },
-            "phone": { "type": "string" },
-            "timestamp": { "type": "number" }
-        }
     }
   },
   "auth": {
     "providers": ["password", "anonymous"]
   },
   "firestore": {
-    "structure": [
-      { "path": "/users/{userId}", "definition": { "entityName": "UserProfile" } },
-      { "path": "/stations/{stationId}", "definition": { "entityName": "Station" } },
-      { "path": "/transactions/{transactionId}", "definition": { "entityName": "Transaction" } },
-      { "path": "/vouchers/{voucherId}", "definition": { "entityName": "CreditVoucher" } },
-      { "path": "/shifts/{shiftId}", "definition": { "entityName": "Shift" } },
-      { "path": "/members/{memberId}", "definition": { "entityName": "Member" } },
-      { "path": "/redemptions/{redemptionId}", "definition": { "entityName": "PointRedemption" } },
-      { "path": "/reservations/{resId}", "definition": { "entityName": "Reservation" } },
-      { "path": "/memberRequests/{requestId}", "definition": { "entityName": "MemberRequest" } }
-    ]
+    "/users/{userId}": { "schema": { "$ref": "#/backend/entities/UserProfile" }, "description": "Profil pengguna sistem." },
+    "/stations/{stationId}": { "schema": { "$ref": "#/backend/entities/Station" }, "description": "Status unit hardware." },
+    "/transactions/{transactionId}": { "schema": { "$ref": "#/backend/entities/Transaction" }, "description": "Log keuangan." },
+    "/wifiPackages/{packageId}": { "schema": { "$ref": "#/backend/entities/WifiPackage" }, "description": "Daftar paket Wi-Fi." },
+    "/members/{memberId}": { "schema": { "$ref": "#/backend/entities/Member" }, "description": "Data loyalitas pelanggan." }
   }
 }

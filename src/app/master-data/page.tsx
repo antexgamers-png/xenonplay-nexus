@@ -9,12 +9,13 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PricingClient } from '@/components/master-data/pricing/pricing-client';
 import { FnbClient } from '@/components/master-data/fnb/fnb-client';
+import { WifiClient } from '@/components/master-data/wifi/wifi-client';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
-import type { PricingRule, FnbItem } from '@/lib/types';
+import type { PricingRule, FnbItem, WifiPackage } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/components/providers/auth-provider';
-import { ShieldAlert, Tag, ShoppingCart } from 'lucide-react';
+import { ShieldAlert, Tag, ShoppingCart, Wifi } from 'lucide-react';
 
 export default function MasterDataPage() {
   const firestore = useFirestore();
@@ -30,10 +31,16 @@ export default function MasterDataPage() {
     return collection(firestore, 'fnbItems');
   }, [firestore, isAuthLoading, role]);
 
+  const wifiPackagesQuery = useMemoFirebase(() => {
+    if (!firestore || isAuthLoading || role !== 'admin') return null;
+    return collection(firestore, 'wifiPackages');
+  }, [firestore, isAuthLoading, role]);
+
   const { data: pricingRules, isLoading: isLoadingPricing } = useCollection<PricingRule>(pricingRulesQuery);
   const { data: fnbItems, isLoading: isLoadingFnb } = useCollection<FnbItem>(fnbItemsQuery);
+  const { data: wifiPackages, isLoading: isLoadingWifi } = useCollection<WifiPackage>(wifiPackagesQuery);
   
-  const isLoading = isAuthLoading || isLoadingPricing || isLoadingFnb;
+  const isLoading = isAuthLoading || isLoadingPricing || isLoadingFnb || isLoadingWifi;
 
   if (!isAuthLoading && role !== 'admin') {
     return (
@@ -63,20 +70,23 @@ export default function MasterDataPage() {
   )
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8 pb-20">
       <header>
         <h1 className="text-3xl font-bold tracking-tight">Master Data</h1>
         <p className="text-muted-foreground mt-1">
-          Kelola katalog harga paket dan inventaris produk FnB Anda.
+          Kelola katalog harga paket, inventaris produk FnB, dan kupon Wi-Fi.
         </p>
       </header>
       <Tabs defaultValue="pricing">
-        <TabsList className="bg-muted/50 border p-1 rounded-xl h-11 inline-flex w-auto">
-          <TabsTrigger value="pricing" className="px-6 rounded-lg font-bold uppercase text-[10px] tracking-widest gap-2">
-            <Tag className="size-3.5" /> Harga & Bundling
+        <TabsList className="bg-muted/50 border p-1 rounded-xl h-11 inline-flex w-auto overflow-x-auto max-w-full">
+          <TabsTrigger value="pricing" className="px-6 rounded-lg font-bold uppercase text-[10px] tracking-widest gap-2 shrink-0">
+            <Tag className="size-3.5" /> Harga Rental
           </TabsTrigger>
-          <TabsTrigger value="fnb" className="px-6 rounded-lg font-bold uppercase text-[10px] tracking-widest gap-2">
+          <TabsTrigger value="fnb" className="px-6 rounded-lg font-bold uppercase text-[10px] tracking-widest gap-2 shrink-0">
             <ShoppingCart className="size-3.5" /> Produk FnB
+          </TabsTrigger>
+          <TabsTrigger value="wifi" className="px-6 rounded-lg font-bold uppercase text-[10px] tracking-widest gap-2 shrink-0">
+            <Wifi className="size-3.5" /> Kupon Wi-Fi
           </TabsTrigger>
         </TabsList>
         
@@ -100,6 +110,18 @@ export default function MasterDataPage() {
             <CardContent>
               {isLoading && renderSkeleton()}
               {!isLoading && <FnbClient initialData={fnbItems || []} />}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="wifi" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Katalog Paket Wi-Fi</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoading && renderSkeleton()}
+              {!isLoading && <WifiClient initialData={wifiPackages || []} />}
             </CardContent>
           </Card>
         </TabsContent>

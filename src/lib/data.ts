@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -16,12 +15,11 @@ import {
   where,
   runTransaction,
 } from 'firebase/firestore';
-import type { Station, Transaction, PricingRule, FnbItem, GeneralSettings, Member, Shift, CreditVoucher, Expense, PointRedemption, LandingSettings, Reward, Reservation, MemberRequest } from './types';
+import type { Station, Transaction, PricingRule, FnbItem, GeneralSettings, Member, Shift, CreditVoucher, Expense, PointRedemption, LandingSettings, Reward, Reservation, MemberRequest, WifiPackage } from './types';
 import { formatDuration } from './utils';
 
 /**
  * Memproses reward stempel dan poin secara otomatis dalam transaksi.
- * Logika: 1 Sesi = 1 Stempel. 10 Stempel = 5 Poin bonus.
  */
 function processLoyaltyInTransaction(txn: any, memberSnap: any, transactionRef: any, mRef: any) {
     if (!memberSnap.exists()) return;
@@ -38,6 +36,49 @@ function processLoyaltyInTransaction(txn: any, memberSnap: any, transactionRef: 
 
     txn.update(mRef, { stamps: nextStamps, points: increment(addedPoints), lastActivity: Date.now() });
     txn.update(transactionRef, { isLoyaltyProcessed: true });
+}
+
+export async function addWifiPackage(db: Firestore, pkg: Omit<WifiPackage, 'id'>) {
+    const docRef = doc(collection(db, 'wifiPackages'));
+    await setDoc(docRef, { ...pkg, id: docRef.id });
+}
+
+export async function updateWifiPackage(db: Firestore, id: string, updates: Partial<WifiPackage>) {
+    return await updateDoc(doc(db, 'wifiPackages', id), updates);
+}
+
+export async function deleteWifiPackage(db: Firestore, id: string) {
+    return await deleteDoc(doc(db, 'wifiPackages', id));
+}
+
+export async function createWifiTransaction(db: Firestore, pkg: WifiPackage, code: string, activeShiftId?: string | null) {
+    const now = Date.now();
+    const docRef = doc(collection(db, 'transactions'));
+    const newTransaction = {
+        id: docRef.id,
+        stationId: 'wifi',
+        stationName: 'VOUCHER WI-FI',
+        durationMinutes: 0,
+        amount: pkg.price,
+        discount: 0,
+        paidAmount: pkg.price,
+        timestamp: now,
+        status: 'paid',
+        shiftId: activeShiftId || null,
+        fnbItems: [],
+        additionalCharges: [{ description: `Wifi: ${pkg.name}`, amount: pkg.price, timestamp: now, isPaid: true }],
+        claimCode: code,
+        isLoyaltyProcessed: false
+    };
+
+    return await runTransaction(db, async (txn) => {
+        txn.set(docRef, newTransaction);
+        if (activeShiftId) {
+            const shiftRef = doc(db, 'shifts', activeShiftId);
+            txn.update(shiftRef, { totalSales: increment(pkg.price), expectedBalance: increment(pkg.price) });
+        }
+        return newTransaction;
+    });
 }
 
 export async function triggerADBAction(db: Firestore, stationId: string, action: string, staffId?: string, staffName?: string) {
@@ -230,7 +271,6 @@ export async function createTransaction(db: Firestore, data: any) {
     const extraStickFee = (data.extraSticks || 0) * 1000;
     const baseAmount = data.amount || 0;
     
-    // Hitung total FnB (baik manual maupun bundling dengan harga 0)
     const fnbTotal = (data.fnbItems || []).reduce((sum: number, f: any) => sum + (f.price * f.quantity), 0);
     const finalBruto = baseAmount + extraStickFee + fnbTotal;
     const finalNetto = Math.max(0, finalBruto - discount);
@@ -279,7 +319,6 @@ export async function createTransaction(db: Firestore, data: any) {
             memberSnap = await txn.get(memberRef);
         }
         
-        // Audit Stok: Kurangi stok untuk semua item yang keluar
         if (data.fnbItems && data.fnbItems.length > 0) {
             for (const item of data.fnbItems) {
                 const itemRef = doc(db, 'fnbItems', item.id);
@@ -290,7 +329,6 @@ export async function createTransaction(db: Firestore, data: any) {
         txn.set(docRef, newTransaction);
         if (memberSnap && memberRef) processLoyaltyInTransaction(txn, memberSnap, docRef, memberRef);
         
-        // Audit Shift: Tambahkan ke saldo laci jika dibayar sekarang
         if (data.activeShiftId && isPaid && finalNetto > 0) {
             const shiftRef = doc(db, 'shifts', data.activeShiftId);
             txn.update(shiftRef, { totalSales: increment(finalNetto), expectedBalance: increment(finalNetto) });

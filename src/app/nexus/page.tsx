@@ -1,14 +1,14 @@
-
 'use client';
 import { StationGrid } from '@/components/dashboard/station-grid';
 import { FnbPos } from '@/components/dashboard/fnb-pos';
 import { VoucherPos } from '@/components/dashboard/voucher-pos';
+import { WifiPos } from '@/components/dashboard/wifi-pos';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
-import type { Station, PricingRule, FnbItem } from '@/lib/types';
+import type { Station, PricingRule, FnbItem, WifiPackage } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/components/providers/auth-provider';
-import { Gamepad2, ShoppingCart, Ticket } from 'lucide-react';
+import { Gamepad2, ShoppingCart, Ticket, Wifi } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function DashboardPage() {
@@ -30,11 +30,17 @@ export default function DashboardPage() {
     return collection(firestore, 'fnbItems');
   }, [firestore, isRoleLoading]);
 
+  const wifiPackagesQuery = useMemoFirebase(() => {
+    if (isRoleLoading || !firestore) return null;
+    return collection(firestore, 'wifiPackages');
+  }, [firestore, isRoleLoading]);
+
   const { data: stations, isLoading: isLoadingStations } = useCollection<Station>(stationsQuery);
   const { data: pricingRules, isLoading: isLoadingPricing } = useCollection<PricingRule>(pricingRulesQuery);
   const { data: fnbItems, isLoading: isLoadingFnb } = useCollection<FnbItem>(fnbItemsQuery);
+  const { data: wifiPackages, isLoading: isLoadingWifi } = useCollection<WifiPackage>(wifiPackagesQuery);
   
-  const isLoading = isRoleLoading || isLoadingStations || isLoadingPricing || isLoadingFnb;
+  const isLoading = isRoleLoading || isLoadingStations || isLoadingPricing || isLoadingFnb || isLoadingWifi;
 
   return (
     <div className="flex flex-col gap-4">
@@ -60,6 +66,13 @@ export default function DashboardPage() {
           >
             <ShoppingCart className="h-3 w-3" />
             Kasir Kantin
+          </TabsTrigger>
+          <TabsTrigger 
+            value="wifi" 
+            className="data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm px-4 py-1.5 rounded-lg transition-all text-[10px] font-black uppercase tracking-widest gap-2 h-full whitespace-nowrap"
+          >
+            <Wifi className="h-3 w-3" />
+            Hotspot Wi-Fi
           </TabsTrigger>
           <TabsTrigger 
             value="voucher" 
@@ -89,25 +102,15 @@ export default function DashboardPage() {
         </TabsContent>
 
         <TabsContent value="kasir" className="mt-0 outline-none pb-20 lg:pb-0">
-          {isLoading ? (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Skeleton className="lg:col-span-2 h-[500px]" />
-              <Skeleton className="h-[500px]" />
-            </div>
-          ) : (
-            fnbItems && <FnbPos items={fnbItems} />
-          )}
+          {isLoading ? <Skeleton className="h-[500px]" /> : fnbItems && <FnbPos items={fnbItems} />}
+        </TabsContent>
+
+        <TabsContent value="wifi" className="mt-0 outline-none pb-20 lg:pb-0">
+          {isLoading ? <Skeleton className="h-[400px]" /> : wifiPackages && <WifiPos packages={wifiPackages} />}
         </TabsContent>
 
         <TabsContent value="voucher" className="mt-0 outline-none pb-20 lg:pb-0">
-          {isLoading ? (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Skeleton className="lg:col-span-1 h-[400px]" />
-              <Skeleton className="lg:col-span-2 h-[400px]" />
-            </div>
-          ) : (
-            <VoucherPos />
-          )}
+          {isLoading ? <Skeleton className="h-[400px]" /> : <VoucherPos />}
         </TabsContent>
       </Tabs>
     </div>

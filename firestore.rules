@@ -1,4 +1,3 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -19,9 +18,14 @@ service cloud.firestore {
     }
 
     // ======================================================
-    // 1. PUBLIC READ-ONLY COLLECTIONS
+    // COLLECTIONS
     // ======================================================
     
+    match /wifiPackages/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     match /members/{id} {
       allow read: if true;
       allow write: if isSignedIn();
@@ -77,12 +81,7 @@ service cloud.firestore {
       allow write: if isSignedIn();
     }
 
-    // ======================================================
-    // 2. SECURE COLLECTIONS (AUTH REQUIRED)
-    // ======================================================
-
     match /users/{userId} {
-      // allow list agar logic 'isFirstUser' pada AuthProvider bisa berjalan
       allow get, list: if isSignedIn();
       allow create: if isSignedIn() && request.auth.uid == userId;
       allow update: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
