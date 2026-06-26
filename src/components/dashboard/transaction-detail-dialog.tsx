@@ -97,28 +97,28 @@ export function TransactionDetailDialog({
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
-    let receiptContent = '';
+    let receiptBody = '';
 
     if (isWifi) {
-        receiptContent = `
+        receiptBody = `
             <div class="center">
-                <img src="/xplogo-monochrome.png" class="logo" />
+                <img src="/xenonplay-logo.png" class="logo" />
                 <div class="bold" style="font-size: 1.2em;">${storeName.toUpperCase()}</div>
-                <div style="margin-top: 6px; font-size: 0.8em;">${headerMsg}</div>
+                <div style="margin-top: 6px; font-size: 0.8em; opacity: 0.7;">${headerMsg}</div>
             </div>
             <div class="sep"></div>
-            <div class="center py-4">
-                <span style="font-size: 0.8em; font-weight: 900; letter-spacing: 2px; opacity: 0.6;">KODE VOUCHER WI-FI</span>
-                <div style="font-size: 3.5em; font-weight: 900; margin: 15px 0; letter-spacing: 4px;">${transaction.claimCode}</div>
-                <div class="bold" style="font-size: 1.1em; text-transform: uppercase;">PAKET: ${transaction.packageName || 'HOTSPOT'}</div>
+            <div class="center py-6">
+                <span style="font-size: 0.8em; font-weight: 900; letter-spacing: 2px; opacity: 0.6; display: block; margin-bottom: 5px;">KODE VOUCHER WI-FI</span>
+                <div style="font-size: 3.2em; font-weight: 900; margin: 10px 0; letter-spacing: 4px; line-height: 1;">${transaction.claimCode}</div>
+                <div class="bold" style="font-size: 1em; text-transform: uppercase; margin-top: 10px; color: #3b82f6;">PAKET: ${transaction.packageName || 'HOTSPOT'}</div>
             </div>
             <div class="sep"></div>
             <div style="padding: 10px 5px;">
-                <div class="bold" style="font-size: 0.9em; margin-bottom: 5px; border-bottom: 1px solid #000; width: fit-content;">PANDUAN KONEKSI:</div>
-                <div style="font-size: 0.85em; line-height: 1.4; white-space: pre-wrap; opacity: 0.9;">${wifiGuide}</div>
+                <div class="bold" style="font-size: 0.85em; margin-bottom: 5px; border-bottom: 1px solid #000; width: fit-content;">PANDUAN KONEKSI:</div>
+                <div style="font-size: 0.8em; line-height: 1.4; white-space: pre-wrap; opacity: 0.9;">${wifiGuide}</div>
             </div>
             <div class="sep"></div>
-            <div class="flex" style="font-size: 0.75em; opacity: 0.7;">
+            <div class="flex" style="font-size: 0.7em; opacity: 0.6;">
                 <div>Tgl: ${dateStr} ${timeStr}</div>
                 <div class="right">Kasir: ${cashierName.toUpperCase()}</div>
             </div>
@@ -134,56 +134,153 @@ export function TransactionDetailDialog({
         });
         const totalQty = printLines.reduce((s, i) => s + i.qty, 0);
 
-        receiptContent = `
+        receiptBody = `
             <div class="center">
-                <img src="/xplogo-monochrome.png" class="logo" />
+                <img src="/xenonplay-logo.png" class="logo" />
                 <div class="bold" style="font-size: 1.2em;">${storeName.toUpperCase()}</div>
-                <div style="font-size: 0.8em; opacity: 0.8;">${address}</div>
+                <div style="font-size: 0.75em; opacity: 0.7;">${address}</div>
             </div>
             <div class="sep"></div>
-            <div class="flex" style="font-size: 0.8em;">
+            <div class="flex" style="font-size: 0.75em;">
                 <div>Nota: ${transaction.id.substring(0,8).toUpperCase()}<br>Tgl: ${dateStr} ${timeStr}</div>
                 <div class="right">Kasir:<br><span class="bold">${cashierName.toUpperCase()}</span></div>
             </div>
             <div class="sep"></div>
             ${printLines.map((item, idx) => `
                 <div class="item-block">
-                    <span class="item-name" style="font-size: 0.9em;">${idx + 1}. ${item.name}</span>
-                    <div class="flex" style="font-size: 0.8em;">
+                    <span class="item-name" style="font-size: 0.85em;">${idx + 1}. ${item.name}</span>
+                    <div class="flex" style="font-size: 0.75em;">
                         <span>${item.qty} x ${item.price.toLocaleString('id-ID')}</span>
                         <span class="right bold">${item.total.toLocaleString('id-ID')}</span>
                     </div>
                 </div>
             `).join('')}
             <div class="sep"></div>
-            <div class="summary-row" style="font-size: 0.8em;"><span>Sub Total</span><span class="right">${bruto.toLocaleString('id-ID')}</span></div>
-            ${discount > 0 ? `<div class="summary-row" style="font-size: 0.8em;"><span>Diskon</span><span class="right">- ${discount.toLocaleString('id-ID')}</span></div>` : ''}
+            <div class="summary-row" style="font-size: 0.75em;"><span>Sub Total</span><span class="right">${bruto.toLocaleString('id-ID')}</span></div>
+            ${discount > 0 ? `<div class="summary-row" style="font-size: 0.75em;"><span>Diskon</span><span class="right">- ${discount.toLocaleString('id-ID')}</span></div>` : ''}
             <div class="total-row"><span>TOTAL</span><span class="right">${netto.toLocaleString('id-ID')}</span></div>
+            <div class="sep"></div>
         `;
     }
 
     const html = `
       <html>
         <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+          <title>XenonPlay Luxury Print - ${transaction.id}</title>
+          <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+          <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
           <style>
             @page { margin: 0; size: ${paperSize} auto; }
-            body { margin: 0; padding: 0; background: #fff; display: flex; flex-direction: column; align-items: center; font-family: 'Courier New', Courier, monospace; }
-            .receipt-paper { width: ${paperSize}; padding: 8mm 4mm; font-size: ${fontSize}px; font-weight: ${fontWeight}; line-height: 1.3; color: #000; box-sizing: border-box; }
+            html, body { 
+                margin: 0; padding: 0; background: #f1f5f9; 
+                display: flex; flex-direction: column; align-items: center; 
+                font-family: 'Courier New', Courier, monospace; min-height: 100vh;
+            }
+            .receipt-paper { 
+                width: ${paperSize}; padding: 8mm 5mm; background: #fffdf5; 
+                font-size: ${fontSize}px; font-weight: ${fontWeight}; line-height: 1.4; color: #000; 
+                box-sizing: border-box; border: 1px solid #e2e8f0; 
+                box-shadow: 0 20px 50px rgba(0,0,0,0.1); margin: 40px 0 100px; position: relative;
+            }
             .center { text-align: center; } .right { text-align: right; } .bold { font-weight: bold; }
-            .sep { border-top: 1px dashed #000; margin: 10px 0; }
-            .item-block { margin-bottom: 8px; } .item-name { font-weight: bold; display: block; text-transform: uppercase; }
-            .flex { display: flex; justify-content: space-between; } .logo { width: 45px; height: auto; margin: 0 auto 10px; display: block; filter: grayscale(1); }
+            .sep { border-top: 1px dashed #000; margin: 12px 0; opacity: 0.5; }
+            .item-block { margin-bottom: 10px; } .item-name { font-weight: bold; display: block; text-transform: uppercase; }
+            .flex { display: flex; justify-content: space-between; } 
+            .logo { width: 50px; height: auto; margin: 0 auto 10px; display: block; filter: grayscale(1); opacity: 0.8; }
             .summary-row { display: flex; justify-content: space-between; margin: 4px 0; }
-            .total-row { display: flex; justify-content: space-between; margin: 8px 0; font-weight: 900; font-size: 1.2em; border-top: 1px solid #000; padding-top: 6px; }
-            .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
-            @media print { .no-print { display: none; } }
+            .total-row { display: flex; justify-content: space-between; margin: 8px 0; font-weight: 900; font-size: 1.2em; border-top: 1.5px solid #000; padding-top: 8px; }
+            .py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+            
+            /* UI Controls */
+            .fab-container { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column-reverse; align-items: center; gap: 15px; z-index: 1000; }
+            .fab-main { width: 64px; height: 64px; background: #0ea5e9; color: white; border-radius: 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 25px -5px rgba(14, 165, 233, 0.5); cursor: pointer; border: none; transition: all 0.3s; }
+            .fab-main svg { width: 32px; height: 32px; fill: none; stroke: currentColor; stroke-width: 2.5; }
+            .fab-main.active { transform: rotate(135deg); background: #ef4444; }
+            .fab-menu { display: flex; flex-direction: column; gap: 12px; opacity: 0; transform: translateY(20px) scale(0.8); pointer-events: none; transition: all 0.3s; }
+            .fab-menu.active { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+            .fab-item { width: 56px; height: 56px; background: white; color: #64748b; border-radius: 18px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 20px rgba(0,0,0,0.1); cursor: pointer; border: 1px solid #f1f5f9; }
+            .fab-item svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; }
+
+            @media print {
+              .fab-container { display: none; }
+              .receipt-paper { border: none; box-shadow: none; width: ${paperSize}; margin: 0; padding: 0; background: #fff; }
+              body { background: #fff; }
+            }
           </style>
         </head>
-        <body onload="window.print(); window.close();">
-            <div class="receipt-paper">${receiptContent}
-                <div class="sep"></div>
-                <div class="center" style="font-size: 0.8em; font-style: italic; white-space: pre-wrap;">${footerMsg}</div>
+        <body>
+            <div id="receipt-target" class="receipt-paper">
+                ${receiptBody}
+                <div class="center" style="font-size: 0.8em; font-style: italic; white-space: pre-wrap; margin-top: 10px; opacity: 0.6;">${footerMsg}</div>
             </div>
+
+            <div class="fab-container">
+                <button class="fab-main" id="fab-main" onclick="toggleMenu()">
+                    <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <div class="fab-menu" id="fab-menu">
+                    <button class="fab-item" onclick="window.print()" title="Cetak Ke Printer">
+                        <svg viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2m-2 4H8v-6h8v6z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+                    <button class="fab-item" onclick="exportImage()" title="Simpan Gambar PNG">
+                        <svg viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+                    <button class="fab-item" onclick="exportPDF()" title="Simpan Dokumen PDF">
+                        <svg viewBox="0 0 24 24"><path d="M7 21h10a2 2 0 002-2V7l-5-5H7a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 2v5h5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <script>
+                function toggleMenu() {
+                    const main = document.getElementById('fab-main');
+                    const menu = document.getElementById('fab-menu');
+                    main.classList.toggle('active');
+                    menu.classList.toggle('active');
+                }
+
+                function exportImage() {
+                    const target = document.getElementById('receipt-target');
+                    const originalBorder = target.style.border;
+                    const originalShadow = target.style.shadow;
+                    target.style.border = 'none';
+                    target.style.boxShadow = 'none';
+                    target.style.margin = '0';
+                    
+                    html2canvas(target, { backgroundColor: '#fffdf5', scale: 3 }).then(canvas => {
+                        const link = document.createElement('a');
+                        link.download = 'XenonPlay_Nota_${transaction.id.substring(0,8)}.png';
+                        link.href = canvas.toDataURL('image/png');
+                        link.click();
+                        target.style.border = originalBorder;
+                        target.style.boxShadow = originalShadow;
+                        target.style.margin = '40px 0 100px';
+                    });
+                }
+
+                function exportPDF() {
+                    const target = document.getElementById('receipt-target');
+                    target.style.border = 'none';
+                    target.style.boxShadow = 'none';
+                    target.style.margin = '0';
+                    const { jsPDF } = window.jspdf;
+                    
+                    html2canvas(target, { backgroundColor: '#fffdf5', scale: 2 }).then(canvas => {
+                        const imgData = canvas.toDataURL('image/png');
+                        const pdf = new jsPDF({
+                            orientation: 'portrait',
+                            unit: 'px',
+                            format: [canvas.width / 2, canvas.height / 2]
+                        });
+                        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 2, canvas.height / 2);
+                        pdf.save('XenonPlay_Nota_${transaction.id.substring(0,8)}.pdf');
+                        target.style.border = '1px solid #e2e8f0';
+                        target.style.boxShadow = '0 20px 50px rgba(0,0,0,0.1)';
+                        target.style.margin = '40px 0 100px';
+                    });
+                }
+            </script>
         </body>
       </html>
     `;
@@ -274,7 +371,7 @@ export function TransactionDetailDialog({
             <div className="flex gap-2">
                 <Button variant="outline" className="flex-1 font-bold uppercase gap-2 h-11" onClick={handlePrint} disabled={isPrinting}>
                     {isPrinting ? <Loader2 className="size-4 animate-spin" /> : <Printer className="size-4" />}
-                    Cetak Kupon
+                    Cetak Nota
                 </Button>
                 {!isPaid && (
                     <Button onClick={handleFinalPaid} className="flex-[1.5] font-black uppercase text-xs h-11 shadow-lg shadow-primary/20">Bayar & Lunasi</Button>
