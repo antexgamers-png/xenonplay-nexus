@@ -127,11 +127,30 @@ export interface GeneralSettings {
   themeMode?: 'light' | 'dark' | 'scheduled';
   dayThemeStart?: string;
   nightThemeStart?: string;
+  
+  // Nota (Receipt) Settings
   receiptPaperSize?: string;
   receiptHeader?: string;
   receiptFooter?: string;
   receiptFontSize?: number;
   receiptFontWeight?: string;
+  receiptFontFamily?: 'sans' | 'mono' | 'serif';
+  receiptShowLogo?: boolean;
+  receiptShowStoreName?: boolean;
+  receiptShowAddress?: boolean;
+  receiptShowFooter?: boolean;
+
+  // Kupon (Coupon) Settings
+  couponPaperSize?: string;
+  couponFooter?: string;
+  couponFontSize?: number;
+  couponFontWeight?: string;
+  couponFontFamily?: 'sans' | 'mono' | 'serif';
+  couponShowLogo?: boolean;
+  couponShowStoreName?: boolean;
+  couponShowAddress?: boolean;
+  couponShowFooter?: boolean;
+  
   wifiInstructions?: string;
 }
 

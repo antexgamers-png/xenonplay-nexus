@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -200,20 +199,28 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
   const handlePrintReceipt = () => {
       if (!lastOrderDetails) return;
       
-      const printWindow = window.open('', '_blank');
-      if (!printWindow) return;
-
       const storeName = settings?.storeName || 'XENONPLAY';
       const address = settings?.address || '';
-      const paperSize = settings?.receiptPaperSize || '58mm';
-      const fontSize = settings?.receiptFontSize || 12;
-      const fontWeight = settings?.receiptFontWeight || '500';
-      const headerMsg = settings?.receiptHeader || 'Selamat datang di toko kami';
-      const footerMsg = settings?.receiptFooter || 'Terimakasih Telah Bermain\n"Good Game, Well Played"';
       
+      const conf = {
+          paperSize: settings?.receiptPaperSize || '58mm',
+          fontSize: settings?.receiptFontSize || 12,
+          fontWeight: settings?.receiptFontWeight || '500',
+          fontFamily: settings?.receiptFontFamily || 'sans',
+          showLogo: settings?.receiptShowLogo ?? true,
+          showStoreName: settings?.receiptShowStoreName ?? true,
+          showAddress: settings?.receiptShowAddress ?? true,
+          showFooter: settings?.receiptShowFooter ?? true,
+          footerText: settings?.receiptFooter || 'Terimakasih Telah Bermain',
+      };
+
+      const fontFamilyCSS = conf.fontFamily === 'mono' ? "'Courier New', monospace" : conf.fontFamily === 'serif' ? "Georgia, serif" : "Inter, sans-serif";
       const dateStr = format(lastOrderDetails.timestamp, 'dd/MM/yyyy');
       const timeStr = format(lastOrderDetails.timestamp, 'HH:mm');
       const totalQty = lastOrderDetails.items.reduce((s: number, i: any) => s + i.quantity, 0);
+
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) return;
 
       const html = `
       <html>
@@ -223,98 +230,35 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
           <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
           <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
           <style>
-            @page { margin: 0; size: ${paperSize} auto; }
+            @page { margin: 0; size: ${conf.paperSize} auto; }
             html, body { 
-              margin: 0; 
-              padding: 0; 
-              background: #fff; 
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              font-family: 'Courier New', Courier, monospace;
-              height: auto;
+              margin: 0; padding: 0; background: #f1f5f9; display: flex; flex-direction: column; align-items: center; 
+              font-family: ${fontFamilyCSS}; min-height: 100vh;
             }
             .receipt-paper { 
-              width: ${paperSize};
-              padding: 8mm 4mm; 
-              background: #fff;
-              font-size: ${fontSize}px; 
-              font-weight: ${fontWeight};
-              line-height: 1.3; 
-              color: #000;
-              box-sizing: border-box;
-              border: 1px solid #e2e8f0;
-              box-shadow: 0 10px 40px rgba(0,0,0,0.05);
-              margin: 20px 0 80px;
-              height: fit-content;
+              width: ${conf.paperSize}; padding: 8mm 5mm; background: #fffdf5; font-size: ${conf.fontSize}px; 
+              font-weight: ${conf.fontWeight}; line-height: 1.4; color: #000; box-sizing: border-box; 
+              border: 1px solid #e2e8f0; box-shadow: 0 20px 50px rgba(0,0,0,0.1); margin: 40px 0 100px;
             }
-            .center { text-align: center; } 
-            .right { text-align: right; } 
-            .bold { font-weight: bold; }
-            .sep { border-top: 1px dashed #000; margin: 10px 0; }
-            .item-block { margin-bottom: 8px; }
-            .item-name { font-weight: bold; display: block; text-transform: uppercase; }
-            .flex { display: flex; justify-content: space-between; }
-            .logo { width: 50px; height: auto; margin: 0 auto 10px; display: block; filter: grayscale(1); }
+            .center { text-align: center; } .right { text-align: right; } .bold { font-weight: bold; }
+            .sep { border-top: 1px dashed #000; margin: 12px 0; opacity: 0.5; }
+            .item-block { margin-bottom: 10px; } .item-name { font-weight: bold; display: block; text-transform: uppercase; }
+            .flex { display: flex; justify-content: space-between; } 
+            .logo { width: 50px; height: auto; margin: 0 auto 10px; display: block; filter: grayscale(1); opacity: 0.8; }
             .summary-row { display: flex; justify-content: space-between; margin: 4px 0; }
-            .total-row { display: flex; justify-content: space-between; margin: 8px 0; font-weight: 900; font-size: 1.2em; border-top: 1px solid #000; padding-top: 6px; }
+            .total-row { display: flex; justify-content: space-between; margin: 8px 0; font-weight: 900; font-size: 1.2em; border-top: 1.5px solid #000; padding-top: 8px; }
             
-            /* UI Controls */
-            .fab-container {
-                position: fixed;
-                bottom: 30px;
-                right: 30px;
-                display: flex;
-                flex-direction: column-reverse;
-                align-items: center;
-                gap: 15px;
-                z-index: 1000;
-            }
-            .fab-main {
-                width: 60px;
-                height: 60px;
-                background: #0ea5e9;
-                color: white;
-                border-radius: 18px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                box-shadow: 0 10px 25px -5px rgba(14, 165, 233, 0.4);
-                cursor: pointer;
-                border: none;
-                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            }
-            .fab-main svg { width: 30px; height: 30px; fill: currentColor; }
+            .fab-container { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column-reverse; align-items: center; gap: 15px; z-index: 1000; }
+            .fab-main { width: 64px; height: 64px; background: #0ea5e9; color: white; border-radius: 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 25px -5px rgba(14, 165, 233, 0.5); cursor: pointer; border: none; transition: all 0.3s; }
+            .fab-main svg { width: 32px; height: 32px; fill: none; stroke: currentColor; stroke-width: 2.5; }
             .fab-main.active { transform: rotate(135deg); background: #ef4444; }
-            
-            .fab-menu {
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-                opacity: 0;
-                transform: translateY(20px) scale(0.8);
-                pointer-events: none;
-                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            }
+            .fab-menu { display: flex; flex-direction: column; gap: 12px; opacity: 0; transform: translateY(20px) scale(0.8); pointer-events: none; transition: all 0.3s; }
             .fab-menu.active { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
-            
-            .fab-item {
-                width: 52px;
-                height: 52px;
-                background: white;
-                color: #64748b;
-                border-radius: 16px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-                cursor: pointer;
-                border: 1px solid #f1f5f9;
-            }
+            .fab-item { width: 56px; height: 56px; background: white; color: #64748b; border-radius: 18px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 20px rgba(0,0,0,0.1); cursor: pointer; border: 1px solid #f1f5f9; }
 
             @media print {
               .fab-container { display: none; }
-              .receipt-paper { border: none; box-shadow: none; width: ${paperSize}; margin: 0; padding: 0; }
+              .receipt-paper { border: none; box-shadow: none; width: ${conf.paperSize}; margin: 0; padding: 0; background: #fff; }
               body { background: #fff; }
             }
           </style>
@@ -322,80 +266,53 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
         <body>
             <div id="receipt-target" class="receipt-paper">
                 <div class="center">
-                    <img src="/xplogo-monochrome.png" class="logo" />
-                    <div class="bold" style="font-size: 1.2em;">${storeName.toUpperCase()}</div>
-                    <div style="font-size: 0.8em; opacity: 0.8;">${address}</div>
-                    <div style="margin-top: 6px; font-size: 0.8em;">${headerMsg}</div>
+                    ${conf.showLogo ? `<img src="/xenonplay-logo.png" class="logo" />` : ''}
+                    ${conf.showStoreName ? `<div class="bold" style="font-size: 1.2em;">${storeName.toUpperCase()}</div>` : ''}
+                    ${conf.showAddress ? `<div style="font-size: 0.75em; opacity: 0.7;">${address}</div>` : ''}
                 </div>
                 
                 <div class="sep"></div>
                 
-                <div class="flex" style="font-size: 0.8em;">
-                    <div>
-                    <div>Nota : ${lastOrderDetails.id.substring(0,8).toUpperCase()}</div>
-                    <div>Tgl  : ${dateStr}</div>
-                    <div>Jam  : ${timeStr}</div>
-                    </div>
-                    <div class="right">
-                    <div>Kasir:</div>
-                    <div class="bold">${lastOrderDetails.cashier.toUpperCase()}</div>
-                    </div>
+                <div class="flex" style="font-size: 0.75em;">
+                    <div>Nota: ${lastOrderDetails.id.substring(0,8).toUpperCase()}<br>Tgl: ${dateStr} ${timeStr}</div>
+                    <div class="right">Kasir:<br><span class="bold">${lastOrderDetails.cashier.toUpperCase()}</span></div>
                 </div>
 
                 <div class="sep"></div>
 
                 ${lastOrderDetails.items.map((item: any, idx: number) => `
                     <div class="item-block">
-                    <span class="item-name" style="font-size: 0.9em;">${idx + 1}. ${item.name}</span>
-                    <div class="flex" style="font-size: 0.8em;">
-                        <span>${item.quantity} x ${item.price.toLocaleString('id-ID')}</span>
-                        <span class="right bold">${(item.price * item.quantity).toLocaleString('id-ID')}</span>
-                    </div>
+                        <span class="item-name" style="font-size: 0.85em;">${idx + 1}. ${item.name}</span>
+                        <div class="flex" style="font-size: 0.75em;">
+                            <span>${item.quantity} x ${item.price.toLocaleString('id-ID')}</span>
+                            <span class="right bold">${(item.price * item.quantity).toLocaleString('id-ID')}</span>
+                        </div>
                     </div>
                 `).join('')}
 
                 <div class="sep"></div>
 
-                <div class="summary-row" style="font-size: 0.8em;">
-                    <span>Total Qty</span>
-                    <span class="right">${totalQty} Items</span>
-                </div>
-                <div class="summary-row" style="font-size: 0.8em;">
-                    <span>Sub Total</span>
-                    <span class="right">${lastOrderDetails.total.toLocaleString('id-ID')}</span>
-                </div>
+                <div class="summary-row" style="font-size: 0.75em;"><span>Total Qty</span><span class="right">${totalQty} Items</span></div>
+                <div class="summary-row" style="font-size: 0.75em;"><span>Sub Total</span><span class="right">${lastOrderDetails.total.toLocaleString('id-ID')}</span></div>
+                <div class="total-row"><span>TOTAL</span><span class="right">${lastOrderDetails.total.toLocaleString('id-ID')}</span></div>
 
-                <div class="total-row">
-                    <span>TOTAL AKHIR</span>
-                    <span class="right">${lastOrderDetails.total.toLocaleString('id-ID')}</span>
-                </div>
-
-                <div class="summary-row" style="opacity: 0.8; font-size: 0.8em;">
-                    <span>Bayar Tunai</span>
-                    <span class="right">${lastOrderDetails.cash.toLocaleString('id-ID')}</span>
-                </div>
-                <div class="summary-row" style="font-size: 0.9em;">
-                    <span class="bold">Kembali</span>
-                    <span class="right bold">${lastOrderDetails.change.toLocaleString('id-ID')}</span>
-                </div>
+                <div class="summary-row" style="opacity: 0.7; font-size: 0.75em;"><span>Bayar Tunai</span><span class="right">${lastOrderDetails.cash.toLocaleString('id-ID')}</span></div>
+                <div class="summary-row" style="font-size: 0.85em;"><span>Kembali</span><span class="right bold">${lastOrderDetails.change.toLocaleString('id-ID')}</span></div>
 
                 <div class="sep"></div>
-                <div class="center" style="font-size: 0.8em; font-style: italic; white-space: pre-wrap;">${footerMsg}</div>
+                ${conf.showFooter ? `<div class="center" style="font-size: 0.8em; font-style: italic; white-space: pre-wrap; margin-top: 10px; opacity: 0.6;">${conf.footerText}</div>` : ''}
             </div>
 
             <div class="fab-container">
                 <button class="fab-main" id="fab-main" onclick="toggleMenu()">
-                    <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </button>
                 <div class="fab-menu" id="fab-menu">
                     <button class="fab-item" onclick="window.print()" title="Cetak">
-                        <svg viewBox="0 0 24 24"><path d="M19 8H5c-1.66 0-3 1.33-3 3v6h4v4h12v-4h4v-6c0-1.67-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2m-2 4H8v-6h8v6z" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </button>
-                    <button class="fab-item" onclick="exportImage()" title="Simpan PNG">
-                        <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
-                    </button>
-                    <button class="fab-item" onclick="exportPDF()" title="Simpan PDF">
-                        <svg viewBox="0 0 24 24"><path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 10h1V8H9v2zm5.5 2h1V8h-1v4zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6z"/></svg>
+                    <button class="fab-item" onclick="exportImage()" title="Simpan Gambar">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </button>
                 </div>
             </div>
@@ -407,41 +324,14 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
                     main.classList.toggle('active');
                     menu.classList.toggle('active');
                 }
-
                 function exportImage() {
                     const target = document.getElementById('receipt-target');
-                    target.style.border = 'none';
-                    target.style.boxShadow = 'none';
-                    target.style.margin = '0';
-                    html2canvas(target, { backgroundColor: '#fff', scale: 3 }).then(canvas => {
+                    target.style.border = 'none'; target.style.boxShadow = 'none'; target.style.margin = '0';
+                    html2canvas(target, { backgroundColor: '#fffdf5', scale: 3 }).then(canvas => {
                         const link = document.createElement('a');
-                        link.download = 'XenonPlay_${lastOrderDetails.id.substring(0,8)}.png';
-                        link.href = canvas.toDataURL('image/png');
-                        link.click();
-                        target.style.border = '1px solid #e2e8f0';
-                        target.style.boxShadow = '0 10px 40px rgba(0,0,0,0.05)';
-                        target.style.margin = '20px 0 80px';
-                    });
-                }
-
-                function exportPDF() {
-                    const target = document.getElementById('receipt-target');
-                    target.style.border = 'none';
-                    target.style.boxShadow = 'none';
-                    target.style.margin = '0';
-                    const { jsPDF } = window.jspdf;
-                    html2canvas(target, { scale: 2 }).then(canvas => {
-                        const imgData = canvas.toDataURL('image/png');
-                        const pdf = new jsPDF({
-                            orientation: 'portrait',
-                            unit: 'px',
-                            format: [canvas.width / 2, canvas.height / 2]
-                        });
-                        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 2, canvas.height / 2);
-                        pdf.save('XenonPlay_${lastOrderDetails.id.substring(0,8)}.pdf');
-                        target.style.border = '1px solid #e2e8f0';
-                        target.style.boxShadow = '0 10px 40px rgba(0,0,0,0.05)';
-                        target.style.margin = '20px 0 80px';
+                        link.download = 'FnbReceipt_${lastOrderDetails.id.substring(0,8)}.png';
+                        link.href = canvas.toDataURL('image/png'); link.click();
+                        target.style.border = '1px solid #e2e8f0'; target.style.boxShadow = '0 20px 50px rgba(0,0,0,0.1)'; target.style.margin = '40px 0 100px';
                     });
                 }
             </script>

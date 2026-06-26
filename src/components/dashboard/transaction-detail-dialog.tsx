@@ -13,7 +13,7 @@ import { Button } from '../ui/button';
 import type { Transaction, Member, GeneralSettings, Shift } from '@/lib/types';
 import { ScrollArea } from '../ui/scroll-area';
 import { Separator } from '../ui/separator';
-import { Badge } from '../ui/badge';
+import { Badge } from '@/components/ui/badge';
 import { cn, formatCurrency } from '@/lib/utils';
 import { ShoppingCart, Gamepad2, Ticket, CheckCircle2, AlertCircle, Search, UserCheck, X, Printer, Loader2, Wifi } from 'lucide-react';
 import { useState, useMemo } from 'react';
@@ -68,10 +68,6 @@ export function TransactionDetailDialog({
   const isPaid = transaction.status === 'paid';
   const isWifi = transaction.stationId === 'wifi';
 
-  const charges = transaction.additionalCharges ?? [];
-  const rentalCharges = charges.filter(c => c && c.description && !c.description.startsWith('FnB:'));
-  const fnbItems = transaction.fnbItems || [];
-
   const handleFinalPaid = () => {
       onMarkAsPaid(selectedMember);
       setSelectedMember(null);
@@ -82,17 +78,37 @@ export function TransactionDetailDialog({
     setIsPrinting(true);
     const storeName = settings?.storeName || 'XENONPLAY';
     const address = settings?.address || '';
-    const paperSize = settings?.receiptPaperSize || '58mm';
-    const fontSize = settings?.receiptFontSize || 12;
-    const fontWeight = settings?.receiptFontWeight || '500';
-    const headerMsg = settings?.receiptHeader || 'Selamat datang di toko kami';
-    const footerMsg = settings?.receiptFooter || 'Terimakasih Telah Bermain\n"Good Game, Well Played"';
-    const wifiGuide = settings?.wifiInstructions || 'Silahkan hubungi kasir jika ada kendala.';
+    
+    // Choose settings based on mode
+    const conf = isWifi ? {
+        paperSize: settings?.couponPaperSize || '58mm',
+        fontSize: settings?.couponFontSize || 12,
+        fontWeight: settings?.couponFontWeight || '500',
+        fontFamily: settings?.couponFontFamily || 'mono',
+        showLogo: settings?.couponShowLogo ?? true,
+        showStoreName: settings?.couponShowStoreName ?? true,
+        showAddress: settings?.couponShowAddress ?? false,
+        showFooter: settings?.couponShowFooter ?? true,
+        footerText: settings?.couponFooter || 'Simpan kode ini dengan baik.',
+    } : {
+        paperSize: settings?.receiptPaperSize || '58mm',
+        fontSize: settings?.receiptFontSize || 12,
+        fontWeight: settings?.receiptFontWeight || '500',
+        fontFamily: settings?.receiptFontFamily || 'sans',
+        showLogo: settings?.receiptShowLogo ?? true,
+        showStoreName: settings?.receiptShowStoreName ?? true,
+        showAddress: settings?.receiptShowAddress ?? true,
+        showFooter: settings?.receiptShowFooter ?? true,
+        footerText: settings?.receiptFooter || 'Terimakasih Telah Bermain',
+    };
 
+    const wifiGuide = settings?.wifiInstructions || 'Silahkan hubungi kasir jika ada kendala.';
     const dateStr = format(transaction.timestamp, 'dd/MM/yyyy');
     const timeStr = format(transaction.timestamp, 'HH:mm');
     const shift = shifts?.find(s => s.id === transaction.shiftId);
     const cashierName = shift?.openedByName || 'Operator';
+
+    const fontFamilyCSS = conf.fontFamily === 'mono' ? "'Courier New', monospace" : conf.fontFamily === 'serif' ? "Georgia, serif" : "Inter, sans-serif";
 
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
@@ -102,9 +118,9 @@ export function TransactionDetailDialog({
     if (isWifi) {
         receiptBody = `
             <div class="center">
-                <img src="/xenonplay-logo.png" class="logo" />
-                <div class="bold" style="font-size: 1.2em;">${storeName.toUpperCase()}</div>
-                <div style="margin-top: 6px; font-size: 0.8em; opacity: 0.7;">${headerMsg}</div>
+                ${conf.showLogo ? `<img src="/xenonplay-logo.png" class="logo" />` : ''}
+                ${conf.showStoreName ? `<div class="bold" style="font-size: 1.2em;">${storeName.toUpperCase()}</div>` : ''}
+                ${conf.showAddress ? `<div style="margin-top: 6px; font-size: 0.8em; opacity: 0.7;">${address}</div>` : ''}
             </div>
             <div class="sep"></div>
             <div class="center py-6">
@@ -118,12 +134,10 @@ export function TransactionDetailDialog({
                 <div style="font-size: 0.8em; line-height: 1.4; white-space: pre-wrap; opacity: 0.9;">${wifiGuide}</div>
             </div>
             <div class="sep"></div>
-            <div class="flex" style="font-size: 0.7em; opacity: 0.6;">
-                <div>Tgl: ${dateStr} ${timeStr}</div>
-                <div class="right">Kasir: ${cashierName.toUpperCase()}</div>
-            </div>
         `;
     } else {
+        const rentalCharges = (transaction.additionalCharges || []).filter(c => !c.description.startsWith('FnB:'));
+        const fnbItems = transaction.fnbItems || [];
         const printLines: any[] = [];
         rentalCharges.forEach(rc => {
             let name = rc.description.replace(/^Sewa\s+/i, '').replace(/x\d+$/i, '').trim();
@@ -132,13 +146,12 @@ export function TransactionDetailDialog({
         fnbItems.forEach(f => {
             printLines.push({ name: f.name.toUpperCase(), qty: f.quantity, price: f.price, total: f.price * f.quantity });
         });
-        const totalQty = printLines.reduce((s, i) => s + i.qty, 0);
 
         receiptBody = `
             <div class="center">
-                <img src="/xenonplay-logo.png" class="logo" />
-                <div class="bold" style="font-size: 1.2em;">${storeName.toUpperCase()}</div>
-                <div style="font-size: 0.75em; opacity: 0.7;">${address}</div>
+                ${conf.showLogo ? `<img src="/xenonplay-logo.png" class="logo" />` : ''}
+                ${conf.showStoreName ? `<div class="bold" style="font-size: 1.2em;">${storeName.toUpperCase()}</div>` : ''}
+                ${conf.showAddress ? `<div style="font-size: 0.75em; opacity: 0.7;">${address}</div>` : ''}
             </div>
             <div class="sep"></div>
             <div class="flex" style="font-size: 0.75em;">
@@ -167,19 +180,19 @@ export function TransactionDetailDialog({
       <html>
         <head>
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-          <title>XenonPlay Luxury Print - ${transaction.id}</title>
+          <title>XenonPlay Receipt - ${transaction.id}</title>
           <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
           <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
           <style>
-            @page { margin: 0; size: ${paperSize} auto; }
+            @page { margin: 0; size: ${conf.paperSize} auto; }
             html, body { 
                 margin: 0; padding: 0; background: #f1f5f9; 
                 display: flex; flex-direction: column; align-items: center; 
-                font-family: 'Courier New', Courier, monospace; min-height: 100vh;
+                font-family: ${fontFamilyCSS}; min-height: 100vh;
             }
             .receipt-paper { 
-                width: ${paperSize}; padding: 8mm 5mm; background: #fffdf5; 
-                font-size: ${fontSize}px; font-weight: ${fontWeight}; line-height: 1.4; color: #000; 
+                width: ${conf.paperSize}; padding: 8mm 5mm; background: #fffdf5; 
+                font-size: ${conf.fontSize}px; font-weight: ${conf.fontWeight}; line-height: 1.4; color: #000; 
                 box-sizing: border-box; border: 1px solid #e2e8f0; 
                 box-shadow: 0 20px 50px rgba(0,0,0,0.1); margin: 40px 0 100px; position: relative;
             }
@@ -204,7 +217,7 @@ export function TransactionDetailDialog({
 
             @media print {
               .fab-container { display: none; }
-              .receipt-paper { border: none; box-shadow: none; width: ${paperSize}; margin: 0; padding: 0; background: #fff; }
+              .receipt-paper { border: none; box-shadow: none; width: ${conf.paperSize}; margin: 0; padding: 0; background: #fff; }
               body { background: #fff; }
             }
           </style>
@@ -212,7 +225,7 @@ export function TransactionDetailDialog({
         <body>
             <div id="receipt-target" class="receipt-paper">
                 ${receiptBody}
-                <div class="center" style="font-size: 0.8em; font-style: italic; white-space: pre-wrap; margin-top: 10px; opacity: 0.6;">${footerMsg}</div>
+                ${conf.showFooter ? `<div class="center" style="font-size: 0.8em; font-style: italic; white-space: pre-wrap; margin-top: 10px; opacity: 0.6;">${conf.footerText}</div>` : ''}
             </div>
 
             <div class="fab-container">
@@ -239,45 +252,26 @@ export function TransactionDetailDialog({
                     main.classList.toggle('active');
                     menu.classList.toggle('active');
                 }
-
                 function exportImage() {
                     const target = document.getElementById('receipt-target');
-                    const originalBorder = target.style.border;
-                    const originalShadow = target.style.shadow;
-                    target.style.border = 'none';
-                    target.style.boxShadow = 'none';
-                    target.style.margin = '0';
-                    
+                    target.style.border = 'none'; target.style.boxShadow = 'none'; target.style.margin = '0';
                     html2canvas(target, { backgroundColor: '#fffdf5', scale: 3 }).then(canvas => {
                         const link = document.createElement('a');
-                        link.download = 'XenonPlay_Nota_${transaction.id.substring(0,8)}.png';
-                        link.href = canvas.toDataURL('image/png');
-                        link.click();
-                        target.style.border = originalBorder;
-                        target.style.boxShadow = originalShadow;
-                        target.style.margin = '40px 0 100px';
+                        link.download = 'Receipt_${transaction.id.substring(0,8)}.png';
+                        link.href = canvas.toDataURL('image/png'); link.click();
+                        target.style.border = '1px solid #e2e8f0'; target.style.boxShadow = '0 20px 50px rgba(0,0,0,0.1)'; target.style.margin = '40px 0 100px';
                     });
                 }
-
                 function exportPDF() {
                     const target = document.getElementById('receipt-target');
-                    target.style.border = 'none';
-                    target.style.boxShadow = 'none';
-                    target.style.margin = '0';
+                    target.style.border = 'none'; target.style.boxShadow = 'none'; target.style.margin = '0';
                     const { jsPDF } = window.jspdf;
-                    
                     html2canvas(target, { backgroundColor: '#fffdf5', scale: 2 }).then(canvas => {
                         const imgData = canvas.toDataURL('image/png');
-                        const pdf = new jsPDF({
-                            orientation: 'portrait',
-                            unit: 'px',
-                            format: [canvas.width / 2, canvas.height / 2]
-                        });
+                        const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [canvas.width / 2, canvas.height / 2] });
                         pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 2, canvas.height / 2);
-                        pdf.save('XenonPlay_Nota_${transaction.id.substring(0,8)}.pdf');
-                        target.style.border = '1px solid #e2e8f0';
-                        target.style.boxShadow = '0 20px 50px rgba(0,0,0,0.1)';
-                        target.style.margin = '40px 0 100px';
+                        pdf.save('Receipt_${transaction.id.substring(0,8)}.pdf');
+                        target.style.border = '1px solid #e2e8f0'; target.style.boxShadow = '0 20px 50px rgba(0,0,0,0.1)'; target.style.margin = '40px 0 100px';
                     });
                 }
             </script>
@@ -347,7 +341,7 @@ export function TransactionDetailDialog({
             <div className="space-y-3">
                 <h4 className='text-[10px] font-black uppercase text-muted-foreground tracking-widest'>Rincian Tagihan</h4>
                 <div className="space-y-2">
-                    {charges.map((charge, idx) => (
+                    {(transaction.additionalCharges || []).map((charge, idx) => (
                     <div key={idx} className='flex justify-between items-center bg-muted/50 p-3 rounded-lg border border-border'>
                         <div className="flex-1">
                             <div className="flex items-center gap-2"><p className="text-xs font-bold uppercase">{charge.description.replace('FnB: ', '').replace('Wifi: ', '')}</p>{charge.isPaid && <CheckCircle2 className="h-3 w-3 text-emerald-500" />}</div>
