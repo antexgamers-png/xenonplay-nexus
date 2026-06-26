@@ -28,7 +28,10 @@ import {
     Bold,
     Wifi,
     Ticket,
-    CheckCircle2
+    CheckCircle2,
+    Undo2,
+    ExternalLink,
+    Loader2
 } from 'lucide-react';
 import type { GeneralSettings } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -112,6 +115,7 @@ export default function PengaturanPage() {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [activeSubTab, setActiveSubTab] = useState('receipt_mode');
 
   const settingsRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'general') : null, [firestore]);
   const { data: currentSettings, isLoading } = useDoc<GeneralSettings>(settingsRef);
@@ -133,18 +137,28 @@ export default function PengaturanPage() {
     try {
       await saveGeneralSettings(firestore, formData);
       toast({
-        title: 'Sukses',
-        description: 'Pengaturan berhasil diperbarui.',
+        title: 'Sukses Disimpan',
+        description: 'Seluruh pengaturan nota dan kupon telah diperbarui.',
         variant: 'success'
       });
     } catch (e: any) {
       toast({
-        title: 'Error',
-        description: 'Gagal menyimpan pengaturan.',
+        title: 'Gagal Simpan',
+        description: 'Waduh, terjadi kendala saat menyimpan. Coba lagi ya!',
         variant: 'destructive'
       });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDiscard = () => {
+    if (currentSettings) {
+      setFormData({
+          ...DEFAULT_FORM_DATA,
+          ...currentSettings,
+      });
+      toast({ title: 'Perubahan Dibatalkan', description: 'Data dikembalikan ke pengaturan terakhir yang tersimpan.', variant: 'default' });
     }
   };
 
@@ -169,6 +183,107 @@ export default function PengaturanPage() {
     }
   };
 
+  const openRealPreview = () => {
+      const isWifi = activeSubTab === 'coupon_mode';
+      const storeName = formData.storeName;
+      const address = formData.address;
+      
+      const conf = isWifi ? {
+          paperSize: formData.couponPaperSize || '58mm',
+          fontSize: formData.couponFontSize || 12,
+          fontWeight: formData.couponFontWeight || '500',
+          fontFamily: formData.couponFontFamily || 'sans',
+          showLogo: formData.couponShowLogo,
+          showStoreName: formData.couponShowStoreName,
+          showAddress: formData.couponShowAddress,
+          showFooter: formData.couponShowFooter,
+          footerText: formData.couponFooter,
+      } : {
+          paperSize: formData.receiptPaperSize || '58mm',
+          fontSize: formData.receiptFontSize || 12,
+          fontWeight: formData.receiptFontWeight || '500',
+          fontFamily: formData.receiptFontFamily || 'sans',
+          showLogo: formData.receiptShowLogo,
+          showStoreName: formData.receiptShowStoreName,
+          showAddress: formData.receiptShowAddress,
+          showFooter: formData.receiptShowFooter,
+          footerText: formData.receiptFooter,
+      };
+
+      const fontFamilyCSS = conf.fontFamily === 'mono' ? "'Courier New', monospace" : conf.fontFamily === 'serif' ? "Georgia, serif" : "Inter, sans-serif";
+      
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) return;
+
+      const bodyContent = isWifi ? `
+          <div class="center">
+              ${conf.showLogo ? `<img src="/xenonplay-logo.png" class="logo" />` : ''}
+              ${conf.showStoreName ? `<div class="bold" style="font-size: 1.2em;">${storeName.toUpperCase()}</div>` : ''}
+              ${conf.showAddress ? `<div style="margin-top: 6px; font-size: 0.8em; opacity: 0.7;">${address}</div>` : ''}
+          </div>
+          <div class="sep"></div>
+          <div class="center py-6">
+              <span style="font-size: 0.8em; font-weight: 900; letter-spacing: 2px; opacity: 0.6; display: block; margin-bottom: 5px;">KODE VOUCHER WI-FI</span>
+              <div style="font-size: 3.2em; font-weight: 900; margin: 10px 0; letter-spacing: 4px; line-height: 1;">72A9X</div>
+              <div class="bold" style="font-size: 1em; text-transform: uppercase; margin-top: 10px; color: #3b82f6;">PAKET: CONTOH 1 JAM</div>
+          </div>
+          <div class="sep"></div>
+          <div style="padding: 10px 5px;">
+              <div class="bold" style="font-size: 0.85em; margin-bottom: 5px; border-bottom: 1px solid #000; width: fit-content;">PANDUAN KONEKSI:</div>
+              <div style="font-size: 0.8em; line-height: 1.4; white-space: pre-wrap; opacity: 0.9;">${formData.wifiInstructions}</div>
+          </div>
+          <div class="sep"></div>
+      ` : `
+          <div class="center">
+              ${conf.showLogo ? `<img src="/xenonplay-logo.png" class="logo" />` : ''}
+              ${conf.showStoreName ? `<div class="bold" style="font-size: 1.2em;">${storeName.toUpperCase()}</div>` : ''}
+              ${conf.showAddress ? `<div style="font-size: 0.75em; opacity: 0.7;">${address}</div>` : ''}
+          </div>
+          <div class="sep"></div>
+          <div class="flex" style="font-size: 0.75em;">
+              <div>Nota: PREVIEW<br>Tgl: ${new Date().toLocaleDateString('id-ID')}</div>
+              <div class="right">Kasir:<br><span class="bold">OPERATOR</span></div>
+          </div>
+          <div class="sep"></div>
+          <div class="item-block">
+              <span class="item-name" style="font-size: 0.85em;">1. CONTOH ITEM RENTAL</span>
+              <div class="flex" style="font-size: 0.75em;">
+                  <span>1 x 10.000</span>
+                  <span class="right bold">10.000</span>
+              </div>
+          </div>
+          <div class="sep"></div>
+          <div class="total-row"><span>TOTAL</span><span class="right">10.000</span></div>
+          <div class="sep"></div>
+      `;
+
+      printWindow.document.write(`
+        <html>
+            <head>
+                <title>Preview Cetak</title>
+                <style>
+                    body { background: #f1f5f9; display: flex; justify-content: center; font-family: ${fontFamilyCSS}; margin: 0; padding: 20px; }
+                    .receipt { width: ${conf.paperSize}; padding: 8mm 5mm; background: #fffdf5; font-size: ${conf.fontSize}px; font-weight: ${conf.fontWeight}; line-height: 1.4; color: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+                    .center { text-align: center; } .right { text-align: right; } .bold { font-weight: bold; }
+                    .sep { border-top: 1px dashed #000; margin: 12px 0; opacity: 0.5; }
+                    .flex { display: flex; justify-content: space-between; }
+                    .logo { width: 50px; height: auto; margin: 0 auto 10px; display: block; filter: grayscale(1); opacity: 0.8; }
+                    .item-block { margin-bottom: 10px; } .item-name { font-weight: bold; display: block; text-transform: uppercase; }
+                    .total-row { display: flex; justify-content: space-between; margin: 8px 0; font-weight: 900; font-size: 1.2em; border-top: 1.5px solid #000; padding-top: 8px; }
+                    .py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+                </style>
+            </head>
+            <body>
+                <div class="receipt">
+                    ${bodyContent}
+                    ${conf.showFooter ? `<div class="center" style="font-size: 0.8em; font-style: italic; white-space: pre-wrap; margin-top: 10px; opacity: 0.6;">${conf.footerText}</div>` : ''}
+                </div>
+            </body>
+        </html>
+      `);
+      printWindow.document.close();
+  };
+
   if (isLoading) return <div className="space-y-6"><Skeleton className="h-10 w-[300px]" /><Skeleton className="h-[400px] w-full" /></div>;
 
   return (
@@ -181,10 +296,16 @@ export default function PengaturanPage() {
             </div>
             <h1 className="text-3xl font-black uppercase tracking-tight text-foreground">Pengaturan <span className="text-primary">Umum</span></h1>
         </div>
-        <Button onClick={handleSave} disabled={isSaving} className="font-black uppercase tracking-widest px-8 h-12 shadow-xl shadow-primary/30 gap-2">
-            {isSaving ? <RotateCcw className="size-4 animate-spin" /> : <Save className="size-4" />}
-            Simpan Seluruh Pengaturan
-        </Button>
+        <div className="flex items-center gap-3">
+            <Button variant="ghost" onClick={handleDiscard} className="font-bold uppercase tracking-widest text-[10px] gap-2 px-6 h-12 border-border hover:bg-red-500/5 hover:text-red-500 transition-all">
+                <Undo2 className="size-3.5" />
+                Batalkan Perubahan
+            </Button>
+            <Button onClick={handleSave} disabled={isSaving} className="font-black uppercase tracking-widest px-8 h-12 shadow-xl shadow-primary/30 gap-2">
+                {isSaving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+                Simpan Seluruh Pengaturan
+            </Button>
+        </div>
       </header>
 
       <Tabs defaultValue="business" className="w-full">
@@ -220,7 +341,7 @@ export default function PengaturanPage() {
         <TabsContent value="printer" className="animate-in fade-in slide-in-from-bottom-2">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                 <div className="lg:col-span-8 space-y-6">
-                    <Tabs defaultValue="receipt_mode" className="w-full">
+                    <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="w-full">
                         <TabsList className="bg-muted/50 p-1 rounded-xl mb-6 border w-full sm:w-fit">
                             <TabsTrigger value="receipt_mode" className="rounded-lg font-bold uppercase text-[9px] tracking-widest gap-2">
                                 <ReceiptText className="size-3" /> Nota (Rental/FnB)
@@ -238,10 +359,9 @@ export default function PengaturanPage() {
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="p-8 space-y-8">
-                                    {/* Layout Elements Toggles */}
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                                         {[
-                                            { id: 'receiptShowLogo', label: 'Tampilkan Logo', icon: Store },
+                                            { id: 'receiptShowLogo', label: 'Logo', icon: Store },
                                             { id: 'receiptShowStoreName', label: 'Nama Toko', icon: Type },
                                             { id: 'receiptShowAddress', label: 'Alamat', icon: Store },
                                             { id: 'receiptShowFooter', label: 'Footer', icon: History },
@@ -301,10 +421,9 @@ export default function PengaturanPage() {
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="p-8 space-y-8">
-                                    {/* Layout Elements Toggles */}
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                                         {[
-                                            { id: 'couponShowLogo', label: 'Tampilkan Logo', icon: Store },
+                                            { id: 'couponShowLogo', label: 'Logo', icon: Store },
                                             { id: 'couponShowStoreName', label: 'Nama Toko', icon: Type },
                                             { id: 'couponShowAddress', label: 'Alamat', icon: Store },
                                             { id: 'couponShowFooter', label: 'Footer', icon: History },
@@ -358,57 +477,102 @@ export default function PengaturanPage() {
                     </Tabs>
                 </div>
 
-                <div className="lg:col-span-4 sticky top-24">
+                <div className="lg:col-span-4 sticky top-24 space-y-6">
                     <Card className="rounded-[2.5rem] overflow-hidden border-border bg-muted/10 shadow-2xl">
-                        <CardHeader className="bg-card border-b py-4">
-                            <div className="flex items-center gap-2"><Eye className="size-4 text-primary" /><CardTitle className="text-sm font-black uppercase tracking-widest text-primary">Live Preview Simulator</CardTitle></div>
+                        <CardHeader className="bg-card border-b py-4 flex flex-row items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Eye className="size-4 text-primary" />
+                                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-primary">Live Simulator</CardTitle>
+                            </div>
+                            <Button variant="outline" size="sm" onClick={openRealPreview} className="h-7 px-3 rounded-lg font-black uppercase text-[8px] tracking-widest gap-1.5 border-primary/20 text-primary">
+                                <ExternalLink className="size-2.5" /> Buka Window
+                            </Button>
                         </CardHeader>
                         <CardContent className="p-8 flex justify-center bg-slate-200/50 min-h-[500px]">
-                            <div 
-                                className={cn(
-                                    "bg-[#fffdf5] text-black shadow-2xl p-6 transition-all duration-500 relative", 
-                                    formData.receiptPaperSize === '58mm' ? "w-[220px]" : "w-[280px]"
-                                )} 
-                                style={{ 
-                                    minHeight: '400px', 
-                                    fontSize: `${formData.receiptFontSize}px`, 
-                                    fontWeight: formData.receiptFontWeight,
-                                    fontFamily: formData.receiptFontFamily === 'mono' ? "'Courier New', monospace" : formData.receiptFontFamily === 'serif' ? "Georgia, serif" : "Inter, sans-serif"
-                                }}
-                            >
-                                {formData.receiptShowLogo && (
-                                    <div className="flex justify-center mb-4 opacity-50 grayscale">
-                                        <Image src="/xenonplay-logo.png" alt="Logo" width={40} height={40} className="object-contain" />
+                            {activeSubTab === 'receipt_mode' ? (
+                                <div 
+                                    className={cn(
+                                        "bg-[#fffdf5] text-black shadow-2xl p-6 transition-all duration-500 relative", 
+                                        formData.receiptPaperSize === '58mm' ? "w-[220px]" : "w-[280px]"
+                                    )} 
+                                    style={{ 
+                                        minHeight: '400px', 
+                                        fontSize: `${formData.receiptFontSize}px`, 
+                                        fontWeight: formData.receiptFontWeight,
+                                        fontFamily: formData.receiptFontFamily === 'mono' ? "'Courier New', monospace" : formData.receiptFontFamily === 'serif' ? "Georgia, serif" : "Inter, sans-serif"
+                                    }}
+                                >
+                                    {formData.receiptShowLogo && (
+                                        <div className="flex justify-center mb-4 opacity-50 grayscale">
+                                            <Image src="/xenonplay-logo.png" alt="Logo" width={40} height={40} className="object-contain" />
+                                        </div>
+                                    )}
+                                    {formData.receiptShowStoreName && (
+                                        <div className="text-center font-black uppercase mb-1" style={{ fontSize: '1.2em' }}>{formData.storeName}</div>
+                                    )}
+                                    {formData.receiptShowAddress && (
+                                        <div className="text-center opacity-60 mb-2" style={{ fontSize: '0.8em' }}>{formData.address}</div>
+                                    )}
+                                    
+                                    <div className="border-t border-dashed border-black/30 my-4" />
+                                    <div className="space-y-4">
+                                        <div className="flex justify-between items-center" style={{ fontSize: '0.9em' }}>
+                                            <span className="font-bold uppercase">CONTOH ITEM x1</span>
+                                            <span className="font-mono">10.000</span>
+                                        </div>
+                                        <div className="border-t border-black/10 pt-4 flex justify-between items-end">
+                                            <span className="font-black uppercase text-[0.8em]">TOTAL</span>
+                                            <span className="font-black" style={{ fontSize: '1.4em' }}>10.000</span>
+                                        </div>
                                     </div>
-                                )}
-                                {formData.receiptShowStoreName && (
-                                    <div className="text-center font-black uppercase mb-1" style={{ fontSize: '1.2em' }}>{formData.storeName}</div>
-                                )}
-                                {formData.receiptShowAddress && (
-                                    <div className="text-center opacity-60 mb-2" style={{ fontSize: '0.8em' }}>{formData.address}</div>
-                                )}
-                                
-                                <div className="border-t border-dashed border-black/30 my-4" />
-                                
-                                <div className="space-y-4">
-                                    <div className="flex justify-between items-center" style={{ fontSize: '0.9em' }}>
-                                        <span className="font-bold uppercase">CONTOH ITEM x1</span>
-                                        <span className="font-mono">10.000</span>
-                                    </div>
-                                    <div className="border-t border-black/10 pt-4 flex justify-between items-end">
-                                        <span className="font-black uppercase text-[0.8em]">TOTAL</span>
-                                        <span className="font-black" style={{ fontSize: '1.4em' }}>10.000</span>
-                                    </div>
+                                    <div className="border-t border-dashed border-black/30 my-4" />
+                                    {formData.receiptShowFooter && (
+                                        <div className="text-center opacity-50 italic" style={{ fontSize: '0.8em' }}>{formData.receiptFooter}</div>
+                                    )}
                                 </div>
-
-                                <div className="border-t border-dashed border-black/30 my-4" />
-                                
-                                {formData.receiptShowFooter && (
-                                    <div className="text-center opacity-50 italic" style={{ fontSize: '0.8em' }}>{formData.receiptFooter}</div>
-                                )}
-                            </div>
+                            ) : (
+                                <div 
+                                    className={cn(
+                                        "bg-[#fffdf5] text-black shadow-2xl p-6 transition-all duration-500 relative", 
+                                        formData.couponPaperSize === '58mm' ? "w-[220px]" : "w-[280px]"
+                                    )} 
+                                    style={{ 
+                                        minHeight: '400px', 
+                                        fontSize: `${formData.couponFontSize}px`, 
+                                        fontWeight: formData.couponFontWeight,
+                                        fontFamily: formData.couponFontFamily === 'mono' ? "'Courier New', monospace" : formData.couponFontFamily === 'serif' ? "Georgia, serif" : "Inter, sans-serif"
+                                    }}
+                                >
+                                    {formData.couponShowLogo && (
+                                        <div className="flex justify-center mb-4 opacity-50 grayscale">
+                                            <Image src="/xenonplay-logo.png" alt="Logo" width={40} height={40} className="object-contain" />
+                                        </div>
+                                    )}
+                                    {formData.couponShowStoreName && (
+                                        <div className="text-center font-black uppercase mb-1" style={{ fontSize: '1.1em' }}>{formData.storeName}</div>
+                                    )}
+                                    <div className="border-t border-dashed border-black/30 my-4" />
+                                    <div className="text-center py-4">
+                                        <span className="text-[10px] font-black uppercase tracking-widest opacity-40">Kode Voucher</span>
+                                        <div className="text-4xl font-black font-mono tracking-widest my-2">72A9X</div>
+                                        <span className="text-[10px] font-bold uppercase text-primary">PAKET: 1 JAM MABAR</span>
+                                    </div>
+                                    <div className="border-t border-dashed border-black/30 my-4" />
+                                    <div className="text-[10px] opacity-80 leading-relaxed font-bold uppercase mb-2">Panduan:</div>
+                                    <div className="text-[9px] opacity-70 whitespace-pre-wrap">{formData.wifiInstructions}</div>
+                                    <div className="border-t border-dashed border-black/30 my-4" />
+                                    {formData.couponShowFooter && (
+                                        <div className="text-center opacity-50 italic" style={{ fontSize: '0.8em' }}>{formData.couponFooter}</div>
+                                    )}
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
+                    <div className="bg-primary/5 p-5 rounded-[2rem] border border-primary/10">
+                        <p className="text-[10px] text-primary/70 leading-relaxed font-bold uppercase text-center">
+                            Klik tombol "Buka Window" untuk melihat simulasi ukuran kertas thermal asli di tab baru browser Anda.
+                        </p>
+                    </div>
                 </div>
             </div>
         </TabsContent>
