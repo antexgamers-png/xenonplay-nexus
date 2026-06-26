@@ -59,7 +59,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import Image from 'next/image';
-import { cn, formatCurrency } from '@/lib/utils';
+import { cn, formatCurrency, formatDuration } from '@/lib/utils';
 
 const DEFAULT_FORM_DATA: GeneralSettings = {
   storeName: 'XenonPlay Manager',
@@ -225,9 +225,10 @@ export default function PengaturanPage() {
           <div class="center" style="padding: 15px 0;">
               <span style="font-size: 0.7em; font-weight: 900; letter-spacing: 3px; opacity: 0.4; display: block; margin-bottom: 8px; text-transform: uppercase;">Akses Internet Hotspot</span>
               <div style="border: 2px solid #000; padding: 10px; display: inline-block; min-width: 140px; border-radius: 8px;">
-                  <div style="font-size: 2.8em; font-weight: 900; letter-spacing: 6px; line-height: 1; margin: 0;">72A9X</div>
+                  <div style="font-size: 2.8em; font-weight: 900; letter-spacing: 6px; line-height: 1; margin: 0; white-space: nowrap;">72A9X</div>
               </div>
-              <div class="bold" style="font-size: 0.9em; text-transform: uppercase; margin-top: 12px; letter-spacing: 1px;">PAKET: CONTOH 1 JAM</div>
+              <div class="bold" style="font-size: 1.2em; text-transform: uppercase; margin-top: 12px; letter-spacing: 1px; color: #3b82f6;">DURASI: 2 JAM</div>
+              <div style="font-size: 0.85em; text-transform: uppercase; margin-top: 4px; opacity: 0.6;">PAKET: CONTOH 2 JAM</div>
           </div>
           <div class="sep" style="opacity: 0.3;"></div>
           <div style="padding: 5px 0;">
@@ -563,9 +564,10 @@ export default function PengaturanPage() {
                                     <div className="text-center py-4">
                                         <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 block mb-3">Voucher Hotspot</span>
                                         <div className="inline-block border-2 border-black px-4 py-2 rounded-lg">
-                                            <div className="text-4xl font-black font-mono tracking-[0.2em] leading-none">72A9X</div>
+                                            <div className="text-4xl font-black font-mono tracking-[0.2em] leading-none white-space-nowrap">72A9X</div>
                                         </div>
-                                        <span className="text-[10px] font-black uppercase text-primary block mt-4 tracking-widest">PAKET: 1 JAM MABAR</span>
+                                        <span className="text-[1.2em] font-black uppercase text-primary block mt-4 tracking-widest">DURASI: 2 JAM</span>
+                                        <span className="text-[9px] font-black uppercase opacity-40 block mt-1 tracking-widest">PAKET: 2 JAM MABAR</span>
                                     </div>
                                     <div className="border-t border-black/10 my-4" />
                                     <div className="text-[10px] opacity-80 leading-relaxed font-black uppercase mb-2 tracking-widest">Panduan:</div>

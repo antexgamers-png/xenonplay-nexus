@@ -14,7 +14,7 @@ import type { Transaction, Member, GeneralSettings, Shift } from '@/lib/types';
 import { ScrollArea } from '../ui/scroll-area';
 import { Separator } from '../ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { cn, formatCurrency } from '@/lib/utils';
+import { cn, formatCurrency, formatDuration } from '@/lib/utils';
 import { ShoppingCart, Gamepad2, Ticket, CheckCircle2, AlertCircle, Search, UserCheck, X, Printer, Loader2, Wifi } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { useCollection, useFirestore, useMemoFirebase, useDoc } from '@/firebase';
@@ -106,6 +106,7 @@ export function TransactionDetailDialog({
     const timeStr = format(transaction.timestamp, 'HH:mm');
     const shift = shifts?.find(s => s.id === transaction.shiftId);
     const cashierName = shift?.openedByName || 'Operator';
+    const formattedDuration = formatDuration(transaction.durationMinutes);
 
     const fontFamilyCSS = conf.fontFamily === 'mono' ? "'Courier New', monospace" : conf.fontFamily === 'serif' ? "Georgia, serif" : "Inter, sans-serif";
 
@@ -123,11 +124,12 @@ export function TransactionDetailDialog({
             </div>
             <div class="sep" style="opacity: 0.3;"></div>
             <div class="center" style="padding: 15px 0;">
-                <span style="font-size: 0.7em; font-weight: 900; letter-spacing: 3px; opacity: 0.4; display: block; margin-bottom: 8px; text-transform: uppercase;">Akses Internet Hotspot</span>
+                <span style="font-size: 0.8em; font-weight: 900; letter-spacing: 3px; opacity: 0.4; display: block; margin-bottom: 8px; text-transform: uppercase;">Akses Internet Hotspot</span>
                 <div style="border: 2px solid #000; padding: 10px; display: inline-block; min-width: 140px; border-radius: 8px;">
-                    <div style="font-size: 2.8em; font-weight: 900; letter-spacing: 6px; line-height: 1; margin: 0;">${transaction.claimCode}</div>
+                    <div style="font-size: 2.8em; font-weight: 900; letter-spacing: 6px; line-height: 1; margin: 0; white-space: nowrap;">${transaction.claimCode}</div>
                 </div>
-                <div class="bold" style="font-size: 0.9em; text-transform: uppercase; margin-top: 12px; letter-spacing: 1px;">PAKET: ${transaction.packageName || 'HOTSPOT'}</div>
+                <div class="bold" style="font-size: 1.2em; text-transform: uppercase; margin-top: 12px; letter-spacing: 1px; color: #3b82f6;">DURASI: ${formattedDuration}</div>
+                <div style="font-size: 0.85em; text-transform: uppercase; margin-top: 4px; opacity: 0.6;">PAKET: ${transaction.packageName || 'HOTSPOT'}</div>
             </div>
             <div class="sep" style="opacity: 0.3;"></div>
             <div style="padding: 5px 0;">
