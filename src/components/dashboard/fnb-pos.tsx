@@ -231,17 +231,16 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
               font-family: 'Courier New', Courier, monospace;
             }
             .receipt-paper { 
-              width: 100vw;
-              max-width: ${paperSize};
-              padding: 12mm 6mm; 
+              width: ${paperSize};
+              padding: 8mm 4mm; 
               background: #fff;
-              font-size: 13px; 
+              font-size: 12px; 
               line-height: 1.3; 
               color: #000;
               box-sizing: border-box;
-              border: 1px solid #f1f5f9; /* Ghost border for preview */
+              border: 1px solid #e2e8f0; /* Garis panduan visual */
               box-shadow: 0 10px 40px rgba(0,0,0,0.05);
-              margin-bottom: 80px;
+              margin: 20px 0 80px;
             }
             .center { text-align: center; } 
             .right { text-align: right; } 
@@ -250,11 +249,11 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
             .item-block { margin-bottom: 8px; }
             .item-name { font-weight: bold; display: block; text-transform: uppercase; }
             .flex { display: flex; justify-content: space-between; }
-            .logo { width: 60px; height: auto; margin: 0 auto 12px; display: block; filter: grayscale(1); }
-            .summary-row { display: flex; justify-content: space-between; margin: 5px 0; }
-            .total-row { display: flex; justify-content: space-between; margin: 10px 0; font-weight: bold; font-size: 16px; border-top: 1px solid #000; padding-top: 8px; }
+            .logo { width: 50px; height: auto; margin: 0 auto 10px; display: block; filter: grayscale(1); }
+            .summary-row { display: flex; justify-content: space-between; margin: 4px 0; }
+            .total-row { display: flex; justify-content: space-between; margin: 8px 0; font-weight: bold; font-size: 15px; border-top: 1px solid #000; padding-top: 6px; }
             
-            /* Modern FAB Styles */
+            /* UI Controls */
             .fab-container {
                 position: fixed;
                 bottom: 30px;
@@ -268,9 +267,9 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
             .fab-main {
                 width: 60px;
                 height: 60px;
-                background: #0ea5e9; /* Azure Cyan */
+                background: #0ea5e9;
                 color: white;
-                border-radius: 18px; /* Modern Squircle */
+                border-radius: 18px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -280,7 +279,7 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
                 transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             }
             .fab-main svg { width: 30px; height: 30px; fill: currentColor; }
-            .fab-main.active { transform: rotate(135deg); background: #ef4444; box-shadow: 0 10px 25px -5px rgba(239, 68, 68, 0.4); }
+            .fab-main.active { transform: rotate(135deg); background: #ef4444; }
             
             .fab-menu {
                 display: flex;
@@ -305,17 +304,11 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
                 box-shadow: 0 10px 20px rgba(0,0,0,0.1);
                 cursor: pointer;
                 border: 1px solid #f1f5f9;
-                transition: all 0.2s;
             }
-            .fab-item:hover { background: #f8fafc; color: #0ea5e9; transform: translateX(-5px); }
-            .fab-item svg { width: 22px; height: 22px; fill: currentColor; }
 
-            @media (max-width: 480px) {
-                .receipt-paper { width: 96vw; padding: 8mm 6mm; border-radius: 12px; }
-            }
             @media print {
               .fab-container { display: none; }
-              .receipt-paper { border: none; box-shadow: none; width: ${paperSize}; margin: 0; }
+              .receipt-paper { border: none; box-shadow: none; width: ${paperSize}; margin: 0; padding: 0; }
               body { background: #fff; }
             }
           </style>
@@ -324,14 +317,14 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
             <div id="receipt-target" class="receipt-paper">
                 <div class="center">
                     <img src="/xplogo-monochrome.png" class="logo" />
-                    <div class="bold" style="font-size: 16px;">${storeName.toUpperCase()}</div>
-                    <div style="font-size: 11px; opacity: 0.8;">${address}</div>
-                    <div style="margin-top: 8px; font-size: 11px;">${headerMsg}</div>
+                    <div class="bold" style="font-size: 14px;">${storeName.toUpperCase()}</div>
+                    <div style="font-size: 10px; opacity: 0.8;">${address}</div>
+                    <div style="margin-top: 6px; font-size: 10px;">${headerMsg}</div>
                 </div>
                 
                 <div class="sep"></div>
                 
-                <div class="flex" style="font-size: 11px;">
+                <div class="flex" style="font-size: 10px;">
                     <div>
                     <div>Nota : ${lastOrderDetails.id.substring(0,8).toUpperCase()}</div>
                     <div>Tgl  : ${dateStr}</div>
@@ -347,8 +340,8 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
 
                 ${lastOrderDetails.items.map((item: any, idx: number) => `
                     <div class="item-block">
-                    <span class="item-name">${idx + 1}. ${item.name}</span>
-                    <div class="flex">
+                    <span class="item-name" style="font-size: 10px;">${idx + 1}. ${item.name}</span>
+                    <div class="flex" style="font-size: 10px;">
                         <span>${item.quantity} x ${item.price.toLocaleString('id-ID')}</span>
                         <span class="right bold">${(item.price * item.quantity).toLocaleString('id-ID')}</span>
                     </div>
@@ -357,11 +350,11 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
 
                 <div class="sep"></div>
 
-                <div class="summary-row">
+                <div class="summary-row" style="font-size: 10px;">
                     <span>Total Qty</span>
                     <span class="right">${totalQty} Items</span>
                 </div>
-                <div class="summary-row">
+                <div class="summary-row" style="font-size: 10px;">
                     <span>Sub Total</span>
                     <span class="right">${lastOrderDetails.total.toLocaleString('id-ID')}</span>
                 </div>
@@ -371,17 +364,17 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
                     <span class="right">${lastOrderDetails.total.toLocaleString('id-ID')}</span>
                 </div>
 
-                <div class="summary-row" style="opacity: 0.8;">
+                <div class="summary-row" style="opacity: 0.8; font-size: 10px;">
                     <span>Bayar Tunai</span>
                     <span class="right">${lastOrderDetails.cash.toLocaleString('id-ID')}</span>
                 </div>
-                <div class="summary-row">
+                <div class="summary-row" style="font-size: 11px;">
                     <span class="bold">Kembali</span>
                     <span class="right bold">${lastOrderDetails.change.toLocaleString('id-ID')}</span>
                 </div>
 
                 <div class="sep"></div>
-                <div class="center" style="font-size: 11px; font-style: italic; white-space: pre-wrap;">${footerMsg}</div>
+                <div class="center" style="font-size: 10px; font-style: italic; white-space: pre-wrap;">${footerMsg}</div>
             </div>
 
             <div class="fab-container">
@@ -411,15 +404,17 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
 
                 function exportImage() {
                     const target = document.getElementById('receipt-target');
-                    target.style.border = 'none'; // Hide ghost border for export
+                    target.style.border = 'none';
                     target.style.boxShadow = 'none';
+                    target.style.margin = '0';
                     html2canvas(target, { backgroundColor: '#fff', scale: 3 }).then(canvas => {
                         const link = document.createElement('a');
                         link.download = 'XenonPlay_${lastOrderDetails.id.substring(0,8)}.png';
                         link.href = canvas.toDataURL('image/png');
                         link.click();
-                        target.style.border = '1px solid #f1f5f9'; // Restore ghost border
+                        target.style.border = '1px solid #e2e8f0';
                         target.style.boxShadow = '0 10px 40px rgba(0,0,0,0.05)';
+                        target.style.margin = '20px 0 80px';
                     });
                 }
 
@@ -427,6 +422,7 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
                     const target = document.getElementById('receipt-target');
                     target.style.border = 'none';
                     target.style.boxShadow = 'none';
+                    target.style.margin = '0';
                     const { jsPDF } = window.jspdf;
                     html2canvas(target, { scale: 2 }).then(canvas => {
                         const imgData = canvas.toDataURL('image/png');
@@ -437,8 +433,9 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
                         });
                         pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 2, canvas.height / 2);
                         pdf.save('XenonPlay_${lastOrderDetails.id.substring(0,8)}.pdf');
-                        target.style.border = '1px solid #f1f5f9';
+                        target.style.border = '1px solid #e2e8f0';
                         target.style.boxShadow = '0 10px 40px rgba(0,0,0,0.05)';
+                        target.style.margin = '20px 0 80px';
                     });
                 }
             </script>
