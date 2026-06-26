@@ -4,7 +4,7 @@ import type { UserRole, UserProfile } from '@/lib/types';
 import type { ReactNode } from 'react';
 import React, { useEffect, createContext, useContext, useState, useRef, useCallback } from 'react';
 import { useUser } from '@/firebase/provider';
-import { doc, getDoc, setDoc, collection, getDocs, limit, query, onSnapshot, where } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, limit, query, where } from 'firebase/firestore';
 import { useFirestore, useAuth as useFirebaseAuth } from '@/firebase';
 import { usePathname, useRouter } from 'next/navigation';
 import { signInAnonymously, signOut } from 'firebase/auth';
@@ -129,14 +129,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const userDocRef = doc(firestore, 'users', user.uid);
         const userDoc = await getDoc(userDocRef);
-        const userData = userDoc.exists() ? userDoc.data() as UserProfile : null;
         
-        if (userData?.role) {
+        // JIKA DOKUMEN ADA: Gunakan data yang ada, JANGAN evaluasi ulang role
+        if (userDoc.exists()) {
+          const userData = userDoc.data() as UserProfile;
           setRole(userData.role);
-          if (!localStorage.getItem('xenon_session_id') && userData.currentSessionId) {
-              localStorage.setItem('xenon_session_id', userData.currentSessionId);
+          
+          // Update session ID dan last login saja tanpa menyentuh role
+          const mySessionId = localStorage.getItem('xenon_session_id') || userData.currentSessionId || Math.random().toString(36).substring(2, 15);
+          if (!localStorage.getItem('xenon_session_id')) {
+              localStorage.setItem('xenon_session_id', mySessionId);
           }
+          
+          await setDoc(userDocRef, { 
+            currentSessionId: mySessionId, 
+            lastLogin: Date.now() 
+          }, { merge: true });
         } 
+        // JIKA DOKUMEN TIDAK ADA (User Baru): Baru jalankan logika penentuan role
         else if (user.email) {
           const adminQuery = query(collection(firestore, 'users'), where('role', '==', 'admin'), limit(1));
           const adminSnap = await getDocs(adminQuery);
@@ -153,12 +163,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             email: user.email, 
             role: newRole,
             displayName: user.displayName || user.email.split('@')[0],
-            createdAt: userData?.createdAt || Date.now(), 
+            createdAt: Date.now(), 
             currentSessionId: mySessionId, 
             lastLogin: Date.now()
           };
           
-          await setDoc(userDocRef, newUserDoc, { merge: true });
+          await setDoc(userDocRef, newUserDoc);
           setRole(newRole);
         }
       } catch (error) {
