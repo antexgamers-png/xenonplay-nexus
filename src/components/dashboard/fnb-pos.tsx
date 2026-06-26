@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -215,136 +216,207 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
       const html = `
       <html>
         <head>
-          <title>Nota Digital Preview</title>
+          <title>Nota Digital Preview - ${lastOrderDetails.id}</title>
+          <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+          <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
           <style>
             @page { margin: 0; size: auto; }
             html, body { 
               margin: 0; 
               padding: 0; 
               height: auto; 
-              background: #1e293b; 
+              background: #0f172a; 
               display: flex;
               justify-content: center;
-              min-height: 100vh;
+              font-family: 'Inter', sans-serif;
+            }
+            .preview-container {
+                width: 100%;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                padding: 40px 20px;
+                box-sizing: border-box;
             }
             .receipt-paper { 
               width: ${paperSize}; 
               padding: 8mm 4mm; 
               background: #fff;
               font-family: 'Courier New', Courier, monospace; 
-              font-size: 9px; 
+              font-size: 10px; 
               line-height: 1.2; 
               color: #000;
               height: fit-content;
-              box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-              margin: 20px 0;
+              box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+              position: relative;
             }
             .center { text-align: center; } 
             .right { text-align: right; } 
             .bold { font-weight: bold; }
-            .sep { border-top: 1px dashed #000; margin: 6px 0; }
-            .item-block { margin-bottom: 5px; }
+            .sep { border-top: 1px dashed #000; margin: 8px 0; }
+            .item-block { margin-bottom: 6px; }
             .item-name { font-weight: bold; display: block; text-transform: uppercase; }
             .flex { display: flex; justify-content: space-between; }
-            .logo { width: 50px; height: auto; margin: 0 auto 6px; display: block; filter: grayscale(1) contrast(2); }
-            .summary-row { display: flex; justify-content: space-between; margin: 3px 0; }
-            .total-row { display: flex; justify-content: space-between; margin: 6px 0; font-weight: bold; font-size: 11px; border-top: 1px solid #000; padding-top: 4px; }
+            .logo { width: 50px; height: auto; margin: 0 auto 8px; display: block; filter: grayscale(1) contrast(2); }
+            .summary-row { display: flex; justify-content: space-between; margin: 4px 0; }
+            .total-row { display: flex; justify-content: space-between; margin: 8px 0; font-weight: bold; font-size: 12px; border-top: 1px solid #000; padding-top: 6px; }
             .pre-wrap { white-space: pre-wrap; }
-            .btn-print {
+            
+            /* Floating Controls */
+            .controls {
                 position: fixed;
                 bottom: 30px;
-                right: 30px;
-                padding: 15px 30px;
-                background: #3b82f6;
-                color: #fff;
+                left: 50%;
+                transform: translateX(-50%);
+                display: flex;
+                gap: 12px;
+                z-index: 1000;
+                background: rgba(30, 41, 59, 0.8);
+                backdrop-filter: blur(12px);
+                padding: 12px 24px;
+                border-radius: 24px;
+                border: 1px solid rgba(255,255,255,0.1);
+                box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3);
+            }
+            .btn {
+                padding: 10px 20px;
                 border: none;
-                border-radius: 50px;
-                font-family: sans-serif;
+                border-radius: 12px;
+                font-size: 11px;
                 font-weight: 900;
                 text-transform: uppercase;
-                letter-spacing: 2px;
+                letter-spacing: 1px;
                 cursor: pointer;
-                box-shadow: 0 10px 20px rgba(59,130,246,0.4);
-                transition: all 0.3s;
-                z-index: 999;
+                transition: all 0.2s;
+                display: flex;
+                align-items: center;
+                gap: 8px;
             }
-            .btn-print:hover { transform: translateY(-3px); box-shadow: 0 15px 30px rgba(59,130,246,0.6); }
+            .btn-print { background: #3b82f6; color: #fff; }
+            .btn-img { background: #10b981; color: #fff; }
+            .btn-pdf { background: #f59e0b; color: #fff; }
+            .btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
+            .btn:active { transform: translateY(0); }
+
             @media print {
-              html, body { background: #fff; }
+              body { background: #fff; }
+              .preview-container { padding: 0; }
               .receipt-paper { 
                 margin: 0; 
                 box-shadow: none; 
                 width: 100%;
                 padding: 0;
               }
-              .btn-print { display: none; }
+              .controls { display: none; }
+            }
+            @media (max-width: 480px) {
+                .receipt-paper { transform: scale(0.95); transform-origin: top center; }
+                .controls { width: 90%; justify-content: center; flex-wrap: wrap; bottom: 20px; }
+                .btn { padding: 8px 12px; font-size: 9px; }
             }
           </style>
         </head>
         <body>
-          <div class="receipt-paper">
-            <div class="center">
-                <img src="/xplogo-monochrome.png" class="logo" />
-                <div class="bold" style="font-size: 11px;">${storeName.toUpperCase()}</div>
-                <div style="font-size: 8.5px; opacity: 0.8;">${address}</div>
-                <div style="margin-top: 4px;">${headerMsg}</div>
-            </div>
-            
-            <div class="sep"></div>
-            
-            <div class="flex" style="font-size: 8px; opacity: 0.7;">
-                <div>
-                   <div>No   : ${lastOrderDetails.id.substring(0,8).toUpperCase()}</div>
-                   <div>Tgl  : ${dateStr}</div>
-                   <div>Jam  : ${timeStr}</div>
+          <div class="preview-container">
+            <div id="receipt-target" class="receipt-paper">
+                <div class="center">
+                    <img src="/xplogo-monochrome.png" class="logo" />
+                    <div class="bold" style="font-size: 12px;">${storeName.toUpperCase()}</div>
+                    <div style="font-size: 9px; opacity: 0.8;">${address}</div>
+                    <div style="margin-top: 6px; font-size: 9px;">${headerMsg}</div>
                 </div>
-                <div class="right">
-                   <div>Kasir:</div>
-                   <div class="bold">${lastOrderDetails.cashier.toUpperCase()}</div>
+                
+                <div class="sep"></div>
+                
+                <div class="flex" style="font-size: 9px; opacity: 0.8;">
+                    <div>
+                    <div>No   : ${lastOrderDetails.id.substring(0,8).toUpperCase()}</div>
+                    <div>Tgl  : ${dateStr}</div>
+                    <div>Jam  : ${timeStr}</div>
+                    </div>
+                    <div class="right">
+                    <div>Kasir:</div>
+                    <div class="bold">${lastOrderDetails.cashier.toUpperCase()}</div>
+                    </div>
                 </div>
-            </div>
 
-            <div class="sep"></div>
+                <div class="sep"></div>
 
-            ${lastOrderDetails.items.map((item: any, idx: number) => `
-                <div class="item-block">
-                <span class="item-name">${idx + 1}. ${item.name}</span>
-                <div class="flex">
-                    <span>${item.quantity} x ${item.price.toLocaleString('id-ID')}</span>
-                    <span class="right bold">${(item.price * item.quantity).toLocaleString('id-ID')}</span>
+                ${lastOrderDetails.items.map((item: any, idx: number) => `
+                    <div class="item-block">
+                    <span class="item-name">${idx + 1}. ${item.name}</span>
+                    <div class="flex">
+                        <span>${item.quantity} x ${item.price.toLocaleString('id-ID')}</span>
+                        <span class="right bold">${(item.price * item.quantity).toLocaleString('id-ID')}</span>
+                    </div>
+                    </div>
+                `).join('')}
+
+                <div class="sep"></div>
+
+                <div class="summary-row">
+                    <span>Total Qty</span>
+                    <span class="right">${totalQty} Items</span>
                 </div>
+                <div class="summary-row">
+                    <span>Sub Total</span>
+                    <span class="right">${lastOrderDetails.total.toLocaleString('id-ID')}</span>
                 </div>
-            `).join('')}
 
-            <div class="sep"></div>
+                <div class="total-row">
+                    <span>TOTAL AKHIR</span>
+                    <span class="right">${lastOrderDetails.total.toLocaleString('id-ID')}</span>
+                </div>
 
-            <div class="summary-row">
-                <span>Total Qty</span>
-                <span class="right">${totalQty} Items</span>
-            </div>
-            <div class="summary-row">
-                <span>Sub Total</span>
-                <span class="right">${lastOrderDetails.total.toLocaleString('id-ID')}</span>
-            </div>
+                <div class="summary-row" style="opacity: 0.8;">
+                    <span>Bayar Tunai</span>
+                    <span class="right">${lastOrderDetails.cash.toLocaleString('id-ID')}</span>
+                </div>
+                <div class="summary-row">
+                    <span class="bold">Kembali</span>
+                    <span class="right bold">${lastOrderDetails.change.toLocaleString('id-ID')}</span>
+                </div>
 
-            <div class="total-row">
-                <span>TOTAL AKHIR</span>
-                <span class="right">${lastOrderDetails.total.toLocaleString('id-ID')}</span>
+                <div class="sep"></div>
+                <div class="center pre-wrap" style="font-size: 9px; font-style: italic;">${footerMsg}</div>
             </div>
-
-            <div class="summary-row" style="opacity: 0.8;">
-                <span>Bayar Tunai</span>
-                <span class="right">${lastOrderDetails.cash.toLocaleString('id-ID')}</span>
-            </div>
-            <div class="summary-row">
-                <span class="bold">Kembali</span>
-                <span class="right bold">${lastOrderDetails.change.toLocaleString('id-ID')}</span>
-            </div>
-
-            <div class="sep"></div>
-            <div class="center pre-wrap" style="font-size: 8.5px; font-style: italic;">${footerMsg}</div>
           </div>
-          <button class="btn-print" onclick="window.print()">Cetak Ke Printer</button>
+
+          <div class="controls">
+            <button class="btn btn-print" onclick="window.print()">Cetak</button>
+            <button class="btn btn-img" onclick="exportImage()">Simpan PNG</button>
+            <button class="btn btn-pdf" onclick="exportPDF()">Simpan PDF</button>
+          </div>
+
+          <script>
+            function exportImage() {
+                const target = document.getElementById('receipt-target');
+                html2canvas(target, { 
+                    backgroundColor: null,
+                    scale: 3 // Higher quality
+                }).then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = 'Nota_XenonPlay_${lastOrderDetails.id.substring(0,8)}.png';
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                });
+            }
+
+            function exportPDF() {
+                const target = document.getElementById('receipt-target');
+                const { jsPDF } = window.jspdf;
+                html2canvas(target, { scale: 2 }).then(canvas => {
+                    const imgData = canvas.toDataURL('image/png');
+                    const pdf = new jsPDF({
+                        orientation: 'portrait',
+                        unit: 'px',
+                        format: [canvas.width / 2, canvas.height / 2]
+                    });
+                    pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 2, canvas.height / 2);
+                    pdf.save('Nota_XenonPlay_${lastOrderDetails.id.substring(0,8)}.pdf');
+                });
+            }
+          </script>
         </body>
       </html>`;
 
