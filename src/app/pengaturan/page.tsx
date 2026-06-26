@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -23,7 +24,9 @@ import {
     Printer, 
     Eye,
     Settings2,
-    RotateCcw
+    RotateCcw,
+    Type,
+    Bold
 } from 'lucide-react';
 import type { GeneralSettings } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -61,8 +64,19 @@ const DEFAULT_FORM_DATA: GeneralSettings = {
   nightThemeStart: '18:00',
   receiptPaperSize: '58mm',
   receiptHeader: 'Selamat datang di toko kami',
-  receiptFooter: 'Terima kasih telah berkunjung!'
+  receiptFooter: 'Terima kasih telah berkunjung!',
+  receiptFontSize: 12,
+  receiptFontWeight: '500'
 };
+
+const FONT_WEIGHT_OPTIONS = [
+    { value: '400', label: 'Normal' },
+    { value: '500', label: 'Medium' },
+    { value: '600', label: 'Semi Bold' },
+    { value: '700', label: 'Tebal (Bold)' },
+    { value: '800', label: 'Sangat Tebal' },
+    { value: '900', label: 'Hitam (Black)' },
+];
 
 export default function PengaturanPage() {
   const firestore = useFirestore();
@@ -95,7 +109,9 @@ export default function PengaturanPage() {
     if (!currentSettings) return false;
     return formData.receiptPaperSize !== (currentSettings.receiptPaperSize || DEFAULT_FORM_DATA.receiptPaperSize) ||
            formData.receiptHeader !== (currentSettings.receiptHeader || DEFAULT_FORM_DATA.receiptHeader) ||
-           formData.receiptFooter !== (currentSettings.receiptFooter || DEFAULT_FORM_DATA.receiptFooter);
+           formData.receiptFooter !== (currentSettings.receiptFooter || DEFAULT_FORM_DATA.receiptFooter) ||
+           formData.receiptFontSize !== (currentSettings.receiptFontSize || DEFAULT_FORM_DATA.receiptFontSize) ||
+           formData.receiptFontWeight !== (currentSettings.receiptFontWeight || DEFAULT_FORM_DATA.receiptFontWeight);
   }, [formData, currentSettings]);
 
   const hasThemeChanges = useMemo(() => {
@@ -142,6 +158,8 @@ export default function PengaturanPage() {
             receiptPaperSize: currentSettings.receiptPaperSize || DEFAULT_FORM_DATA.receiptPaperSize,
             receiptHeader: currentSettings.receiptHeader || DEFAULT_FORM_DATA.receiptHeader,
             receiptFooter: currentSettings.receiptFooter || DEFAULT_FORM_DATA.receiptFooter,
+            receiptFontSize: currentSettings.receiptFontSize || DEFAULT_FORM_DATA.receiptFontSize,
+            receiptFontWeight: currentSettings.receiptFontWeight || DEFAULT_FORM_DATA.receiptFontWeight,
         }));
     } else if (type === 'theme') {
         setFormData(prev => ({
@@ -271,23 +289,53 @@ export default function PengaturanPage() {
                     <Card className="rounded-[2rem] border-primary/20 bg-primary/[0.01] overflow-hidden shadow-sm">
                         <CardHeader className="bg-primary/5 border-b border-primary/10">
                             <CardTitle className="text-lg font-black uppercase tracking-tight">Konfigurasi Struk</CardTitle>
-                            <CardDescription className="text-xs text-primary/60">Sesuaikan lebar kertas dan pesan khusus pada struk belanja.</CardDescription>
+                            <CardDescription className="text-xs text-primary/60">Sesuaikan lebar kertas dan tampilan teks agar hasil cetak tajam.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6 pt-8">
-                            <div className="space-y-3">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Ukuran Kertas Thermal</Label>
-                                <Select 
-                                    value={formData.receiptPaperSize} 
-                                    onValueChange={(val) => setFormData({...formData, receiptPaperSize: val})}
-                                >
-                                    <SelectTrigger className="h-12 bg-background border-border rounded-xl font-bold">
-                                        <SelectValue placeholder="Pilih ukuran" />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-xl">
-                                        <SelectItem value="58mm" className="font-bold">58mm (Kecil - Standar)</SelectItem>
-                                        <SelectItem value="80mm" className="font-bold">80mm (Besar / Wide)</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="space-y-3">
+                                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Lebar Kertas</Label>
+                                    <Select 
+                                        value={formData.receiptPaperSize} 
+                                        onValueChange={(val) => setFormData({...formData, receiptPaperSize: val})}
+                                    >
+                                        <SelectTrigger className="h-12 bg-background border-border rounded-xl font-bold">
+                                            <SelectValue placeholder="Pilih ukuran" />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-xl">
+                                            <SelectItem value="58mm" className="font-bold">58mm</SelectItem>
+                                            <SelectItem value="80mm" className="font-bold">80mm</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-3">
+                                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Ukuran Font (px)</Label>
+                                    <div className="relative">
+                                        <Type className="absolute left-3.5 top-3.5 size-4 text-muted-foreground" />
+                                        <Input 
+                                            type="number" 
+                                            value={formData.receiptFontSize} 
+                                            onChange={(e) => setFormData({...formData, receiptFontSize: parseInt(e.target.value) || 12})}
+                                            className="h-12 pl-10 rounded-xl bg-background font-bold"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-3">
+                                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Ketebalan Font</Label>
+                                    <Select 
+                                        value={formData.receiptFontWeight} 
+                                        onValueChange={(val) => setFormData({...formData, receiptFontWeight: val})}
+                                    >
+                                        <SelectTrigger className="h-12 bg-background border-border rounded-xl font-bold">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-xl">
+                                            {FONT_WEIGHT_OPTIONS.map(opt => (
+                                                <SelectItem key={opt.value} value={opt.value} className="font-bold">{opt.label}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                             </div>
 
                             <div className="space-y-3">
@@ -306,7 +354,7 @@ export default function PengaturanPage() {
                                     value={formData.receiptFooter}
                                     onChange={(e) => setFormData({...formData, receiptFooter: e.target.value})}
                                     placeholder="Terima kasih..."
-                                    className="min-h-[120px] bg-background border-border rounded-xl font-bold py-4 text-xs leading-relaxed"
+                                    className="min-h-[100px] bg-background border-border rounded-xl font-bold py-4 text-xs leading-relaxed"
                                 />
                             </div>
                         </CardContent>
@@ -332,10 +380,14 @@ export default function PengaturanPage() {
                         <CardContent className="p-8 flex justify-center bg-slate-200/50">
                             <div 
                                 className={cn(
-                                    "bg-white text-black shadow-2xl p-5 font-mono text-[8px] leading-tight transition-all duration-500",
+                                    "bg-white text-black shadow-2xl p-5 font-mono leading-tight transition-all duration-500",
                                     formData.receiptPaperSize === '58mm' ? "w-[220px]" : "w-[300px]"
                                 )}
-                                style={{ minHeight: '420px' }}
+                                style={{ 
+                                    minHeight: '420px',
+                                    fontSize: `${(formData.receiptFontSize || 12) * 0.7}px`, // Preview scaled
+                                    fontWeight: formData.receiptFontWeight || '500'
+                                }}
                             >
                                 <div className="text-center space-y-1 mb-4">
                                     <div className="flex justify-center mb-2">
@@ -347,14 +399,14 @@ export default function PengaturanPage() {
                                             className="contrast-200"
                                         />
                                     </div>
-                                    <div className="font-bold text-[10px] uppercase leading-none">{formData.storeName || 'NAMA TOKO'}</div>
-                                    <div className="text-[7.5px] leading-tight opacity-70">{formData.address || 'Alamat Belum Diatur'}</div>
-                                    <div className="text-[7.5px] mt-1">{formData.receiptHeader}</div>
+                                    <div className="uppercase leading-none" style={{ fontSize: '1.2em', fontWeight: 'bold' }}>{formData.storeName || 'NAMA TOKO'}</div>
+                                    <div className="leading-tight opacity-70" style={{ fontSize: '0.8em' }}>{formData.address || 'Alamat Belum Diatur'}</div>
+                                    <div className="mt-1" style={{ fontSize: '0.8em' }}>{formData.receiptHeader}</div>
                                 </div>
 
                                 <div className="border-t border-dashed border-black/30 my-2" />
 
-                                <div className="flex justify-between text-[7px] opacity-80">
+                                <div className="flex justify-between opacity-80" style={{ fontSize: '0.8em' }}>
                                     <div className="space-y-0.5">
                                         <div>Nota : INV-PREVIEW</div>
                                         <div>Tgl  : 20/05/2026</div>
@@ -387,7 +439,7 @@ export default function PengaturanPage() {
 
                                 <div className="border-t border-dashed border-black/30 my-2" />
 
-                                <div className="space-y-1 text-[7.5px]">
+                                <div className="space-y-1" style={{ fontSize: '0.9em' }}>
                                     <div className="flex justify-between">
                                         <span>Total QTY : 3</span>
                                     </div>
@@ -395,7 +447,7 @@ export default function PengaturanPage() {
                                         <span>Sub Total</span>
                                         <span className="font-bold">Rp 35.000</span>
                                     </div>
-                                    <div className="flex justify-between font-black text-[9px] border-t border-black pt-1.5 mt-1.5">
+                                    <div className="flex justify-between border-t border-black pt-1.5 mt-1.5" style={{ fontSize: '1.2em', fontWeight: '900' }}>
                                         <span>TOTAL</span>
                                         <span>Rp 35.000</span>
                                     </div>
@@ -411,7 +463,7 @@ export default function PengaturanPage() {
 
                                 <div className="border-t border-dashed border-black/30 my-4" />
                                 
-                                <div className="text-center whitespace-pre-wrap leading-relaxed text-[7.5px] italic">
+                                <div className="text-center whitespace-pre-wrap leading-relaxed italic" style={{ fontSize: '0.8em' }}>
                                     {formData.receiptFooter}
                                 </div>
 
@@ -419,7 +471,7 @@ export default function PengaturanPage() {
                             </div>
                         </CardContent>
                         <CardFooter className="bg-card border-t py-3 flex justify-center">
-                            <p className="text-[8px] font-black uppercase text-muted-foreground tracking-[0.2em]">Visualisasi Kertas {formData.receiptPaperSize}</p>
+                            <p className="text-[8px] font-black uppercase text-muted-foreground tracking-[0.2em]">Visualisasi Kertas {formData.receiptPaperSize} • Font {formData.receiptFontSize}px</p>
                         </CardFooter>
                     </Card>
                 </div>

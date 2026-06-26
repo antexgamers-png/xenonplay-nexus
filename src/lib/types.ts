@@ -122,6 +122,8 @@ export interface GeneralSettings {
   receiptPaperSize?: string;
   receiptHeader?: string;
   receiptFooter?: string;
+  receiptFontSize?: number;
+  receiptFontWeight?: string;
 }
 
 export interface LandingSettings {

@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -83,6 +84,8 @@ export function TransactionDetailDialog({
     const storeName = settings?.storeName || 'XENONPLAY';
     const address = settings?.address || '';
     const paperSize = settings?.receiptPaperSize || '58mm';
+    const fontSize = settings?.receiptFontSize || 12;
+    const fontWeight = settings?.receiptFontWeight || '500';
     const headerMsg = settings?.receiptHeader || 'Selamat datang di toko kami';
     const footerMsg = settings?.receiptFooter || 'Terimakasih Telah Bermain\n"Good Game, Well Played"';
 
@@ -125,7 +128,7 @@ export function TransactionDetailDialog({
           <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
           <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
           <style>
-            @page { margin: 0; size: auto; }
+            @page { margin: 0; size: ${paperSize} auto; }
             html, body { 
               margin: 0; 
               padding: 0; 
@@ -134,18 +137,21 @@ export function TransactionDetailDialog({
               flex-direction: column;
               align-items: center;
               font-family: 'Courier New', Courier, monospace;
+              height: auto;
             }
             .receipt-paper { 
               width: ${paperSize};
               padding: 8mm 4mm; 
               background: #fff;
-              font-size: 12px; 
+              font-size: ${fontSize}px; 
+              font-weight: ${fontWeight};
               line-height: 1.3; 
               color: #000;
               box-sizing: border-box;
               border: 1px solid #e2e8f0;
               box-shadow: 0 10px 40px rgba(0,0,0,0.05);
               margin: 20px 0 80px;
+              height: fit-content;
             }
             .center { text-align: center; } 
             .right { text-align: right; } 
@@ -156,7 +162,7 @@ export function TransactionDetailDialog({
             .flex { display: flex; justify-content: space-between; }
             .logo { width: 50px; height: auto; margin: 0 auto 10px; display: block; filter: grayscale(1); }
             .summary-row { display: flex; justify-content: space-between; margin: 4px 0; }
-            .total-row { display: flex; justify-content: space-between; margin: 8px 0; font-weight: bold; font-size: 15px; border-top: 1px solid #000; padding-top: 6px; }
+            .total-row { display: flex; justify-content: space-between; margin: 8px 0; font-weight: 900; font-size: 1.2em; border-top: 1px solid #000; padding-top: 6px; }
             
             /* UI Controls */
             .fab-container {
@@ -222,14 +228,14 @@ export function TransactionDetailDialog({
             <div id="receipt-target" class="receipt-paper">
                 <div class="center">
                     <img src="/xplogo-monochrome.png" class="logo" />
-                    <div class="bold" style="font-size: 14px;">${storeName.toUpperCase()}</div>
-                    <div style="font-size: 10px; opacity: 0.8;">${address}</div>
-                    <div style="margin-top: 6px; font-size: 10px;">${headerMsg}</div>
+                    <div class="bold" style="font-size: 1.2em;">${storeName.toUpperCase()}</div>
+                    <div style="font-size: 0.8em; opacity: 0.8;">${address}</div>
+                    <div style="margin-top: 6px; font-size: 0.8em;">${headerMsg}</div>
                 </div>
                 
                 <div class="sep"></div>
                 
-                <div class="flex" style="font-size: 10px;">
+                <div class="flex" style="font-size: 0.8em;">
                     <div>
                     <div>Nota : ${transaction.id.substring(0,8).toUpperCase()}</div>
                     <div>Tgl  : ${dateStr}</div>
@@ -245,8 +251,8 @@ export function TransactionDetailDialog({
 
                 ${printLines.map((item, idx) => `
                     <div class="item-block">
-                    <span class="item-name" style="font-size: 10px;">${idx + 1}. ${item.name}</span>
-                    <div class="flex" style="font-size: 10px;">
+                    <span class="item-name" style="font-size: 0.9em;">${idx + 1}. ${item.name}</span>
+                    <div class="flex" style="font-size: 0.8em;">
                         <span>${item.qty} x ${item.price.toLocaleString('id-ID')}</span>
                         <span class="right bold">${item.total.toLocaleString('id-ID')}</span>
                     </div>
@@ -255,16 +261,16 @@ export function TransactionDetailDialog({
 
                 <div class="sep"></div>
 
-                <div class="summary-row" style="font-size: 10px;">
+                <div class="summary-row" style="font-size: 0.8em;">
                     <span>Total Qty</span>
                     <span class="right">${totalQty} Items</span>
                 </div>
-                <div class="summary-row" style="font-size: 10px;">
+                <div class="summary-row" style="font-size: 0.8em;">
                     <span>Sub Total</span>
                     <span class="right">${bruto.toLocaleString('id-ID')}</span>
                 </div>
                 ${discount > 0 ? `
-                <div class="summary-row" style="color: #000; font-size: 10px;">
+                <div class="summary-row" style="color: #000; font-size: 0.8em;">
                     <span>Potongan Diskon</span>
                     <span class="right">- ${discount.toLocaleString('id-ID')}</span>
                 </div>
@@ -275,17 +281,17 @@ export function TransactionDetailDialog({
                     <span class="right">${netto.toLocaleString('id-ID')}</span>
                 </div>
 
-                <div class="summary-row" style="opacity: 0.8; font-size: 10px;">
+                <div class="summary-row" style="opacity: 0.8; font-size: 0.8em;">
                     <span>Diterima (Cash)</span>
                     <span class="right">${(transaction.paidAmount || netto).toLocaleString('id-ID')}</span>
                 </div>
-                <div class="summary-row" style="font-size: 11px;">
+                <div class="summary-row" style="font-size: 0.9em;">
                     <span class="bold">Kembali</span>
                     <span class="right bold">0</span>
                 </div>
 
                 <div class="sep"></div>
-                <div class="center" style="font-size: 10px; font-style: italic; white-space: pre-wrap;">${footerMsg}</div>
+                <div class="center" style="font-size: 0.8em; font-style: italic; white-space: pre-wrap;">${footerMsg}</div>
             </div>
 
             <div class="fab-container">
