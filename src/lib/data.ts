@@ -15,7 +15,7 @@ import {
   where,
   runTransaction,
 } from 'firebase/firestore';
-import type { Station, Transaction, PricingRule, FnbItem, GeneralSettings, Member, Shift, CreditVoucher, Expense, PointRedemption, LandingSettings, Reward, Reservation, MemberRequest, WifiPackage } from './types';
+import type { Station, Transaction, PricingRule, FnbItem, GeneralSettings, Member, Shift, CreditVoucher, Expense, PointRedemption, LandingSettings, Reward, Reservation, MemberRequest } from './types';
 import { formatDuration } from './utils';
 
 /**
@@ -38,27 +38,14 @@ function processLoyaltyInTransaction(txn: any, memberSnap: any, transactionRef: 
     txn.update(transactionRef, { isLoyaltyProcessed: true });
 }
 
-export async function addWifiPackage(db: Firestore, pkg: Omit<WifiPackage, 'id'>) {
-    const docRef = doc(collection(db, 'wifiPackages'));
-    await setDoc(docRef, { ...pkg, id: docRef.id });
-}
-
-export async function updateWifiPackage(db: Firestore, id: string, updates: Partial<WifiPackage>) {
-    return await updateDoc(doc(db, 'wifiPackages', id), updates);
-}
-
-export async function deleteWifiPackage(db: Firestore, id: string) {
-    return await deleteDoc(doc(db, 'wifiPackages', id));
-}
-
-export async function createWifiTransaction(db: Firestore, pkg: WifiPackage, code: string, activeShiftId?: string | null) {
+export async function createWifiTransaction(db: Firestore, pkg: PricingRule, code: string, activeShiftId?: string | null) {
     const now = Date.now();
     const docRef = doc(collection(db, 'transactions'));
     const newTransaction = {
         id: docRef.id,
         stationId: 'wifi',
         stationName: 'VOUCHER WI-FI',
-        durationMinutes: 0,
+        durationMinutes: pkg.duration || 0,
         amount: pkg.price,
         discount: 0,
         paidAmount: pkg.price,

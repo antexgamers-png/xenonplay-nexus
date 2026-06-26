@@ -1,13 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import type { WifiPackage } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import type { PricingRule, GeneralSettings } from '@/lib/types';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Wifi, Zap, CheckCircle2, RefreshCw, Printer, AlertTriangle } from 'lucide-react';
-import { useFirestore } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { createWifiTransaction } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { useShift } from '@/components/providers/shift-provider';
@@ -21,8 +21,9 @@ import {
     DialogFooter,
     DialogClose
 } from '@/components/ui/dialog';
+import { doc } from 'firebase/firestore';
 
-export function WifiPos({ packages }: { packages: WifiPackage[] }) {
+export function WifiPos({ packages }: { packages: PricingRule[] }) {
     const firestore = useFirestore();
     const { toast } = useToast();
     const { activeShift, setIsOpeningDialog } = useShift();
@@ -32,6 +33,9 @@ export function WifiPos({ packages }: { packages: WifiPackage[] }) {
     const [isProcessing, setIsProcessing] = useState(false);
     const [isSuccessOpen, setIsSuccessOpen] = useState(false);
     const [lastOrder, setLastOrder] = useState<any>(null);
+
+    const settingsRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'general') : null, [firestore]);
+    const { data: settings } = useDoc<GeneralSettings>(settingsRef);
 
     const checkShift = () => {
         if (!activeShift) {
@@ -91,6 +95,7 @@ export function WifiPos({ packages }: { packages: WifiPackage[] }) {
                     {packages.length === 0 && (
                         <div className="col-span-full py-20 text-center border-2 border-dashed rounded-[2rem] opacity-40">
                             <p className="text-xs font-black uppercase tracking-widest">Belum ada paket Wi-Fi di Master Data.</p>
+                            <p className="text-[10px] text-muted-foreground uppercase font-bold mt-2">Daftarkan di Master Data &gt; Tab Kupon Wi-Fi</p>
                         </div>
                     )}
                 </div>

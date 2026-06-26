@@ -14,10 +14,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getWifiColumns } from './wifi-columns';
-import type { WifiPackage } from '@/lib/types';
+import type { PricingRule } from '@/lib/types';
 import { useMemo } from 'react';
 
-export function WifiTable({ data, onEdit }: { data: WifiPackage[], onEdit: (i: WifiPackage) => void }) {
+export function WifiTable({ data, onEdit }: { data: PricingRule[], onEdit: (i: PricingRule) => void }) {
   const columns = useMemo(() => getWifiColumns(onEdit), [onEdit]);
   const table = useReactTable({ data, columns, getCoreRowModel: getCoreRowModel() });
 

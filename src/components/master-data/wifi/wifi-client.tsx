@@ -3,15 +3,15 @@
 import { Plus, Wifi } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { WifiTable } from './wifi-table';
-import type { WifiPackage } from '@/lib/types';
+import type { PricingRule } from '@/lib/types';
 import { useState } from 'react';
-import { WifiFormDialog } from './wifi-form-dialog';
+import { PricingFormDialog } from '../pricing/pricing-form-dialog';
 
-export function WifiClient({ initialData }: { initialData: WifiPackage[] }) {
+export function WifiClient({ initialData }: { initialData: PricingRule[] }) {
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<WifiPackage | undefined>(undefined);
+  const [editingItem, setEditingItem] = useState<PricingRule | undefined>(undefined);
 
-  const handleEdit = (item: WifiPackage) => {
+  const handleEdit = (item: PricingRule) => {
     setEditingItem(item);
     setIsFormOpen(true);
   };
@@ -31,10 +31,11 @@ export function WifiClient({ initialData }: { initialData: WifiPackage[] }) {
       
       <WifiTable data={initialData} onEdit={handleEdit} />
       
-      <WifiFormDialog 
+      <PricingFormDialog 
         isOpen={isFormOpen} 
         onOpenChange={setIsFormOpen} 
-        item={editingItem} 
+        rule={editingItem} 
+        fnbItems={[]}
       />
     </div>
   );

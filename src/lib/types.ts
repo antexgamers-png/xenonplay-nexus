@@ -31,10 +31,13 @@ export interface Station {
   last_heartbeat?: any;
 }
 
-export interface WifiPackage {
+export interface PricingRule {
   id: string;
   name: string;
+  duration: number;
+  type: 'PS3' | 'PS4' | 'PS5' | 'All' | 'Wifi';
   price: number;
+  items?: { itemId: string; name: string; quantity: number }[];
 }
 
 export interface Transaction {

@@ -5,11 +5,12 @@ import { VoucherPos } from '@/components/dashboard/voucher-pos';
 import { WifiPos } from '@/components/dashboard/wifi-pos';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
-import type { Station, PricingRule, FnbItem, WifiPackage } from '@/lib/types';
+import type { Station, PricingRule, FnbItem } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/components/providers/auth-provider';
 import { Gamepad2, ShoppingCart, Ticket, Wifi } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useMemo } from 'react';
 
 export default function DashboardPage() {
   const firestore = useFirestore();
@@ -30,17 +31,13 @@ export default function DashboardPage() {
     return collection(firestore, 'fnbItems');
   }, [firestore, isRoleLoading]);
 
-  const wifiPackagesQuery = useMemoFirebase(() => {
-    if (isRoleLoading || !firestore) return null;
-    return collection(firestore, 'wifiPackages');
-  }, [firestore, isRoleLoading]);
-
   const { data: stations, isLoading: isLoadingStations } = useCollection<Station>(stationsQuery);
   const { data: pricingRules, isLoading: isLoadingPricing } = useCollection<PricingRule>(pricingRulesQuery);
   const { data: fnbItems, isLoading: isLoadingFnb } = useCollection<FnbItem>(fnbItemsQuery);
-  const { data: wifiPackages, isLoading: isLoadingWifi } = useCollection<WifiPackage>(wifiPackagesQuery);
   
-  const isLoading = isRoleLoading || isLoadingStations || isLoadingPricing || isLoadingFnb || isLoadingWifi;
+  const isLoading = isRoleLoading || isLoadingStations || isLoadingPricing || isLoadingFnb;
+
+  const wifiPackages = useMemo(() => (pricingRules || []).filter(r => r.type === 'Wifi'), [pricingRules]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -106,7 +103,7 @@ export default function DashboardPage() {
         </TabsContent>
 
         <TabsContent value="wifi" className="mt-0 outline-none pb-20 lg:pb-0">
-          {isLoading ? <Skeleton className="h-[400px]" /> : wifiPackages && <WifiPos packages={wifiPackages} />}
+          {isLoading ? <Skeleton className="h-[400px]" /> : <WifiPos packages={wifiPackages} />}
         </TabsContent>
 
         <TabsContent value="voucher" className="mt-0 outline-none pb-20 lg:pb-0">

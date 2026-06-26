@@ -12,10 +12,11 @@ import { FnbClient } from '@/components/master-data/fnb/fnb-client';
 import { WifiClient } from '@/components/master-data/wifi/wifi-client';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
-import type { PricingRule, FnbItem, WifiPackage } from '@/lib/types';
+import type { PricingRule, FnbItem } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/components/providers/auth-provider';
 import { ShieldAlert, Tag, ShoppingCart, Wifi } from 'lucide-react';
+import { useMemo } from 'react';
 
 export default function MasterDataPage() {
   const firestore = useFirestore();
@@ -31,16 +32,13 @@ export default function MasterDataPage() {
     return collection(firestore, 'fnbItems');
   }, [firestore, isAuthLoading, role]);
 
-  const wifiPackagesQuery = useMemoFirebase(() => {
-    if (!firestore || isAuthLoading || role !== 'admin') return null;
-    return collection(firestore, 'wifiPackages');
-  }, [firestore, isAuthLoading, role]);
-
   const { data: pricingRules, isLoading: isLoadingPricing } = useCollection<PricingRule>(pricingRulesQuery);
   const { data: fnbItems, isLoading: isLoadingFnb } = useCollection<FnbItem>(fnbItemsQuery);
-  const { data: wifiPackages, isLoading: isLoadingWifi } = useCollection<WifiPackage>(wifiPackagesQuery);
   
-  const isLoading = isAuthLoading || isLoadingPricing || isLoadingFnb || isLoadingWifi;
+  const isLoading = isAuthLoading || isLoadingPricing || isLoadingFnb;
+
+  const psPricingRules = useMemo(() => (pricingRules || []).filter(r => r.type !== 'Wifi'), [pricingRules]);
+  const wifiPricingRules = useMemo(() => (pricingRules || []).filter(r => r.type === 'Wifi'), [pricingRules]);
 
   if (!isAuthLoading && role !== 'admin') {
     return (
@@ -97,7 +95,7 @@ export default function MasterDataPage() {
             </CardHeader>
             <CardContent>
               {isLoading && renderSkeleton()}
-              {!isLoading && <PricingClient initialData={pricingRules || []} fnbItems={fnbItems || []} />}
+              {!isLoading && <PricingClient initialData={psPricingRules} fnbItems={fnbItems || []} />}
             </CardContent>
           </Card>
         </TabsContent>
@@ -121,7 +119,7 @@ export default function MasterDataPage() {
             </CardHeader>
             <CardContent>
               {isLoading && renderSkeleton()}
-              {!isLoading && <WifiClient initialData={wifiPackages || []} />}
+              {!isLoading && <WifiClient initialData={wifiPricingRules} />}
             </CardContent>
           </Card>
         </TabsContent>

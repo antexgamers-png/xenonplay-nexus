@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -35,7 +34,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 const pricingRuleSchema = z.object({
   name: z.string().min(1, 'Nama paket harus diisi'),
   duration: z.coerce.number().int().min(1, 'Durasi harus diisi'),
-  type: z.enum(['PS3', 'PS4', 'PS5', 'All']),
+  type: z.enum(['PS3', 'PS4', 'PS5', 'All', 'Wifi']),
   price: z.coerce.number().min(0, 'Harga harus diisi'),
   items: z.array(z.object({
     itemId: z.string().min(1, 'Pilih item'),
@@ -167,7 +166,7 @@ export function PricingFormDialog({
                     {errors.duration && <p className="text-xs text-destructive">{errors.duration.message}</p>}
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="type">Tipe Station</Label>
+                    <Label htmlFor="type">Tipe Layanan</Label>
                     <Controller
                     name="type"
                     control={control}
@@ -177,10 +176,11 @@ export function PricingFormDialog({
                             <SelectValue placeholder="Pilih tipe" />
                         </SelectTrigger>
                         <SelectContent className="bg-background border-border">
-                            <SelectItem value="All">Semua Tipe</SelectItem>
-                            <SelectItem value="PS3">PS3</SelectItem>
-                            <SelectItem value="PS4">PS4</SelectItem>
-                            <SelectItem value="PS5">PS5</SelectItem>
+                            <SelectItem value="All">Semua Konsol</SelectItem>
+                            <SelectItem value="PS5">Khusus PS5</SelectItem>
+                            <SelectItem value="PS4">Khusus PS4</SelectItem>
+                            <SelectItem value="PS3">Khusus PS3</SelectItem>
+                            <SelectItem value="Wifi" className="text-primary font-bold">KUPON WI-FI</SelectItem>
                         </SelectContent>
                         </Select>
                     )}

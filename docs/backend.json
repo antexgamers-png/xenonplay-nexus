@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "UserProfile": {
@@ -35,14 +34,16 @@
         "last_action_timestamp": { "type": "number" }
       }
     },
-    "WifiPackage": {
-      "title": "WifiPackage",
+    "PricingRule": {
+      "title": "PricingRule",
       "type": "object",
-      "description": "Daftar harga paket kupon Wi-Fi Hotspot.",
+      "description": "Daftar harga paket sewa PS atau Kupon Wi-Fi.",
       "properties": {
         "id": { "type": "string" },
         "name": { "type": "string" },
-        "price": { "type": "number" }
+        "duration": { "type": "number" },
+        "price": { "type": "number" },
+        "type": { "type": "string", "enum": ["PS3", "PS4", "PS5", "All", "Wifi"] }
       }
     },
     "Transaction": {
@@ -86,7 +87,7 @@
     "/users/{userId}": { "schema": { "$ref": "#/backend/entities/UserProfile" }, "description": "Profil pengguna sistem." },
     "/stations/{stationId}": { "schema": { "$ref": "#/backend/entities/Station" }, "description": "Status unit hardware." },
     "/transactions/{transactionId}": { "schema": { "$ref": "#/backend/entities/Transaction" }, "description": "Log keuangan." },
-    "/wifiPackages/{packageId}": { "schema": { "$ref": "#/backend/entities/WifiPackage" }, "description": "Daftar paket Wi-Fi." },
+    "/pricingRules/{ruleId}": { "schema": { "$ref": "#/backend/entities/PricingRule" }, "description": "Daftar harga paket sewa & wifi." },
     "/members/{memberId}": { "schema": { "$ref": "#/backend/entities/Member" }, "description": "Data loyalitas pelanggan." }
   }
 }
