@@ -79,7 +79,6 @@ export function TransactionDetailDialog({
     const storeName = settings?.storeName || 'XENONPLAY';
     const address = settings?.address || '';
     
-    // Choose settings based on mode
     const conf = isWifi ? {
         paperSize: settings?.couponPaperSize || '58mm',
         fontSize: settings?.couponFontSize || 12,
@@ -119,21 +118,26 @@ export function TransactionDetailDialog({
         receiptBody = `
             <div class="center">
                 ${conf.showLogo ? `<img src="/xenonplay-logo.png" class="logo" />` : ''}
-                ${conf.showStoreName ? `<div class="bold" style="font-size: 1.2em;">${storeName.toUpperCase()}</div>` : ''}
-                ${conf.showAddress ? `<div style="margin-top: 6px; font-size: 0.8em; opacity: 0.7;">${address}</div>` : ''}
+                ${conf.showStoreName ? `<div class="bold" style="font-size: 1.1em; letter-spacing: 1px;">${storeName.toUpperCase()}</div>` : ''}
+                ${conf.showAddress ? `<div style="margin-top: 4px; font-size: 0.75em; opacity: 0.6;">${address}</div>` : ''}
             </div>
-            <div class="sep"></div>
-            <div class="center py-6">
-                <span style="font-size: 0.8em; font-weight: 900; letter-spacing: 2px; opacity: 0.6; display: block; margin-bottom: 5px;">KODE VOUCHER WI-FI</span>
-                <div style="font-size: 3.2em; font-weight: 900; margin: 10px 0; letter-spacing: 4px; line-height: 1;">${transaction.claimCode}</div>
-                <div class="bold" style="font-size: 1em; text-transform: uppercase; margin-top: 10px; color: #3b82f6;">PAKET: ${transaction.packageName || 'HOTSPOT'}</div>
+            <div class="sep" style="opacity: 0.3;"></div>
+            <div class="center" style="padding: 15px 0;">
+                <span style="font-size: 0.7em; font-weight: 900; letter-spacing: 3px; opacity: 0.4; display: block; margin-bottom: 8px; text-transform: uppercase;">Akses Internet Hotspot</span>
+                <div style="border: 2px solid #000; padding: 10px; display: inline-block; min-width: 140px; border-radius: 8px;">
+                    <div style="font-size: 2.8em; font-weight: 900; letter-spacing: 6px; line-height: 1; margin: 0;">${transaction.claimCode}</div>
+                </div>
+                <div class="bold" style="font-size: 0.9em; text-transform: uppercase; margin-top: 12px; letter-spacing: 1px;">PAKET: ${transaction.packageName || 'HOTSPOT'}</div>
             </div>
-            <div class="sep"></div>
-            <div style="padding: 10px 5px;">
-                <div class="bold" style="font-size: 0.85em; margin-bottom: 5px; border-bottom: 1px solid #000; width: fit-content;">PANDUAN KONEKSI:</div>
-                <div style="font-size: 0.8em; line-height: 1.4; white-space: pre-wrap; opacity: 0.9;">${wifiGuide}</div>
+            <div class="sep" style="opacity: 0.3;"></div>
+            <div style="padding: 5px 0;">
+                <div class="bold" style="font-size: 0.8em; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;">Cara Terhubung:</div>
+                <div style="font-size: 0.75em; line-height: 1.5; white-space: pre-wrap; opacity: 0.8;">${wifiGuide}</div>
             </div>
-            <div class="sep"></div>
+            <div class="sep" style="opacity: 0.3;"></div>
+            <div class="center" style="font-size: 0.65em; opacity: 0.4; margin-bottom: 5px;">
+                Tgl: ${dateStr} • ${timeStr} WIB
+            </div>
         `;
     } else {
         const rentalCharges = (transaction.additionalCharges || []).filter(c => !c.description.startsWith('FnB:'));
@@ -205,7 +209,6 @@ export function TransactionDetailDialog({
             .total-row { display: flex; justify-content: space-between; margin: 8px 0; font-weight: 900; font-size: 1.2em; border-top: 1.5px solid #000; padding-top: 8px; }
             .py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
             
-            /* UI Controls */
             .fab-container { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column-reverse; align-items: center; gap: 15px; z-index: 1000; }
             .fab-main { width: 64px; height: 64px; background: #0ea5e9; color: white; border-radius: 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 25px -5px rgba(14, 165, 233, 0.5); cursor: pointer; border: none; transition: all 0.3s; }
             .fab-main svg { width: 32px; height: 32px; fill: none; stroke: currentColor; stroke-width: 2.5; }

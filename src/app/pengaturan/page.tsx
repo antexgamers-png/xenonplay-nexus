@@ -218,21 +218,26 @@ export default function PengaturanPage() {
       const bodyContent = isWifi ? `
           <div class="center">
               ${conf.showLogo ? `<img src="/xenonplay-logo.png" class="logo" />` : ''}
-              ${conf.showStoreName ? `<div class="bold" style="font-size: 1.2em;">${storeName.toUpperCase()}</div>` : ''}
-              ${conf.showAddress ? `<div style="margin-top: 6px; font-size: 0.8em; opacity: 0.7;">${address}</div>` : ''}
+              ${conf.showStoreName ? `<div class="bold" style="font-size: 1.1em; letter-spacing: 1px;">${storeName.toUpperCase()}</div>` : ''}
+              ${conf.showAddress ? `<div style="margin-top: 4px; font-size: 0.75em; opacity: 0.6;">${address}</div>` : ''}
           </div>
-          <div class="sep"></div>
-          <div class="center py-6">
-              <span style="font-size: 0.8em; font-weight: 900; letter-spacing: 2px; opacity: 0.6; display: block; margin-bottom: 5px;">KODE VOUCHER WI-FI</span>
-              <div style="font-size: 3.2em; font-weight: 900; margin: 10px 0; letter-spacing: 4px; line-height: 1;">72A9X</div>
-              <div class="bold" style="font-size: 1em; text-transform: uppercase; margin-top: 10px; color: #3b82f6;">PAKET: CONTOH 1 JAM</div>
+          <div class="sep" style="opacity: 0.3;"></div>
+          <div class="center" style="padding: 15px 0;">
+              <span style="font-size: 0.7em; font-weight: 900; letter-spacing: 3px; opacity: 0.4; display: block; margin-bottom: 8px; text-transform: uppercase;">Akses Internet Hotspot</span>
+              <div style="border: 2px solid #000; padding: 10px; display: inline-block; min-width: 140px; border-radius: 8px;">
+                  <div style="font-size: 2.8em; font-weight: 900; letter-spacing: 6px; line-height: 1; margin: 0;">72A9X</div>
+              </div>
+              <div class="bold" style="font-size: 0.9em; text-transform: uppercase; margin-top: 12px; letter-spacing: 1px;">PAKET: CONTOH 1 JAM</div>
           </div>
-          <div class="sep"></div>
-          <div style="padding: 10px 5px;">
-              <div class="bold" style="font-size: 0.85em; margin-bottom: 5px; border-bottom: 1px solid #000; width: fit-content;">PANDUAN KONEKSI:</div>
-              <div style="font-size: 0.8em; line-height: 1.4; white-space: pre-wrap; opacity: 0.9;">${formData.wifiInstructions}</div>
+          <div class="sep" style="opacity: 0.3;"></div>
+          <div style="padding: 5px 0;">
+              <div class="bold" style="font-size: 0.8em; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;">Cara Terhubung:</div>
+              <div style="font-size: 0.75em; line-height: 1.5; white-space: pre-wrap; opacity: 0.8;">${formData.wifiInstructions}</div>
           </div>
-          <div class="sep"></div>
+          <div class="sep" style="opacity: 0.3;"></div>
+          <div class="center" style="font-size: 0.65em; opacity: 0.4; margin-bottom: 5px;">
+              Tgl: ${new Date().toLocaleDateString('id-ID')} • 10:00 WIB
+          </div>
       ` : `
           <div class="center">
               ${conf.showLogo ? `<img src="/xenonplay-logo.png" class="logo" />` : ''}
@@ -549,18 +554,23 @@ export default function PengaturanPage() {
                                         </div>
                                     )}
                                     {formData.couponShowStoreName && (
-                                        <div className="text-center font-black uppercase mb-1" style={{ fontSize: '1.1em' }}>{formData.storeName}</div>
+                                        <div className="text-center font-black uppercase mb-1" style={{ fontSize: '1.1em', letterSpacing: '1px' }}>{formData.storeName}</div>
                                     )}
-                                    <div className="border-t border-dashed border-black/30 my-4" />
+                                    {formData.couponShowAddress && (
+                                        <div className="text-center opacity-60 mb-2" style={{ fontSize: '0.75em' }}>{formData.address}</div>
+                                    )}
+                                    <div className="border-t border-black/10 my-4" />
                                     <div className="text-center py-4">
-                                        <span className="text-[10px] font-black uppercase tracking-widest opacity-40">Kode Voucher</span>
-                                        <div className="text-4xl font-black font-mono tracking-widest my-2">72A9X</div>
-                                        <span className="text-[10px] font-bold uppercase text-primary">PAKET: 1 JAM MABAR</span>
+                                        <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 block mb-3">Voucher Hotspot</span>
+                                        <div className="inline-block border-2 border-black px-4 py-2 rounded-lg">
+                                            <div className="text-4xl font-black font-mono tracking-[0.2em] leading-none">72A9X</div>
+                                        </div>
+                                        <span className="text-[10px] font-black uppercase text-primary block mt-4 tracking-widest">PAKET: 1 JAM MABAR</span>
                                     </div>
-                                    <div className="border-t border-dashed border-black/30 my-4" />
-                                    <div className="text-[10px] opacity-80 leading-relaxed font-bold uppercase mb-2">Panduan:</div>
-                                    <div className="text-[9px] opacity-70 whitespace-pre-wrap">{formData.wifiInstructions}</div>
-                                    <div className="border-t border-dashed border-black/30 my-4" />
+                                    <div className="border-t border-black/10 my-4" />
+                                    <div className="text-[10px] opacity-80 leading-relaxed font-black uppercase mb-2 tracking-widest">Panduan:</div>
+                                    <div className="text-[9px] opacity-70 whitespace-pre-wrap leading-relaxed">{formData.wifiInstructions}</div>
+                                    <div className="border-t border-black/10 my-4" />
                                     {formData.couponShowFooter && (
                                         <div className="text-center opacity-50 italic" style={{ fontSize: '0.8em' }}>{formData.couponFooter}</div>
                                     )}
