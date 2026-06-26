@@ -215,6 +215,7 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
       const html = `
       <html>
         <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
           <title>XenonPlay Receipt - ${lastOrderDetails.id}</title>
           <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
           <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
@@ -223,7 +224,6 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
             html, body { 
               margin: 0; 
               padding: 0; 
-              height: auto; 
               background: #fff; 
               display: flex;
               flex-direction: column;
@@ -231,26 +231,30 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
               font-family: 'Courier New', Courier, monospace;
             }
             .receipt-paper { 
-              width: ${paperSize}; 
-              padding: 10mm 4mm; 
+              width: 100vw;
+              max-width: ${paperSize};
+              padding: 12mm 6mm; 
               background: #fff;
-              font-size: 12px; 
-              line-height: 1.2; 
+              font-size: 13px; 
+              line-height: 1.3; 
               color: #000;
               box-sizing: border-box;
+              border: 1px solid #f1f5f9; /* Ghost border for preview */
+              box-shadow: 0 10px 40px rgba(0,0,0,0.05);
+              margin-bottom: 80px;
             }
             .center { text-align: center; } 
             .right { text-align: right; } 
             .bold { font-weight: bold; }
-            .sep { border-top: 1px dashed #000; margin: 8px 0; }
-            .item-block { margin-bottom: 6px; }
+            .sep { border-top: 1px dashed #000; margin: 10px 0; }
+            .item-block { margin-bottom: 8px; }
             .item-name { font-weight: bold; display: block; text-transform: uppercase; }
             .flex { display: flex; justify-content: space-between; }
-            .logo { width: 50px; height: auto; margin: 0 auto 8px; display: block; filter: grayscale(1); }
-            .summary-row { display: flex; justify-content: space-between; margin: 4px 0; }
-            .total-row { display: flex; justify-content: space-between; margin: 8px 0; font-weight: bold; font-size: 14px; border-top: 1px solid #000; padding-top: 6px; }
+            .logo { width: 60px; height: auto; margin: 0 auto 12px; display: block; filter: grayscale(1); }
+            .summary-row { display: flex; justify-content: space-between; margin: 5px 0; }
+            .total-row { display: flex; justify-content: space-between; margin: 10px 0; font-weight: bold; font-size: 16px; border-top: 1px solid #000; padding-top: 8px; }
             
-            /* FAB Styles */
+            /* Modern FAB Styles */
             .fab-container {
                 position: fixed;
                 bottom: 30px;
@@ -264,46 +268,55 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
             .fab-main {
                 width: 60px;
                 height: 60px;
-                background: #3b82f6;
+                background: #0ea5e9; /* Azure Cyan */
                 color: white;
-                border-radius: 50%;
+                border-radius: 18px; /* Modern Squircle */
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                box-shadow: 0 10px 25px rgba(59, 130, 246, 0.5);
+                box-shadow: 0 10px 25px -5px rgba(14, 165, 233, 0.4);
                 cursor: pointer;
                 border: none;
-                font-size: 28px;
-                transition: transform 0.3s;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             }
-            .fab-main.active { transform: rotate(45deg); background: #ef4444; }
+            .fab-main svg { width: 30px; height: 30px; fill: currentColor; }
+            .fab-main.active { transform: rotate(135deg); background: #ef4444; box-shadow: 0 10px 25px -5px rgba(239, 68, 68, 0.4); }
+            
             .fab-menu {
-                display: none;
+                display: flex;
                 flex-direction: column;
                 gap: 12px;
+                opacity: 0;
+                transform: translateY(20px) scale(0.8);
+                pointer-events: none;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             }
-            .fab-menu.active { display: flex; animation: slideUp 0.3s ease-out; }
+            .fab-menu.active { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+            
             .fab-item {
-                width: 50px;
-                height: 50px;
+                width: 52px;
+                height: 52px;
                 background: white;
-                border-radius: 50%;
+                color: #64748b;
+                border-radius: 16px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+                box-shadow: 0 10px 20px rgba(0,0,0,0.1);
                 cursor: pointer;
-                border: 1px solid #e2e8f0;
-                font-size: 18px;
+                border: 1px solid #f1f5f9;
+                transition: all 0.2s;
             }
-            @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+            .fab-item:hover { background: #f8fafc; color: #0ea5e9; transform: translateX(-5px); }
+            .fab-item svg { width: 22px; height: 22px; fill: currentColor; }
 
             @media (max-width: 480px) {
-                .receipt-paper { width: 95vw; padding: 6vw 4vw; font-size: 14px; }
-                .total-row { font-size: 16px; }
+                .receipt-paper { width: 96vw; padding: 8mm 6mm; border-radius: 12px; }
             }
             @media print {
               .fab-container { display: none; }
+              .receipt-paper { border: none; box-shadow: none; width: ${paperSize}; margin: 0; }
+              body { background: #fff; }
             }
           </style>
         </head>
@@ -311,14 +324,14 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
             <div id="receipt-target" class="receipt-paper">
                 <div class="center">
                     <img src="/xplogo-monochrome.png" class="logo" />
-                    <div class="bold" style="font-size: 14px;">${storeName.toUpperCase()}</div>
-                    <div style="font-size: 10px; opacity: 0.8;">${address}</div>
-                    <div style="margin-top: 6px; font-size: 10px;">${headerMsg}</div>
+                    <div class="bold" style="font-size: 16px;">${storeName.toUpperCase()}</div>
+                    <div style="font-size: 11px; opacity: 0.8;">${address}</div>
+                    <div style="margin-top: 8px; font-size: 11px;">${headerMsg}</div>
                 </div>
                 
                 <div class="sep"></div>
                 
-                <div class="flex" style="font-size: 10px;">
+                <div class="flex" style="font-size: 11px;">
                     <div>
                     <div>Nota : ${lastOrderDetails.id.substring(0,8).toUpperCase()}</div>
                     <div>Tgl  : ${dateStr}</div>
@@ -368,15 +381,23 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
                 </div>
 
                 <div class="sep"></div>
-                <div class="center" style="font-size: 10px; font-style: italic; white-space: pre-wrap;">${footerMsg}</div>
+                <div class="center" style="font-size: 11px; font-style: italic; white-space: pre-wrap;">${footerMsg}</div>
             </div>
 
             <div class="fab-container">
-                <button class="fab-main" id="fab-main" onclick="toggleMenu()">+</button>
+                <button class="fab-main" id="fab-main" onclick="toggleMenu()">
+                    <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                </button>
                 <div class="fab-menu" id="fab-menu">
-                    <button class="fab-item" onclick="window.print()" title="Cetak">🖨️</button>
-                    <button class="fab-item" onclick="exportImage()" title="Simpan PNG">🖼️</button>
-                    <button class="fab-item" onclick="exportPDF()" title="Simpan PDF">📄</button>
+                    <button class="fab-item" onclick="window.print()" title="Cetak">
+                        <svg viewBox="0 0 24 24"><path d="M19 8H5c-1.66 0-3 1.33-3 3v6h4v4h12v-4h4v-6c0-1.67-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
+                    </button>
+                    <button class="fab-item" onclick="exportImage()" title="Simpan PNG">
+                        <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                    </button>
+                    <button class="fab-item" onclick="exportPDF()" title="Simpan PDF">
+                        <svg viewBox="0 0 24 24"><path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 10h1V8H9v2zm5.5 2h1V8h-1v4zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6z"/></svg>
+                    </button>
                 </div>
             </div>
 
@@ -390,16 +411,22 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
 
                 function exportImage() {
                     const target = document.getElementById('receipt-target');
+                    target.style.border = 'none'; // Hide ghost border for export
+                    target.style.boxShadow = 'none';
                     html2canvas(target, { backgroundColor: '#fff', scale: 3 }).then(canvas => {
                         const link = document.createElement('a');
                         link.download = 'XenonPlay_${lastOrderDetails.id.substring(0,8)}.png';
                         link.href = canvas.toDataURL('image/png');
                         link.click();
+                        target.style.border = '1px solid #f1f5f9'; // Restore ghost border
+                        target.style.boxShadow = '0 10px 40px rgba(0,0,0,0.05)';
                     });
                 }
 
                 function exportPDF() {
                     const target = document.getElementById('receipt-target');
+                    target.style.border = 'none';
+                    target.style.boxShadow = 'none';
                     const { jsPDF } = window.jspdf;
                     html2canvas(target, { scale: 2 }).then(canvas => {
                         const imgData = canvas.toDataURL('image/png');
@@ -410,6 +437,8 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
                         });
                         pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 2, canvas.height / 2);
                         pdf.save('XenonPlay_${lastOrderDetails.id.substring(0,8)}.pdf');
+                        target.style.border = '1px solid #f1f5f9';
+                        target.style.boxShadow = '0 10px 40px rgba(0,0,0,0.05)';
                     });
                 }
             </script>
