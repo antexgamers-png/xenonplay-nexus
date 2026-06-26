@@ -217,11 +217,21 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
         <head>
           <style>
             @page { margin: 0; size: ${paperSize} auto; }
-            body { 
-              width: ${paperSize}; margin: 0; padding: 5px 2px; 
-              font-family: 'Courier New', Courier, monospace; 
-              font-size: 8px; line-height: 1.1; color: #000;
+            html, body { 
+              margin: 0; 
+              padding: 0; 
+              height: auto; 
+              min-height: 0;
               background: #fff;
+            }
+            body { 
+              width: ${paperSize}; 
+              padding: 5px 2px; 
+              font-family: 'Courier New', Courier, monospace; 
+              font-size: 8px; 
+              line-height: 1.1; 
+              color: #000;
+              overflow: hidden;
               -webkit-print-color-adjust: exact;
             }
             .center { text-align: center; } 
@@ -297,7 +307,6 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
 
           <div class="sep"></div>
           <div class="center pre-wrap" style="font-size: 7.5px;">${footerMsg}</div>
-          <div style="height: 15px;"></div>
         </body>
       </html>`;
 
@@ -416,11 +425,11 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
                                 <Trash2 className="h-3.5 w-3.5 mr-1" /> <span className="text-[9px] font-black uppercase">Hapus</span>
                             </Button>
                             <div className="flex items-center gap-4 bg-background p-1 rounded-xl border border-border/50">
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleUpdateCart(item.id, -1)} disabled={(selectedFnb[item.id] || 0) === 0}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleUpdateCart(item.id, -1)} disabled={(cart[item.id] || 0) === 0}>
                                     <Minus className="h-4 w-4" />
                                 </Button>
                                 <span className="text-sm font-black font-mono w-6 text-center">{item.quantity}</span>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleUpdateCart(item.id, 1)} disabled={(selectedFnb[item.id] || 0) >= item.stock}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleUpdateCart(item.id, 1)} disabled={(cart[item.id] || 0) >= item.stock}>
                                     <Plus className="h-4 w-4" />
                                 </Button>
                             </div>

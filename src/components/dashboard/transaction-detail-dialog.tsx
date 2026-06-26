@@ -69,7 +69,6 @@ export function TransactionDetailDialog({
 
   const charges = transaction.additionalCharges ?? [];
   
-  // Pisahkan biaya rental dan item kantin secara akurat
   const rentalCharges = charges.filter(c => c && c.description && !c.description.startsWith('FnB:'));
   const fnbItems = transaction.fnbItems || [];
 
@@ -97,7 +96,6 @@ export function TransactionDetailDialog({
 
     const printLines: any[] = [];
     
-    // 1. Tambahkan baris Rental
     rentalCharges.forEach(rc => {
         let name = rc.description.replace(/^Sewa\s+/i, '').replace(/x\d+$/i, '').trim();
         printLines.push({
@@ -108,7 +106,6 @@ export function TransactionDetailDialog({
         });
     });
 
-    // 2. Tambahkan baris FnB
     fnbItems.forEach(f => {
         printLines.push({
             name: f.name.toUpperCase(),
@@ -125,11 +122,21 @@ export function TransactionDetailDialog({
         <head>
           <style>
             @page { margin: 0; size: ${paperSize} auto; }
-            body { 
-              width: ${paperSize}; margin: 0; padding: 5px 2px; 
-              font-family: 'Courier New', Courier, monospace; 
-              font-size: 8px; line-height: 1.1; color: #000;
+            html, body { 
+              margin: 0; 
+              padding: 0; 
+              height: auto; 
+              min-height: 0;
               background: #fff;
+            }
+            body { 
+              width: ${paperSize}; 
+              padding: 5px 2px; 
+              font-family: 'Courier New', Courier, monospace; 
+              font-size: 8px; 
+              line-height: 1.1; 
+              color: #000;
+              overflow: hidden;
               -webkit-print-color-adjust: exact;
             }
             .center { text-align: center; }
@@ -211,7 +218,6 @@ export function TransactionDetailDialog({
 
           <div class="sep"></div>
           <div class="center pre-wrap" style="font-size: 7.5px;">${footerMsg}</div>
-          <div style="height: 15px;"></div>
         </body>
       </html>
     `;
