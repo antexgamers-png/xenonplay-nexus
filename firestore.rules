@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -21,8 +22,9 @@ service cloud.firestore {
     // COLLECTIONS
     // ======================================================
     
+    // IZIN AKSES WIFI (Eksplisit untuk Get dan List)
     match /wifiPackages/{id} {
-      allow read: if true;
+      allow read: if true; // Mengizinkan semua orang baca agar staff bisa jualan
       allow write: if isAdmin();
     }
 
