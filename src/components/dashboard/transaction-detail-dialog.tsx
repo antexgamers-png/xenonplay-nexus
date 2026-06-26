@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -121,7 +120,7 @@ export function TransactionDetailDialog({
     const html = `
       <html>
         <head>
-          <title>Nota Digital Preview - ${transaction.id}</title>
+          <title>XenonPlay Receipt - ${transaction.id}</title>
           <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
           <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
           <style>
@@ -130,30 +129,20 @@ export function TransactionDetailDialog({
               margin: 0; 
               padding: 0; 
               height: auto; 
-              background: #0f172a; 
+              background: #fff; 
               display: flex;
-              justify-content: center;
-              font-family: 'Inter', sans-serif;
-            }
-            .preview-container {
-                width: 100%;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                padding: 40px 20px;
-                box-sizing: border-box;
+              flex-direction: column;
+              align-items: center;
+              font-family: 'Courier New', Courier, monospace;
             }
             .receipt-paper { 
               width: ${paperSize}; 
-              padding: 8mm 4mm; 
+              padding: 10mm 4mm; 
               background: #fff;
-              font-family: 'Courier New', Courier, monospace; 
-              font-size: 10px; 
+              font-size: 12px; 
               line-height: 1.2; 
               color: #000;
-              height: fit-content;
-              box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-              position: relative;
+              box-sizing: border-box;
             }
             .center { text-align: center; } 
             .right { text-align: right; } 
@@ -162,80 +151,81 @@ export function TransactionDetailDialog({
             .item-block { margin-bottom: 6px; }
             .item-name { font-weight: bold; display: block; text-transform: uppercase; }
             .flex { display: flex; justify-content: space-between; }
-            .logo { width: 50px; height: auto; margin: 0 auto 8px; display: block; filter: grayscale(1) contrast(2); }
+            .logo { width: 50px; height: auto; margin: 0 auto 8px; display: block; filter: grayscale(1); }
             .summary-row { display: flex; justify-content: space-between; margin: 4px 0; }
-            .total-row { display: flex; justify-content: space-between; margin: 8px 0; font-weight: bold; font-size: 12px; border-top: 1px solid #000; padding-top: 6px; }
-            .pre-wrap { white-space: pre-wrap; }
+            .total-row { display: flex; justify-content: space-between; margin: 8px 0; font-weight: bold; font-size: 14px; border-top: 1px solid #000; padding-top: 6px; }
             
-            /* Floating Controls */
-            .controls {
+            /* FAB Styles */
+            .fab-container {
                 position: fixed;
                 bottom: 30px;
-                left: 50%;
-                transform: translateX(-50%);
+                right: 30px;
                 display: flex;
-                gap: 12px;
+                flex-direction: column-reverse;
+                align-items: center;
+                gap: 15px;
                 z-index: 1000;
-                background: rgba(30, 41, 59, 0.8);
-                backdrop-filter: blur(12px);
-                padding: 12px 24px;
-                border-radius: 24px;
-                border: 1px solid rgba(255,255,255,0.1);
-                box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3);
             }
-            .btn {
-                padding: 10px 20px;
-                border: none;
-                border-radius: 12px;
-                font-size: 11px;
-                font-weight: 900;
-                text-transform: uppercase;
-                letter-spacing: 1px;
-                cursor: pointer;
-                transition: all 0.2s;
+            .fab-main {
+                width: 60px;
+                height: 60px;
+                background: #3b82f6;
+                color: white;
+                border-radius: 50%;
                 display: flex;
                 align-items: center;
-                gap: 8px;
+                justify-content: center;
+                box-shadow: 0 10px 25px rgba(59, 130, 246, 0.5);
+                cursor: pointer;
+                border: none;
+                font-size: 28px;
+                transition: transform 0.3s;
             }
-            .btn-print { background: #3b82f6; color: #fff; }
-            .btn-img { background: #10b981; color: #fff; }
-            .btn-pdf { background: #f59e0b; color: #fff; }
-            .btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
-            .btn:active { transform: translateY(0); }
+            .fab-main.active { transform: rotate(45deg); background: #ef4444; }
+            .fab-menu {
+                display: none;
+                flex-direction: column;
+                gap: 12px;
+            }
+            .fab-menu.active { display: flex; animation: slideUp 0.3s ease-out; }
+            .fab-item {
+                width: 50px;
+                height: 50px;
+                background: white;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+                cursor: pointer;
+                border: 1px solid #e2e8f0;
+                font-size: 18px;
+            }
+            @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-            @media print {
-              body { background: #fff; }
-              .preview-container { padding: 0; }
-              .receipt-paper { 
-                margin: 0; 
-                box-shadow: none; 
-                width: 100%;
-                padding: 0;
-              }
-              .controls { display: none; }
-            }
             @media (max-width: 480px) {
-                .receipt-paper { transform: scale(0.95); transform-origin: top center; }
-                .controls { width: 90%; justify-content: center; flex-wrap: wrap; bottom: 20px; }
-                .btn { padding: 8px 12px; font-size: 9px; }
+                .receipt-paper { width: 95vw; padding: 6vw 4vw; font-size: 14px; }
+                .total-row { font-size: 16px; }
+            }
+            @media print {
+              .fab-container { display: none; }
             }
           </style>
         </head>
         <body>
-          <div class="preview-container">
             <div id="receipt-target" class="receipt-paper">
                 <div class="center">
                     <img src="/xplogo-monochrome.png" class="logo" />
-                    <div class="bold" style="font-size: 12px;">${storeName.toUpperCase()}</div>
-                    <div style="font-size: 9px; opacity: 0.8;">${address}</div>
-                    <div style="margin-top: 6px; font-size: 9px;">${headerMsg}</div>
+                    <div class="bold" style="font-size: 14px;">${storeName.toUpperCase()}</div>
+                    <div style="font-size: 10px; opacity: 0.8;">${address}</div>
+                    <div style="margin-top: 6px; font-size: 10px;">${headerMsg}</div>
                 </div>
                 
                 <div class="sep"></div>
                 
-                <div class="flex" style="font-size: 9px; opacity: 0.8;">
+                <div class="flex" style="font-size: 10px;">
                     <div>
-                    <div>No   : ${transaction.id.substring(0,8).toUpperCase()}</div>
+                    <div>Nota : ${transaction.id.substring(0,8).toUpperCase()}</div>
                     <div>Tgl  : ${dateStr}</div>
                     <div>Jam  : ${timeStr}</div>
                     </div>
@@ -289,45 +279,51 @@ export function TransactionDetailDialog({
                 </div>
 
                 <div class="sep"></div>
-                <div class="center pre-wrap" style="font-size: 9px; font-style: italic;">${footerMsg}</div>
+                <div class="center" style="font-size: 10px; font-style: italic; white-space: pre-wrap;">${footerMsg}</div>
             </div>
-          </div>
 
-          <div class="controls">
-            <button class="btn btn-print" onclick="window.print()">Cetak</button>
-            <button class="btn btn-img" onclick="exportImage()">Simpan PNG</button>
-            <button class="btn btn-pdf" onclick="exportPDF()">Simpan PDF</button>
-          </div>
+            <div class="fab-container">
+                <button class="fab-main" id="fab-main" onclick="toggleMenu()">+</button>
+                <div class="fab-menu" id="fab-menu">
+                    <button class="fab-item" onclick="window.print()" title="Cetak">🖨️</button>
+                    <button class="fab-item" onclick="exportImage()" title="Simpan PNG">🖼️</button>
+                    <button class="fab-item" onclick="exportPDF()" title="Simpan PDF">📄</button>
+                </div>
+            </div>
 
-          <script>
-            function exportImage() {
-                const target = document.getElementById('receipt-target');
-                html2canvas(target, { 
-                    backgroundColor: null,
-                    scale: 3 // Higher quality
-                }).then(canvas => {
-                    const link = document.createElement('a');
-                    link.download = 'Nota_XenonPlay_${transaction.id.substring(0,8)}.png';
-                    link.href = canvas.toDataURL('image/png');
-                    link.click();
-                });
-            }
+            <script>
+                function toggleMenu() {
+                    const main = document.getElementById('fab-main');
+                    const menu = document.getElementById('fab-menu');
+                    main.classList.toggle('active');
+                    menu.classList.toggle('active');
+                }
 
-            function exportPDF() {
-                const target = document.getElementById('receipt-target');
-                const { jsPDF } = window.jspdf;
-                html2canvas(target, { scale: 2 }).then(canvas => {
-                    const imgData = canvas.toDataURL('image/png');
-                    const pdf = new jsPDF({
-                        orientation: 'portrait',
-                        unit: 'px',
-                        format: [canvas.width / 2, canvas.height / 2]
+                function exportImage() {
+                    const target = document.getElementById('receipt-target');
+                    html2canvas(target, { backgroundColor: '#fff', scale: 3 }).then(canvas => {
+                        const link = document.createElement('a');
+                        link.download = 'XenonPlay_${transaction.id.substring(0,8)}.png';
+                        link.href = canvas.toDataURL('image/png');
+                        link.click();
                     });
-                    pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 2, canvas.height / 2);
-                    pdf.save('Nota_XenonPlay_${transaction.id.substring(0,8)}.pdf');
-                });
-            }
-          </script>
+                }
+
+                function exportPDF() {
+                    const target = document.getElementById('receipt-target');
+                    const { jsPDF } = window.jspdf;
+                    html2canvas(target, { scale: 2 }).then(canvas => {
+                        const imgData = canvas.toDataURL('image/png');
+                        const pdf = new jsPDF({
+                            orientation: 'portrait',
+                            unit: 'px',
+                            format: [canvas.width / 2, canvas.height / 2]
+                        });
+                        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 2, canvas.height / 2);
+                        pdf.save('XenonPlay_${transaction.id.substring(0,8)}.pdf');
+                    });
+                }
+            </script>
         </body>
       </html>
     `;
