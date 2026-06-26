@@ -87,16 +87,12 @@
   }
 }
 
-/* Logic Scale-to-Fit Utility */
-.scale-to-fit {
-  @apply flex-1 min-h-0 overflow-hidden;
-}
-
+/* FIX: Mencegah pointer-events: none yang menggantung setelah modal ditutup paksa */
 body[style*="pointer-events: none"] {
   pointer-events: auto !important;
 }
 
-/* Custom Scrollbar - Minimalis & Elegan */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;

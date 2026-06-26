@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -7,7 +6,22 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, ShoppingCart, Plus, Minus, Trash2, CreditCard, RefreshCcw, AlertCircle, Banknote, Coins, X, Store, Printer, CheckCircle2 } from 'lucide-react';
+import { 
+    Search, 
+    ShoppingCart, 
+    Plus, 
+    Minus, 
+    Trash2, 
+    CreditCard, 
+    RefreshCcw, 
+    AlertCircle, 
+    Banknote, 
+    Coins, 
+    X, 
+    Store, 
+    Printer, 
+    CheckCircle2 
+} from 'lucide-react';
 import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { createStandaloneFnbTransaction } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
@@ -109,8 +123,8 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
   const checkShift = () => {
     if (!activeShift) {
       toast({
-        title: "Laci Masih Terkunci",
-        description: "Buka laci kasir dulu ya sebelum mulai jualan.",
+        title: "Laci Kasir Terkunci",
+        description: "Buka shift dulu ya di tab 'Kasir & Laci' sebelum jualan amunisi.",
         variant: "destructive"
       });
       setIsOpeningDialog(true);
@@ -133,7 +147,7 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
       
       if (next < 0) return prev;
       if (item && next > item.stock) {
-        toast({ title: "Stok Habis!", description: `Hanya sisa ${item.stock} pcs lagi di kantin.`, variant: "destructive" });
+        toast({ title: "Waduh, Stok Habis!", description: `Item ${item.name} cuma sisa ${item.stock} lagi.`, variant: "destructive" });
         return prev;
       }
       
@@ -166,7 +180,7 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
       });
 
       toast({
-        title: "Penjualan Berhasil!",
+        title: "Mantap, Terjual!",
         description: `Kembalian pelanggan: ${formatCurrency(changeAmount)}`,
         variant: "success"
       });
@@ -381,11 +395,11 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
                         <ShoppingCart className="size-5" />
                     </div>
                     <div>
-                        <SheetTitle className="text-xl font-black uppercase tracking-tight">Daftar Belanja</SheetTitle>
-                        <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">{totalItemsCount} item terpilih</p>
+                        <SheetTitle className="text-xl font-black uppercase tracking-tight">Keranjang Belanja</SheetTitle>
+                        <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">{totalItemsCount} amunisi terpilih</p>
                     </div>
                 </div>
-                <Button variant="ghost" size="sm" className="h-8 text-[10px] font-black" onClick={() => setCart({})}>Kosongkan</Button>
+                <Button variant="ghost" size="sm" className="h-8 text-[10px] font-black" onClick={() => setCart({})}>Bersihkan</Button>
             </div>
           </SheetHeader>
           
@@ -399,12 +413,16 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
                         </div>
                         <div className="flex justify-between items-center">
                             <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-destructive" onClick={() => setCart(prev => { const n = {...prev}; delete n[item.id]; return n; })}>
-                                <Trash2 className="h-3.5 w-3.5 mr-1" /> <span className="text-[9px] font-black uppercase">Batal</span>
+                                <Trash2 className="h-3.5 w-3.5 mr-1" /> <span className="text-[9px] font-black uppercase">Hapus</span>
                             </Button>
                             <div className="flex items-center gap-4 bg-background p-1 rounded-xl border border-border/50">
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleUpdateCart(item.id, -1)}><Minus className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleUpdateCart(item.id, -1)} disabled={(selectedFnb[item.id] || 0) === 0}>
+                                    <Minus className="h-4 w-4" />
+                                </Button>
                                 <span className="text-sm font-black font-mono w-6 text-center">{item.quantity}</span>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleUpdateCart(item.id, 1)}><Plus className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleUpdateCart(item.id, 1)} disabled={(selectedFnb[item.id] || 0) >= item.stock}>
+                                    <Plus className="h-4 w-4" />
+                                </Button>
                             </div>
                         </div>
                     </div>
@@ -421,7 +439,7 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
             <AlertDialog open={isConfirmOpen} onOpenChange={(val) => { if(val && !checkShift()) return; setIsConfirmOpen(val); }}>
                 <AlertDialogTrigger asChild>
                 <Button className="w-full h-16 text-lg font-black uppercase tracking-widest gap-3 shadow-xl rounded-2xl" disabled={cartItems.length === 0 || isProcessing}>
-                    <CreditCard className="h-6 w-6" /> BAYAR SEKARANG
+                    <CreditCard className="h-6 w-6" /> BAYAR TUNAI SEKARANG
                 </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent className="max-w-2xl bg-background border-border">
@@ -498,7 +516,7 @@ export function FnbPos({ items }: { items: FnbItem[] }) {
                 <div className="size-20 rounded-[2.5rem] bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto border-4 border-emerald-500/20 shadow-xl"><CheckCircle2 className="size-10" /></div>
                 
                 <DialogHeader>
-                    <DialogTitle className="text-2xl font-black uppercase tracking-tight text-center">Transaksi Selesai!</DialogTitle>
+                    <DialogTitle className="text-2xl font-black uppercase tracking-tight text-center">Transaksi Berhasil!</DialogTitle>
                     <DialogDescription className="text-center text-xs text-muted-foreground font-bold uppercase">
                         Kembalian pelanggan: <span className="text-emerald-600 font-mono">{formatCurrency(lastOrderDetails?.change || 0)}</span>
                     </DialogDescription>

@@ -17,10 +17,10 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const IDLE_TIMEOUT_MS = 12 * 60 * 60 * 1000;
-const MAX_SESSION_AGE_MS = 24 * 60 * 60 * 1000;
-const THROTTLE_PING_MS = 15 * 60 * 1000;
-const SAFETY_RELEASE_MS = 5000;
+// KONFIGURASI KEAMANAN
+const IDLE_TIMEOUT_MS = 12 * 60 * 60 * 1000; // 12 Jam Inaktifitas
+const THROTTLE_PING_MS = 15 * 60 * 1000;    // Ping DB tiap 15 menit
+const SAFETY_RELEASE_MS = 5000;              // Fail-safe loading
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<UserRole | null>(null);
@@ -45,31 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
            normalized === '/check-member';
   };
 
-  useEffect(() => {
-    setMounted(true);
-    const timer = setTimeout(() => {
-        if (isRoleLoading) setIsRoleLoading(false);
-    }, SAFETY_RELEASE_MS);
-    return () => clearTimeout(timer);
-  }, [isRoleLoading]);
-
-  const checkSessionExpiry = useCallback(async (uid: string) => {
-    if (!firestore || isPublicRoute(pathname || '')) return;
-    try {
-        const snap = await getDoc(doc(firestore, 'users', uid));
-        if (snap.exists()) {
-            const data = snap.data() as UserProfile;
-            const now = Date.now();
-            if (data.lastLogin && (now - data.lastLogin > MAX_SESSION_AGE_MS)) {
-                toast({ title: "Sesi Berakhir", description: "Demi keamanan, silakan masuk kembali.", variant: "destructive" });
-                signOut(auth);
-                return true;
-            }
-        }
-    } catch (e) { console.error("Session check fail:", e); }
-    return false;
-  }, [firestore, pathname, auth, toast]);
-
+  // 1. AUTO-LOGOUT LOGIC
   const resetIdleTimer = useCallback(() => {
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
       
@@ -77,13 +53,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const lastPing = parseInt(localStorage.getItem('xenon_last_ping') || '0');
           const now = Date.now();
           
+          // Throttled Ping ke Firestore untuk update status aktif
           if (now - lastPing > THROTTLE_PING_MS && firestore) {
               setDoc(doc(firestore, 'users', user.uid), { lastLogin: now }, { merge: true }).catch(() => {});
               localStorage.setItem('xenon_last_ping', now.toString());
           }
 
           idleTimerRef.current = setTimeout(() => {
-              toast({ title: "Sesi Diam Berakhir", description: "Sistem logout otomatis karena tidak ada aktivitas.", variant: "destructive" });
+              toast({ 
+                  title: "Sesi Berakhir", 
+                  description: "Sistem otomatis keluar karena tidak ada aktivitas selama 12 jam.", 
+                  variant: "destructive" 
+              });
               signOut(auth);
           }, IDLE_TIMEOUT_MS);
       }
@@ -101,8 +82,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       };
   }, [user, pathname, resetIdleTimer]);
 
+  // 2. ROLE LOCKDOWN LOGIC
   useEffect(() => {
-    if (!mounted || isUserLoading) return;
+    setMounted(true);
+    if (isUserLoading) return;
     
     if (!user) {
         setRole(null);
@@ -121,42 +104,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
     }
 
-    const fetchUserRole = async () => {
+    const initSecureProfile = async () => {
       if (!firestore) { setIsRoleLoading(false); return; }
       try {
-        const isExpired = await checkSessionExpiry(user.uid);
-        if (isExpired) return;
-
         const userDocRef = doc(firestore, 'users', user.uid);
         const userDoc = await getDoc(userDocRef);
         
-        // JIKA DOKUMEN ADA: Gunakan data yang ada, JANGAN evaluasi ulang role
+        // JIKA PROFIL SUDAH ADA: Kunci Role & Update Sesi saja
         if (userDoc.exists()) {
           const userData = userDoc.data() as UserProfile;
           setRole(userData.role);
           
-          // Update session ID dan last login saja tanpa menyentuh role
           const mySessionId = localStorage.getItem('xenon_session_id') || userData.currentSessionId || Math.random().toString(36).substring(2, 15);
           if (!localStorage.getItem('xenon_session_id')) {
               localStorage.setItem('xenon_session_id', mySessionId);
           }
           
+          // CRITICAL: Jangan kirim field 'role' di sini agar tidak tertimpa
           await setDoc(userDocRef, { 
             currentSessionId: mySessionId, 
             lastLogin: Date.now() 
           }, { merge: true });
         } 
-        // JIKA DOKUMEN TIDAK ADA (User Baru): Baru jalankan logika penentuan role
+        // JIKA USER BARU: Tentukan Role sekali saja
         else if (user.email) {
           const adminQuery = query(collection(firestore, 'users'), where('role', '==', 'admin'), limit(1));
           const adminSnap = await getDocs(adminQuery);
           
           const newRole: UserRole = adminSnap.empty ? 'admin' : 'staff';
           const mySessionId = localStorage.getItem('xenon_session_id') || Math.random().toString(36).substring(2, 15);
-          
-          if (!localStorage.getItem('xenon_session_id')) {
-              localStorage.setItem('xenon_session_id', mySessionId);
-          }
           
           const newUserDoc: UserProfile = { 
             id: user.uid, 
@@ -172,13 +148,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setRole(newRole);
         }
       } catch (error) {
-        console.error("[Auth] Init Error:", error);
+        console.error("[SecureAuth] Init Error:", error);
       } finally {
         setIsRoleLoading(false);
       }
     };
-    fetchUserRole();
-  }, [user, isUserLoading, mounted, firestore, pathname, auth, checkSessionExpiry]);
+
+    initSecureProfile();
+  }, [user, isUserLoading, mounted, firestore, pathname, auth]);
 
   return (
     <AuthContext.Provider value={{ role, isRoleLoading }}>
