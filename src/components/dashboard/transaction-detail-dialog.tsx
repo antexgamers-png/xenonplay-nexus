@@ -120,104 +120,142 @@ export function TransactionDetailDialog({
     const html = `
       <html>
         <head>
+          <title>Nota Digital Preview</title>
           <style>
-            @page { margin: 0; size: ${paperSize} auto; }
+            @page { margin: 0; size: auto; }
             html, body { 
               margin: 0; 
               padding: 0; 
               height: auto; 
-              min-height: 0;
-              background: #fff;
+              background: #1e293b; 
+              display: flex;
+              justify-content: center;
+              min-height: 100vh;
             }
-            body { 
+            .receipt-paper { 
               width: ${paperSize}; 
-              padding: 5px 2px; 
+              padding: 8mm 4mm; 
+              background: #fff;
               font-family: 'Courier New', Courier, monospace; 
-              font-size: 8px; 
-              line-height: 1.1; 
+              font-size: 9px; 
+              line-height: 1.2; 
               color: #000;
-              overflow: hidden;
-              -webkit-print-color-adjust: exact;
+              height: fit-content;
+              box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+              margin: 20px 0;
             }
-            .center { text-align: center; }
-            .right { text-align: right; }
+            .center { text-align: center; } 
+            .right { text-align: right; } 
             .bold { font-weight: bold; }
-            .sep { border-top: 1px dashed #000; margin: 5px 0; }
-            .item-block { margin-bottom: 4px; }
-            .item-name { font-weight: bold; display: block; }
+            .sep { border-top: 1px dashed #000; margin: 6px 0; }
+            .item-block { margin-bottom: 5px; }
+            .item-name { font-weight: bold; display: block; text-transform: uppercase; }
             .flex { display: flex; justify-content: space-between; }
-            .logo { width: 40px; height: auto; object-fit: contain; margin: 0 auto 4px; display: block; }
-            .summary-row { display: flex; justify-content: space-between; margin: 2px 0; }
-            .total-row { display: flex; justify-content: space-between; margin: 4px 0; font-weight: bold; font-size: 9px; border-top: 1px solid #000; padding-top: 2px; }
+            .logo { width: 50px; height: auto; margin: 0 auto 6px; display: block; filter: grayscale(1) contrast(2); }
+            .summary-row { display: flex; justify-content: space-between; margin: 3px 0; }
+            .total-row { display: flex; justify-content: space-between; margin: 6px 0; font-weight: bold; font-size: 11px; border-top: 1px solid #000; padding-top: 4px; }
             .pre-wrap { white-space: pre-wrap; }
+            .btn-print {
+                position: fixed;
+                bottom: 30px;
+                right: 30px;
+                padding: 15px 30px;
+                background: #3b82f6;
+                color: #fff;
+                border: none;
+                border-radius: 50px;
+                font-family: sans-serif;
+                font-weight: 900;
+                text-transform: uppercase;
+                letter-spacing: 2px;
+                cursor: pointer;
+                box-shadow: 0 10px 20px rgba(59,130,246,0.4);
+                transition: all 0.3s;
+                z-index: 999;
+            }
+            .btn-print:hover { transform: translateY(-3px); box-shadow: 0 15px 30px rgba(59,130,246,0.6); }
+            @media print {
+              html, body { background: #fff; }
+              .receipt-paper { 
+                margin: 0; 
+                box-shadow: none; 
+                width: 100%;
+                padding: 0;
+              }
+              .btn-print { display: none; }
+            }
           </style>
         </head>
-        <body onload="window.print(); window.close();">
-          <div class="center">
-            <img src="/xplogo-monochrome.png" class="logo" />
-            <div class="bold" style="font-size: 9px;">${storeName.toUpperCase()}</div>
-            <div style="font-size: 7.5px;">${address}</div>
-            <div style="margin-top: 2px;">${headerMsg}</div>
-          </div>
-          
-          <div class="sep"></div>
-          
-          <div class="flex">
-            <div>
-               <div>Nota : ${transaction.id.substring(0,8).toUpperCase()}</div>
-               <div>Tgl  : ${dateStr}</div>
-               <div>Jam  : ${timeStr}</div>
+        <body>
+          <div class="receipt-paper">
+            <div class="center">
+                <img src="/xplogo-monochrome.png" class="logo" />
+                <div class="bold" style="font-size: 11px;">${storeName.toUpperCase()}</div>
+                <div style="font-size: 8.5px; opacity: 0.8;">${address}</div>
+                <div style="margin-top: 4px;">${headerMsg}</div>
             </div>
-            <div class="right">
-               <div>Kasir:</div>
-               <div>${cashierName.toUpperCase()}</div>
+            
+            <div class="sep"></div>
+            
+            <div class="flex" style="font-size: 8px; opacity: 0.7;">
+                <div>
+                   <div>No   : ${transaction.id.substring(0,8).toUpperCase()}</div>
+                   <div>Tgl  : ${dateStr}</div>
+                   <div>Jam  : ${timeStr}</div>
+                </div>
+                <div class="right">
+                   <div>Kasir:</div>
+                   <div class="bold">${cashierName.toUpperCase()}</div>
+                </div>
             </div>
-          </div>
 
-          <div class="sep"></div>
+            <div class="sep"></div>
 
-          ${printLines.map((item, idx) => `
-            <div class="item-block">
-              <span class="item-name">${idx + 1}. ${item.name}</span>
-              <div class="flex">
-                <span>${item.qty} x Rp ${item.price.toLocaleString('id-ID')}</span>
-                <span class="right">Rp ${item.total.toLocaleString('id-ID')}</span>
-              </div>
+            ${printLines.map((item, idx) => `
+                <div class="item-block">
+                <span class="item-name">${idx + 1}. ${item.name}</span>
+                <div class="flex">
+                    <span>${item.qty} x ${item.price.toLocaleString('id-ID')}</span>
+                    <span class="right bold">${item.total.toLocaleString('id-ID')}</span>
+                </div>
+                </div>
+            `).join('')}
+
+            <div class="sep:"></div>
+
+            <div class="summary-row">
+                <span>Total Qty</span>
+                <span class="right">${totalQty} Items</span>
             </div>
-          `).join('')}
+            <div class="summary-row">
+                <span>Sub Total</span>
+                <span class="right">${bruto.toLocaleString('id-ID')}</span>
+            </div>
+            ${discount > 0 ? `
+            <div class="summary-row" style="color: #000;">
+                <span>Potongan Diskon</span>
+                <span class="right">- ${discount.toLocaleString('id-ID')}</span>
+            </div>
+            ` : ''}
 
-          <div class="sep"></div>
+            <div class="total-row">
+                <span>TOTAL AKHIR</span>
+                <span class="right">${netto.toLocaleString('id-ID')}</span>
+            </div>
 
-          <div class="summary-row">
-            <span>Total QTY : ${totalQty}</span>
-          </div>
-          <div class="summary-row">
-            <span>Sub Total</span>
-            <span class="right">Rp ${bruto.toLocaleString('id-ID')}</span>
-          </div>
-          ${discount > 0 ? `
-          <div class="summary-row">
-            <span>Diskon</span>
-            <span class="right">Rp -${discount.toLocaleString('id-ID')}</span>
-          </div>
-          ` : ''}
+            <div class="summary-row" style="opacity: 0.8;">
+                <span>Diterima (Cash)</span>
+                <span class="right">${(transaction.paidAmount || netto).toLocaleString('id-ID')}</span>
+            </div>
+            <div class="summary-row">
+                <span class="bold">Kembali</span>
+                <span class="right bold">0</span>
+            </div>
 
-          <div class="total-row">
-            <span>TOTAL</span>
-            <span class="right">Rp ${netto.toLocaleString('id-ID')}</span>
+            <div class="sep"></div>
+            <div class="center pre-wrap" style="font-size: 8.5px; font-style: italic;">${footerMsg}</div>
           </div>
-
-          <div class="summary-row">
-            <span>Bayar (Cash)</span>
-            <span class="right">${(transaction.paidAmount || netto).toLocaleString('id-ID')}</span>
-          </div>
-          <div class="summary-row">
-            <span>Kembali</span>
-            <span class="right">Rp 0</span>
-          </div>
-
-          <div class="sep"></div>
-          <div class="center pre-wrap" style="font-size: 7.5px;">${footerMsg}</div>
+          <button class="btn-print" onclick="window.print()">Cetak Ke Printer</button>
         </body>
       </html>
     `;
