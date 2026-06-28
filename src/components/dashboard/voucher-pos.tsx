@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Ticket, Plus, History, Check, Copy, Loader2, Zap, Monitor, Clock, FileText, Pencil, Trash2, ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
+import { Ticket, Plus, History, Check, Copy, Loader2, Zap, FileText, Pencil, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { createManualVoucher, updateVoucher, deleteVoucher } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { useShift } from '@/components/providers/shift-provider';
@@ -60,14 +60,12 @@ export function VoucherPos() {
     const [lastCode, setLastCode] = useState<string | null>(null);
     const [hasCopied, setHasCopied] = useState(false);
     
-    // States for Edit/Delete
     const [isEditing, setIsEditing] = useState(false);
     const [editTarget, setEditTarget] = useState<CreditVoucher | null>(null);
     const [editNote, setEditNote] = useState('');
 
     const vouchersQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        // Limit 500 untuk paginasi client-side yang optimal
         return query(collection(firestore, 'vouchers'), orderBy('createdAt', 'desc'), limit(500));
     }, [firestore]);
 
@@ -315,7 +313,7 @@ export function VoucherPos() {
             </div>
 
             <div className="lg:col-span-8">
-                <Card className="rounded-[2rem] overflow-hidden border shadow-sm h-full flex flex-col">
+                <Card className="rounded-[2.5rem] overflow-hidden border shadow-sm h-full flex flex-col">
                     <CardHeader className="bg-muted/20 border-b p-6 flex flex-row items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="p-2 rounded-xl bg-primary/10 text-primary">
@@ -327,8 +325,9 @@ export function VoucherPos() {
                             </div>
                         </div>
                     </CardHeader>
-                    <CardContent className="p-0 flex-1 overflow-hidden flex flex-col">
-                        <ScrollArea className="flex-1 h-[480px]">
+                    <CardContent className="p-0 flex-1 flex flex-col overflow-hidden">
+                        {/* AREA TABEL DENGAN SCROLLBAR INTERNAL */}
+                        <ScrollArea className="h-[480px]">
                             <Table>
                                 <TableHeader className="bg-muted/30 sticky top-0 z-10">
                                     {table.getHeaderGroups().map((headerGroup) => (
@@ -365,9 +364,10 @@ export function VoucherPos() {
                             </Table>
                         </ScrollArea>
                         
-                        <div className="p-4 border-t bg-muted/20 flex flex-col sm:flex-row items-center justify-between gap-4 mt-auto">
+                        {/* FOOTER PAGINASI TETAP DI BAWAH */}
+                        <div className="p-4 border-t bg-muted/20 flex flex-col sm:flex-row items-center justify-between gap-4">
                             <div className="flex items-center gap-2">
-                                <p className="text-[10px] font-black uppercase text-muted-foreground">Tampilkan</p>
+                                <p className="text-[10px] font-black uppercase text-muted-foreground">Baris</p>
                                 <Select value={`${table.getState().pagination.pageSize}`} onValueChange={(v) => table.setPageSize(Number(v))}>
                                     <SelectTrigger className="h-8 w-[70px] text-xs font-bold">
                                         <SelectValue />
@@ -379,7 +379,7 @@ export function VoucherPos() {
                             </div>
                             <div className="flex items-center gap-4">
                                 <span className="text-[10px] font-black uppercase text-muted-foreground">
-                                    Halaman {table.getState().pagination.pageIndex + 1} dari {table.getPageCount()}
+                                    {table.getState().pagination.pageIndex + 1} / {table.getPageCount()}
                                 </span>
                                 <div className="flex gap-1">
                                     <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
@@ -395,7 +395,6 @@ export function VoucherPos() {
                 </Card>
             </div>
 
-            {/* EDIT DIALOG */}
             <Dialog open={!!editTarget} onOpenChange={(v) => !v && setEditTarget(null)}>
                 <DialogContent className="max-w-sm rounded-2xl">
                     <DialogHeader>
