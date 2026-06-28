@@ -31,11 +31,26 @@ import {
     CheckCircle2,
     Undo2,
     ExternalLink,
-    Loader2
+    Loader2,
+    CalendarCheck,
+    Gift,
+    UserPlus,
+    FileSearch
 } from 'lucide-react';
 import type { GeneralSettings } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { saveGeneralSettings, deleteAllTransactions, deleteAllExpenses, deleteAllShifts, deleteAllMembers } from '@/lib/data';
+import { 
+    saveGeneralSettings, 
+    deleteAllTransactions, 
+    deleteAllExpenses, 
+    deleteAllShifts, 
+    deleteAllMembers, 
+    deleteAllVouchers, 
+    deleteAllReservations, 
+    deleteAllRedemptions, 
+    deleteAllMemberRequests, 
+    deleteAllAuditLogs 
+} from '@/lib/data';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -162,7 +177,7 @@ export default function PengaturanPage() {
     }
   };
 
-  const handleReset = async (type: 'transactions' | 'expenses' | 'shifts' | 'members') => {
+  const handleReset = async (type: 'transactions' | 'expenses' | 'shifts' | 'members' | 'vouchers' | 'reservations' | 'redemptions' | 'memberRequests' | 'auditLogs') => {
     if (!firestore) return;
     setIsDeleting(type);
     try {
@@ -170,6 +185,11 @@ export default function PengaturanPage() {
       if (type === 'expenses') await deleteAllExpenses(firestore);
       if (type === 'shifts') await deleteAllShifts(firestore);
       if (type === 'members') await deleteAllMembers(firestore);
+      if (type === 'vouchers') await deleteAllVouchers(firestore);
+      if (type === 'reservations') await deleteAllReservations(firestore);
+      if (type === 'redemptions') await deleteAllRedemptions(firestore);
+      if (type === 'memberRequests') await deleteAllMemberRequests(firestore);
+      if (type === 'auditLogs') await deleteAllAuditLogs(firestore);
 
       toast({
         title: 'Data Dihapus',
@@ -177,7 +197,11 @@ export default function PengaturanPage() {
         variant: 'success'
       });
     } catch (e: any) {
-      toast({ title: 'Gagal Menghapus', description: e.message, variant: 'destructive' });
+      toast({
+        title: 'Gagal Menghapus',
+        description: e.message,
+        variant: 'destructive'
+      });
     } finally {
       setIsDeleting(null);
     }
@@ -582,7 +606,7 @@ export default function PengaturanPage() {
                     </Card>
                     <div className="bg-primary/5 p-5 rounded-[2rem] border border-primary/10">
                         <p className="text-[10px] text-primary/70 leading-relaxed font-bold uppercase text-center">
-                            Klik tombol "Buka Window" untuk melihat simulasi ukuran kertas thermal asli di tab baru browser Anda.
+                            Berikan cuplikan nota fisik kepada pelanggan sebelum mencetak yang sebenarnya.
                         </p>
                     </div>
                 </div>
@@ -613,14 +637,124 @@ export default function PengaturanPage() {
         </TabsContent>
 
         <TabsContent value="danger" className="animate-in fade-in slide-in-from-bottom-2">
-            <Card className="rounded-[2rem] border-red-500/20 bg-red-500/[0.02] overflow-hidden shadow-sm max-w-4xl">
-                <CardHeader className="bg-red-500/5 border-b border-red-500/10"><CardTitle className="text-lg font-black uppercase text-red-600 flex items-center gap-2"><ShieldAlert className="size-5" /> Maintenance Data</CardTitle></CardHeader>
-                <CardContent className="space-y-4 pt-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="flex items-center justify-between p-4 rounded-2xl border border-red-500/10 bg-card shadow-sm"><div className="flex gap-3"><ReceiptText className="h-5 w-5 text-slate-400 mt-1" /><div className="space-y-1"><h4 className="font-bold text-xs uppercase">Transaksi</h4><p className="text-[9px] text-muted-foreground">Sewa, Wi-Fi & FnB.</p></div></div><ResetButton label="Reset" onConfirm={() => handleReset('transactions')} isLoading={isDeleting === 'transactions'} /></div>
-                        <div className="flex items-center justify-between p-4 rounded-2xl border border-red-500/10 bg-card shadow-sm"><div className="flex gap-3"><Wallet className="h-5 w-5 text-slate-400 mt-1" /><div className="space-y-1"><h4 className="font-bold text-xs uppercase">Biaya</h4><p className="text-[9px] text-muted-foreground">Catatan operasional.</p></div></div><ResetButton label="Reset" onConfirm={() => handleReset('expenses')} isLoading={isDeleting === 'expenses'} /></div>
-                        <div className="flex items-center justify-between p-4 rounded-2xl border border-red-500/10 bg-card shadow-sm"><div className="flex gap-3"><History className="h-5 w-5 text-slate-400 mt-1" /><div className="space-y-1"><h4 className="font-bold text-xs uppercase">Audit Shift</h4><p className="text-[9px] text-muted-foreground">Log buka/tutup laci.</p></div></div><ResetButton label="Reset" onConfirm={() => handleReset('shifts')} isLoading={isDeleting === 'shifts'} /></div>
-                        <div className="flex items-center justify-between p-4 rounded-2xl border border-red-500/10 bg-card shadow-sm"><div className="flex gap-3"><Users className="h-5 w-5 text-slate-400 mt-1" /><div className="space-y-1"><h4 className="font-bold text-xs uppercase">Member</h4><p className="text-[9px] text-muted-foreground">Seluruh data Sultan.</p></div></div><ResetButton label="Reset" onConfirm={() => handleReset('members')} isLoading={isDeleting === 'members'} /></div>
+            <Card className="rounded-[2rem] border-red-500/20 bg-red-500/[0.02] overflow-hidden shadow-sm">
+                <CardHeader className="bg-red-500/5 border-b border-red-500/10">
+                    <CardTitle className="text-lg font-black uppercase text-red-600 flex items-center gap-2">
+                        <ShieldAlert className="size-5" /> Maintenance & Cleanup Data
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                        Gunakan fitur ini dengan sangat hati-hati. Seluruh data yang dihapus tidak dapat dipulihkan.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6 pt-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {/* 1. Riwayat Transaksi */}
+                        <div className="flex items-center justify-between p-4 rounded-2xl border border-red-500/10 bg-card shadow-sm">
+                            <div className="flex gap-3">
+                                <ReceiptText className="h-5 w-5 text-slate-400 mt-1" />
+                                <div className="space-y-1">
+                                    <h4 className="font-bold text-xs uppercase">Transaksi</h4>
+                                    <p className="text-[9px] text-muted-foreground uppercase">Sewa, Wi-Fi & FnB</p>
+                                </div>
+                            </div>
+                            <ResetButton label="Nuclear" onConfirm={() => handleReset('transactions')} isLoading={isDeleting === 'transactions'} />
+                        </div>
+
+                        {/* 2. Biaya Operasional */}
+                        <div className="flex items-center justify-between p-4 rounded-2xl border border-red-500/10 bg-card shadow-sm">
+                            <div className="flex gap-3">
+                                <Wallet className="h-5 w-5 text-slate-400 mt-1" />
+                                <div className="space-y-1">
+                                    <h4 className="font-bold text-xs uppercase">Biaya Keluar</h4>
+                                    <p className="text-[9px] text-muted-foreground uppercase">Riwayat Operasional</p>
+                                </div>
+                            </div>
+                            <ResetButton label="Nuclear" onConfirm={() => handleReset('expenses')} isLoading={isDeleting === 'expenses'} />
+                        </div>
+
+                        {/* 3. Laporan Shift */}
+                        <div className="flex items-center justify-between p-4 rounded-2xl border border-red-500/10 bg-card shadow-sm">
+                            <div className="flex gap-3">
+                                <History className="h-5 w-5 text-slate-400 mt-1" />
+                                <div className="space-y-1">
+                                    <h4 className="font-bold text-xs uppercase">Audit Shift</h4>
+                                    <p className="text-[9px] text-muted-foreground uppercase">Laporan Buka-Tutup</p>
+                                </div>
+                            </div>
+                            <ResetButton label="Nuclear" onConfirm={() => handleReset('shifts')} isLoading={isDeleting === 'shifts'} />
+                        </div>
+
+                        {/* 4. Database Member */}
+                        <div className="flex items-center justify-between p-4 rounded-2xl border border-red-500/10 bg-card shadow-sm">
+                            <div className="flex gap-3">
+                                <Users className="h-5 w-5 text-slate-400 mt-1" />
+                                <div className="space-y-1">
+                                    <h4 className="font-bold text-xs uppercase">Sultan Member</h4>
+                                    <p className="text-[9px] text-muted-foreground uppercase">Data & Poin Member</p>
+                                </div>
+                            </div>
+                            <ResetButton label="Nuclear" onConfirm={() => handleReset('members')} isLoading={isDeleting === 'members'} />
+                        </div>
+
+                        {/* 5. Voucher Kredit */}
+                        <div className="flex items-center justify-between p-4 rounded-2xl border border-red-500/10 bg-card shadow-sm">
+                            <div className="flex gap-3">
+                                <Ticket className="h-5 w-5 text-slate-400 mt-1" />
+                                <div className="space-y-1">
+                                    <h4 className="font-bold text-xs uppercase">Voucher Kredit</h4>
+                                    <p className="text-[9px] text-muted-foreground uppercase">Kode sisa waktu</p>
+                                </div>
+                            </div>
+                            <ResetButton label="Nuclear" onConfirm={() => handleReset('vouchers')} isLoading={isDeleting === 'vouchers'} />
+                        </div>
+
+                        {/* 6. Reservasi / Booking */}
+                        <div className="flex items-center justify-between p-4 rounded-2xl border border-red-500/10 bg-card shadow-sm">
+                            <div className="flex gap-3">
+                                <CalendarCheck className="h-5 w-5 text-slate-400 mt-1" />
+                                <div className="space-y-1">
+                                    <h4 className="font-bold text-xs uppercase">Booking Slot</h4>
+                                    <p className="text-[9px] text-muted-foreground uppercase">Jadwal Reservasi</p>
+                                </div>
+                            </div>
+                            <ResetButton label="Nuclear" onConfirm={() => handleReset('reservations')} isLoading={isDeleting === 'reservations'} />
+                        </div>
+
+                        {/* 7. Riwayat Tukar Hadiah */}
+                        <div className="flex items-center justify-between p-4 rounded-2xl border border-red-500/10 bg-card shadow-sm">
+                            <div className="flex gap-3">
+                                <Gift className="h-5 w-5 text-slate-400 mt-1" />
+                                <div className="space-y-1">
+                                    <h4 className="font-bold text-xs uppercase">Tukar Hadiah</h4>
+                                    <p className="text-[9px] text-muted-foreground uppercase">Log Redeem Member</p>
+                                </div>
+                            </div>
+                            <ResetButton label="Nuclear" onConfirm={() => handleReset('redemptions')} isLoading={isDeleting === 'redemptions'} />
+                        </div>
+
+                        {/* 8. Antrean Member Baru */}
+                        <div className="flex items-center justify-between p-4 rounded-2xl border border-red-500/10 bg-card shadow-sm">
+                            <div className="flex gap-3">
+                                <UserPlus className="h-5 w-5 text-slate-400 mt-1" />
+                                <div className="space-y-1">
+                                    <h4 className="font-bold text-xs uppercase">Pendaftar Baru</h4>
+                                    <p className="text-[9px] text-muted-foreground uppercase">Antrean Pendaftaran</p>
+                                </div>
+                            </div>
+                            <ResetButton label="Nuclear" onConfirm={() => handleReset('memberRequests')} isLoading={isDeleting === 'memberRequests'} />
+                        </div>
+
+                        {/* 9. Sisa Audit Logs (Cleanup) */}
+                        <div className="flex items-center justify-between p-4 rounded-2xl border border-red-500/10 bg-card shadow-sm">
+                            <div className="flex gap-3">
+                                <FileSearch className="h-5 w-5 text-slate-400 mt-1" />
+                                <div className="space-y-1">
+                                    <h4 className="font-bold text-xs uppercase">Sisa Audit Logs</h4>
+                                    <p className="text-[9px] text-muted-foreground uppercase">Hapus sisa log sistem</p>
+                                </div>
+                            </div>
+                            <ResetButton label="Cleanup" onConfirm={() => handleReset('auditLogs')} isLoading={isDeleting === 'auditLogs'} />
+                        </div>
                     </div>
                 </CardContent>
             </Card>
@@ -634,7 +768,7 @@ function ResetButton({ label, onConfirm, isLoading }: { label: string, onConfirm
     return (
         <AlertDialog>
             <AlertDialogTrigger asChild><Button variant="destructive" size="sm" className="h-9 px-4 font-black uppercase text-[9px] tracking-widest rounded-xl">{isLoading ? '...' : label}</Button></AlertDialogTrigger>
-            <AlertDialogContent className="rounded-3xl border-border bg-background"><AlertDialogHeader><AlertDialogTitle className="flex items-center gap-2 text-red-500 font-black uppercase tracking-tight"><AlertTriangle className="h-5 w-5" /> Konfirmasi Reset</AlertDialogTitle><AlertDialogDescription className="text-sm font-medium">Tindakan ini akan menghapus data tersebut secara PERMANEN.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel className="font-bold uppercase text-[10px] rounded-xl border-border">Batal</AlertDialogCancel><AlertDialogAction onClick={onConfirm} className="bg-red-600 hover:bg-red-700 font-black uppercase text-[10px] tracking-widest rounded-xl" disabled={isLoading}>{isLoading ? 'Menghapus...' : 'Ya, Hapus Sekarang'}</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+            <AlertDialogContent className="rounded-3xl border-border bg-background"><AlertDialogHeader><AlertDialogTitle className="flex items-center gap-2 text-red-500 font-black uppercase tracking-tight"><AlertTriangle className="h-5 w-5" /> Konfirmasi Penghapusan</AlertDialogTitle><AlertDialogDescription className="text-sm font-medium">Tindakan ini akan menghapus seluruh data pada koleksi tersebut secara PERMANEN. Anda tidak dapat membatalkan aksi ini.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel className="font-bold uppercase text-[10px] rounded-xl border-border">Batal</AlertDialogCancel><AlertDialogAction onClick={onConfirm} className="bg-red-600 hover:bg-red-700 font-black uppercase text-[10px] tracking-widest rounded-xl" disabled={isLoading}>{isLoading ? 'Menghapus...' : 'Ya, Hapus Sekarang'}</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
         </AlertDialog>
     );
 }

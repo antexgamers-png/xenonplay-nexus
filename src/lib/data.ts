@@ -544,6 +544,31 @@ export async function deleteAllMembers(db: Firestore) {
     for (const d of snap.docs) await deleteDoc(d.ref);
 }
 
+export async function deleteAllVouchers(db: Firestore) {
+    const snap = await getDocs(collection(db, 'vouchers'));
+    for (const d of snap.docs) await deleteDoc(d.ref);
+}
+
+export async function deleteAllReservations(db: Firestore) {
+    const snap = await getDocs(collection(db, 'reservations'));
+    for (const d of snap.docs) await deleteDoc(d.ref);
+}
+
+export async function deleteAllRedemptions(db: Firestore) {
+    const snap = await getDocs(collection(db, 'redemptions'));
+    for (const d of snap.docs) await deleteDoc(d.ref);
+}
+
+export async function deleteAllMemberRequests(db: Firestore) {
+    const snap = await getDocs(collection(db, 'memberRequests'));
+    for (const d of snap.docs) await deleteDoc(d.ref);
+}
+
+export async function deleteAllAuditLogs(db: Firestore) {
+    const snap = await getDocs(collection(db, 'auditLogs'));
+    for (const d of snap.docs) await deleteDoc(d.ref);
+}
+
 export async function saveGeneralSettings(db: Firestore, settings: GeneralSettings) {
     await setDoc(doc(db, 'settings', 'general'), settings);
 }
