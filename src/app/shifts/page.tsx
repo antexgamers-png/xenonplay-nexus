@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -52,7 +53,9 @@ import {
     ChevronLeft,
     ChevronRight,
     ArrowRight,
-    Info
+    Info,
+    Calendar,
+    Timer
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -81,7 +84,7 @@ export default function ShiftsPage() {
   // History Query
   const historyQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, 'shifts'), orderBy('openedAt', 'desc'), limit(20));
+    return query(collection(firestore, 'shifts'), orderBy('openedAt', 'desc'), limit(50));
   }, [firestore]);
 
   const { data: shiftHistory, isLoading: isLoadingHistory } = useCollection<Shift>(historyQuery);
@@ -178,7 +181,7 @@ export default function ShiftsPage() {
                     {activeShift ? (
                         <>
                             <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-0.5"><p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">Staff</p><p className="font-bold text-xs truncate">{activeShift.openedByName}</p></div>
+                                <div className="space-y-0.5"><p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">Staff</p><p className="font-bold text-xs truncate text-primary">{activeShift.openedByName}</p></div>
                                 <div className="space-y-0.5"><p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">Mulai</p><p className="font-bold text-xs font-mono">{format(activeShift.openedAt, 'HH:mm')} WIB</p></div>
                             </div>
                             <Separator className="opacity-50" />
@@ -241,12 +244,19 @@ export default function ShiftsPage() {
                             {isLoadingHistory ? [1,2,3].map(i => <TableRow key={i}><TableCell colSpan={5} className="p-4"><Skeleton className="h-10 w-full rounded-lg" /></TableCell></TableRow>) :
                                 shiftHistory?.map(shift => (
                                     <TableRow key={shift.id} className="border-border group hover:bg-muted/20 h-14">
-                                        <TableCell className="py-2"><div className="flex flex-col"><span className="font-bold text-[10px] text-primary uppercase">{shift.openedByName}</span><span className="text-[9px] text-muted-foreground font-mono">{format(shift.openedAt, 'dd/MM HH:mm')}</span></div></TableCell>
-                                        <TableCell className="text-right text-[10px] font-mono">{formatCurrency(shift.expectedBalance)}</TableCell>
-                                        <TableCell className="text-right text-[10px] font-mono font-bold">{shift.status === 'open' ? '...' : formatCurrency(shift.actualBalance || 0)}</TableCell>
+                                        <TableCell className="py-2">
+                                            <div className="flex flex-col">
+                                                <span className="font-black text-[10px] text-primary uppercase">{shift.openedByName}</span>
+                                                <span className="text-[9px] text-muted-foreground font-mono">{format(shift.openedAt, 'dd/MM HH:mm')}</span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-right text-xs font-mono font-bold">{formatCurrency(shift.expectedBalance).replace(',00', '')}</TableCell>
+                                        <TableCell className="text-right text-xs font-mono font-bold text-foreground">{shift.status === 'open' ? '...' : formatCurrency(shift.actualBalance || 0).replace(',00', '')}</TableCell>
                                         <TableCell className="text-center py-2">
-                                            {shift.status === 'open' ? '-' : (
-                                                <Badge className={cn("text-[8px] font-bold min-w-[60px] justify-center h-5", (shift.difference || 0) === 0 ? "bg-emerald-500/10 text-emerald-600" : (shift.difference || 0) > 0 ? "bg-blue-500/10 text-blue-600" : "bg-red-500/10 text-red-600")}>
+                                            {shift.status === 'open' ? (
+                                                <Badge className="bg-blue-500/10 text-blue-500 text-[8px] font-black uppercase">OPEN</Badge>
+                                            ) : (
+                                                <Badge className={cn("text-[8px] font-bold min-w-[60px] justify-center h-5 border-none", (shift.difference || 0) === 0 ? "bg-emerald-500/10 text-emerald-600" : (shift.difference || 0) > 0 ? "bg-blue-500/10 text-blue-600" : "bg-red-500/10 text-red-600")}>
                                                     {(shift.difference || 0) === 0 ? 'COCOK' : formatCurrency(Math.abs(shift.difference || 0)).replace('Rp', (shift.difference || 0) > 0 ? 'SURPLUS ' : 'DEFISIT ')}
                                                 </Badge>
                                             )}
@@ -267,68 +277,111 @@ export default function ShiftsPage() {
           <DialogContent className="max-w-xl bg-[#020617] border-white/10 p-0 overflow-hidden rounded-[1.5rem] shadow-2xl">
               {selectedShift && (
                   <>
-                    <div className={cn("h-1 w-full", (selectedShift.difference || 0) === 0 ? "bg-emerald-500" : (selectedShift.difference || 0) < 0 ? "bg-red-500" : "bg-blue-500")} />
-                    <DialogHeader className="p-5 pb-3">
+                    <div className={cn("h-1 w-full", selectedShift.status === 'open' ? 'bg-blue-500' : (selectedShift.difference || 0) === 0 ? "bg-emerald-500" : (selectedShift.difference || 0) < 0 ? "bg-red-500" : "bg-blue-500")} />
+                    <DialogHeader className="p-6 pb-2">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-xl bg-primary/20 text-primary"><FileText className="size-4" /></div>
-                                <div><DialogTitle className="text-base font-black uppercase text-white tracking-tight">Audit Sesi Kerja</DialogTitle><p className="text-[8px] font-bold text-white/30 uppercase tracking-[0.2em]">{selectedShift.openedByName} • {format(selectedShift.openedAt, 'dd MMM yyyy', { locale: id })}</p></div>
+                                <div className="p-2.5 rounded-xl bg-primary/20 text-primary shadow-lg shadow-primary/10"><FileText className="size-5" /></div>
+                                <div>
+                                    <DialogTitle className="text-lg font-black uppercase text-white tracking-tight">Audit Sesi Kerja</DialogTitle>
+                                    <p className="text-[9px] font-bold text-white/30 uppercase tracking-[0.2em]">{selectedShift.openedByName} • ID: {selectedShift.id.substring(0,6)}</p>
+                                </div>
                             </div>
-                            <div className="flex gap-1">
-                                {[1,2,3].map(i => <div key={i} className={cn("h-0.5 rounded-full transition-all", detailStep === i ? "w-4 bg-primary" : "w-1 bg-white/10")} />)}
+                            <div className="flex items-center gap-1.5 bg-white/5 p-1 rounded-full border border-white/5">
+                                {[1,2,3].map(i => (
+                                    <button 
+                                        key={i} 
+                                        onClick={() => setDetailStep(i)}
+                                        className={cn(
+                                            "h-1.5 rounded-full transition-all duration-300", 
+                                            detailStep === i ? "w-6 bg-primary" : "w-1.5 bg-white/10 hover:bg-white/20"
+                                        )} 
+                                    />
+                                ))}
                             </div>
                         </div>
                     </DialogHeader>
 
-                    <div className="min-h-[320px] px-5 py-2">
+                    <div className="min-h-[360px] px-6 py-4">
                         {detailStep === 1 && (
-                            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-                                <div className="grid grid-cols-2 gap-3">
-                                    <Card className="bg-white/[0.02] border-white/5 p-3 rounded-xl">
-                                        <p className="text-[8px] font-black uppercase text-white/40 mb-2">Rekap Keuangan</p>
-                                        <div className="space-y-1.5">
-                                            <div className="flex justify-between text-[10px]"><span className="text-white/40 uppercase">Modal</span><span className="text-white font-mono">{formatCurrency(selectedShift.initialBalance)}</span></div>
-                                            <div className="flex justify-between text-[10px]"><span className="text-white/40 uppercase">Jualan</span><span className="text-emerald-500 font-mono">+{formatCurrency(selectedShift.totalSales)}</span></div>
-                                            <Separator className="bg-white/5 my-1" />
-                                            <div className="flex justify-between items-end"><span className="text-[9px] font-black uppercase text-primary">Target</span><span className="text-lg font-black text-primary font-mono leading-none">{formatCurrency(selectedShift.expectedBalance).replace(',00', '')}</span></div>
+                            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                                {/* TIME AUDIT */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-3 relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 p-2 opacity-10"><Calendar className="size-12" /></div>
+                                        <div>
+                                            <p className="text-[8px] font-black uppercase text-white/40 mb-1 tracking-widest">Waktu Buka Laci</p>
+                                            <p className="text-sm font-black text-white">{format(selectedShift.openedAt, 'dd MMM yyyy', { locale: id })}</p>
+                                            <p className="text-xs font-bold text-primary font-mono">{format(selectedShift.openedAt, 'HH:mm:ss')} WIB</p>
+                                        </div>
+                                    </div>
+                                    <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-3 relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 p-2 opacity-10"><Timer className="size-12" /></div>
+                                        <div>
+                                            <p className="text-[8px] font-black uppercase text-white/40 mb-1 tracking-widest">Waktu Tutup Buku</p>
+                                            {selectedShift.closedAt ? (
+                                                <>
+                                                    <p className="text-sm font-black text-white">{format(selectedShift.closedAt, 'dd MMM yyyy', { locale: id })}</p>
+                                                    <p className="text-xs font-bold text-red-400 font-mono">{format(selectedShift.closedAt, 'HH:mm:ss')} WIB</p>
+                                                </>
+                                            ) : (
+                                                <div className="flex items-center gap-2 text-blue-400">
+                                                    <span className="text-[10px] font-black uppercase animate-pulse">Sesi Masih Aktif</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <Card className="bg-white/[0.02] border-white/5 p-4 rounded-2xl">
+                                        <p className="text-[8px] font-black uppercase text-white/40 mb-3 tracking-widest flex items-center gap-2"><Banknote className="size-3" /> Rekap Keuangan</p>
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between text-[10px]"><span className="text-white/40 uppercase">Modal Awal</span><span className="text-white font-mono">{formatCurrency(selectedShift.initialBalance)}</span></div>
+                                            <div className="flex justify-between text-[10px]"><span className="text-white/40 uppercase">Total Jualan</span><span className="text-emerald-500 font-mono font-bold">+{formatCurrency(selectedShift.totalSales)}</span></div>
+                                            <Separator className="bg-white/5 my-2" />
+                                            <div className="flex justify-between items-end"><span className="text-[9px] font-black uppercase text-primary tracking-widest">Target Laci</span><span className="text-xl font-black text-primary font-mono leading-none">{formatCurrency(selectedShift.expectedBalance).replace(',00', '')}</span></div>
                                         </div>
                                     </Card>
-                                    <Card className="bg-white/[0.02] border-white/5 p-3 rounded-xl flex flex-col justify-center">
-                                        <p className="text-[8px] font-black uppercase text-white/40 mb-2">Audit Laci Fisik</p>
-                                        <div className="flex justify-between items-end mb-2"><span className="text-[9px] font-black uppercase text-white/60">Saldo Fisik</span><span className="text-lg font-black text-white font-mono leading-none">{formatCurrency(selectedShift.actualBalance || 0).replace(',00', '')}</span></div>
-                                        <div className={cn("p-2 rounded-lg flex justify-between items-center", (selectedShift.difference || 0) === 0 ? "bg-emerald-500/10" : (selectedShift.difference || 0) < 0 ? "bg-red-500/10" : "bg-blue-500/10")}>
-                                            <span className="text-[8px] font-black uppercase opacity-60">Selisih</span>
-                                            <span className="text-xs font-black font-mono">{(selectedShift.difference || 0) > 0 ? '+' : ''}{formatCurrency(selectedShift.difference || 0)}</span>
+                                    <Card className="bg-white/[0.02] border-white/5 p-4 rounded-2xl flex flex-col justify-center">
+                                        <p className="text-[8px] font-black uppercase text-white/40 mb-3 tracking-widest flex items-center gap-2"><Calculator className="size-3" /> Audit Laci Fisik</p>
+                                        <div className="flex justify-between items-end mb-2"><span className="text-[9px] font-black uppercase text-white/60">Uang Fisik</span><span className="text-xl font-black text-white font-mono leading-none">{selectedShift.status === 'open' ? '---' : formatCurrency(selectedShift.actualBalance || 0).replace(',00', '')}</span></div>
+                                        <div className={cn("p-2.5 rounded-xl flex justify-between items-center border", selectedShift.status === 'open' ? "bg-white/5 border-white/5" : (selectedShift.difference || 0) === 0 ? "bg-emerald-500/10 border-emerald-500/20" : (selectedShift.difference || 0) < 0 ? "bg-red-500/10 border-red-500/20" : "bg-blue-500/10 border-blue-500/20")}>
+                                            <span className="text-[8px] font-black uppercase opacity-60">Selisih Kas</span>
+                                            <span className="text-xs font-black font-mono">{selectedShift.status === 'open' ? '-' : (selectedShift.difference || 0) > 0 ? '+' : ''}{formatCurrency(selectedShift.difference || 0)}</span>
                                         </div>
                                     </Card>
                                 </div>
-                                <div className="p-4 rounded-xl bg-white/[0.03] border border-white/5 relative overflow-hidden">
-                                    <p className="text-[8px] font-black uppercase text-amber-500 mb-2 flex items-center gap-1.5"><Info className="size-2.5" /> Memo Operator</p>
-                                    <p className="text-[11px] text-white/70 italic leading-relaxed">"{selectedShift.notes || 'Tidak ada catatan khusus.'}"</p>
+                                <div className="p-4 rounded-2xl bg-white/[0.03] border border-dashed border-white/10 relative overflow-hidden">
+                                    <p className="text-[8px] font-black uppercase text-amber-500 mb-2 flex items-center gap-1.5"><Info className="size-2.5" /> Memo / Catatan Operator</p>
+                                    <p className="text-[11px] text-white/70 italic leading-relaxed">"{selectedShift.notes || 'Tidak ada catatan atau kendala yang dilaporkan.'}"</p>
                                 </div>
                             </div>
                         )}
 
                         {detailStep === 2 && (
-                            <div className="space-y-3 animate-in fade-in slide-in-from-right-4 duration-300">
+                            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
                                 <div className="flex items-center justify-between px-1">
-                                    <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40 flex items-center gap-2"><Receipt className="size-3 text-primary" /> Daftar Nota Terbit ({detailTransactions?.length || 0})</h4>
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-1.5 rounded-lg bg-primary/20 text-primary"><Receipt className="size-3" /></div>
+                                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60">Daftar Nota Terbit ({detailTransactions?.length || 0})</h4>
+                                    </div>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-[8px] font-black text-white/20 uppercase">{transPage + 1} / {totalTransPages || 1}</span>
+                                        <span className="text-[9px] font-black text-white/20 uppercase font-mono">{transPage + 1} / {totalTransPages || 1}</span>
                                         <div className="flex gap-1">
-                                            <Button variant="ghost" size="icon" className="h-6 w-6 text-white/40" onClick={() => setTransPage(p => Math.max(0, p - 1))} disabled={transPage === 0}><ChevronLeft className="size-3" /></Button>
-                                            <Button variant="ghost" size="icon" className="h-6 w-6 text-white/40" onClick={() => setTransPage(p => Math.min(totalTransPages - 1, p + 1))} disabled={transPage >= totalTransPages - 1}><ChevronRight className="size-3" /></Button>
+                                            <Button variant="ghost" size="icon" className="h-7 w-7 text-white/40 hover:bg-white/10 hover:text-white" onClick={() => setTransPage(p => Math.max(0, p - 1))} disabled={transPage === 0}><ChevronLeft className="size-4" /></Button>
+                                            <Button variant="ghost" size="icon" className="h-7 w-7 text-white/40 hover:bg-white/10 hover:text-white" onClick={() => setTransPage(p => Math.min(totalTransPages - 1, p + 1))} disabled={transPage >= totalTransPages - 1}><ChevronRight className="size-4" /></Button>
                                         </div>
                                     </div>
                                 </div>
-                                <div className="rounded-xl border border-white/5 overflow-hidden">
+                                <div className="rounded-2xl border border-white/5 overflow-hidden bg-white/[0.01]">
                                     <Table>
-                                        <TableHeader className="bg-white/5"><TableRow className="border-white/5 h-8"><TableHead className="text-[8px] font-black px-4 uppercase">Jam</TableHead><TableHead className="text-[8px] font-black px-4 uppercase">Unit</TableHead><TableHead className="text-[8px] font-black px-4 uppercase text-right">Netto</TableHead></TableRow></TableHeader>
+                                        <TableHeader className="bg-white/5"><TableRow className="border-white/5 h-10"><TableHead className="text-[8px] font-black px-5 uppercase">Waktu</TableHead><TableHead className="text-[8px] font-black px-5 uppercase">Unit / Station</TableHead><TableHead className="text-[8px] font-black px-5 uppercase text-right">Total Netto</TableHead></TableRow></TableHeader>
                                         <TableBody>
                                             {paginatedTransactions.map(t => (
-                                                <TableRow key={t.id} className="border-white/5 h-10 hover:bg-white/5 transition-colors"><TableCell className="font-mono text-[9px] text-white/30 px-4">{format(t.timestamp, 'HH:mm')}</TableCell><TableCell className="font-bold text-[10px] text-white/80 uppercase px-4">{t.stationName}</TableCell><TableCell className="text-right font-black font-mono text-white/90 text-xs px-4">{formatCurrency(t.paidAmount || 0).replace(',00', '')}</TableCell></TableRow>
+                                                <TableRow key={t.id} className="border-white/5 h-12 hover:bg-white/[0.04] transition-colors"><TableCell className="font-mono text-[9px] text-white/40 px-5">{format(t.timestamp, 'HH:mm')}</TableCell><TableCell className="font-bold text-[10px] text-white/80 uppercase px-5 tracking-tight">{t.stationName}</TableCell><TableCell className="text-right font-black font-mono text-white/90 text-xs px-5">{formatCurrency(t.paidAmount || 0).replace(',00', '')}</TableCell></TableRow>
                                             ))}
-                                            {(!detailTransactions || detailTransactions.length === 0) && <TableRow><TableCell colSpan={3} className="h-40 text-center text-[9px] text-white/10 uppercase italic">Kosong</TableCell></TableRow>}
+                                            {(!detailTransactions || detailTransactions.length === 0) && <TableRow><TableCell colSpan={3} className="h-40 text-center text-[10px] text-white/10 uppercase italic font-bold tracking-widest">Belum ada transaksi</TableCell></TableRow>}
                                         </TableBody>
                                     </Table>
                                 </div>
@@ -336,16 +389,19 @@ export default function ShiftsPage() {
                         )}
 
                         {detailStep === 3 && (
-                            <div className="space-y-3 animate-in fade-in slide-in-from-right-4 duration-300">
-                                <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40 flex items-center gap-2 px-1"><Wallet className="size-3 text-red-500" /> Rekap Pengeluaran Kas ({detailExpenses?.length || 0})</h4>
-                                <ScrollArea className="h-[260px] rounded-xl border border-white/5">
+                            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                                <div className="flex items-center gap-3 px-1">
+                                    <div className="p-1.5 rounded-lg bg-red-500/20 text-red-500"><Wallet className="size-3" /></div>
+                                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60">Rekap Biaya Operasional ({detailExpenses?.length || 0})</h4>
+                                </div>
+                                <ScrollArea className="h-[280px] rounded-2xl border border-white/5 bg-white/[0.01]">
                                     <Table>
-                                        <TableHeader className="bg-white/5"><TableRow className="border-white/5 h-8"><TableHead className="text-[8px] font-black px-4 uppercase">Item</TableHead><TableHead className="text-[8px] font-black px-4 uppercase text-right">Nominal</TableHead></TableRow></TableHeader>
+                                        <TableHeader className="bg-white/5"><TableRow className="border-white/5 h-10"><TableHead className="text-[8px] font-black px-5 uppercase">Item Pengeluaran</TableHead><TableHead className="text-[8px] font-black px-5 uppercase text-right">Nominal</TableHead></TableRow></TableHeader>
                                         <TableBody>
                                             {detailExpenses?.map(e => (
-                                                <TableRow key={e.id} className="border-white/5 h-12 hover:bg-white/5"><TableCell className="px-4"><div className="flex flex-col"><span className="font-bold text-[10px] text-white/80 uppercase truncate max-w-[200px]">{e.description}</span><span className="text-[8px] text-white/20 font-mono uppercase">{e.category} • {format(e.timestamp, 'HH:mm')}</span></div></TableCell><TableCell className="text-right font-black font-mono text-red-500 text-xs px-4">{formatCurrency(e.amount).replace(',00', '')}</TableCell></TableRow>
+                                                <TableRow key={e.id} className="border-white/5 h-14 hover:bg-white/[0.04] transition-colors"><TableCell className="px-5"><div className="flex flex-col"><span className="font-bold text-[10px] text-white/80 uppercase truncate max-w-[200px] tracking-tight">{e.description}</span><span className="text-[8px] text-white/20 font-mono uppercase">{e.category} • {format(e.timestamp, 'HH:mm')}</span></div></TableCell><TableCell className="text-right font-black font-mono text-red-500 text-xs px-5">{formatCurrency(e.amount).replace(',00', '')}</TableCell></TableRow>
                                             ))}
-                                            {(!detailExpenses || detailExpenses.length === 0) && <TableRow><TableCell colSpan={2} className="h-40 text-center text-[9px] text-white/10 uppercase italic">Tidak ada pengeluaran</TableCell></TableRow>}
+                                            {(!detailExpenses || detailExpenses.length === 0) && <TableRow><TableCell colSpan={2} className="h-40 text-center text-[10px] text-white/10 uppercase italic font-bold tracking-widest">Tidak ada dana keluar</TableCell></TableRow>}
                                         </TableBody>
                                     </Table>
                                 </ScrollArea>
@@ -353,19 +409,19 @@ export default function ShiftsPage() {
                         )}
                     </div>
 
-                    <DialogFooter className="p-5 border-t border-white/5 bg-white/[0.02] flex flex-row items-center justify-between gap-3">
+                    <DialogFooter className="p-6 border-t border-white/5 bg-white/[0.02] flex flex-row items-center justify-between gap-3">
                         <div className="flex gap-2 flex-1">
                             {detailStep > 1 && (
-                                <Button variant="outline" className="h-10 rounded-xl border-white/10 bg-transparent text-white/60 font-bold uppercase text-[9px]" onClick={() => setDetailStep(s => s - 1)}><ChevronLeft className="size-3 mr-1" /> Kembali</Button>
+                                <Button variant="outline" className="h-11 rounded-xl border-white/10 bg-transparent text-white/60 font-black uppercase text-[9px] tracking-widest" onClick={() => setDetailStep(s => s - 1)}><ChevronLeft className="size-4 mr-1" /> Kembali</Button>
                             )}
-                            <DialogClose asChild><Button variant="ghost" className="h-10 rounded-xl text-white/30 font-bold uppercase text-[9px]">Tutup</Button></DialogClose>
+                            <DialogClose asChild><Button variant="ghost" className="h-11 rounded-xl text-white/30 font-black uppercase text-[9px] tracking-widest">Tutup</Button></DialogClose>
                         </div>
                         {detailStep < 3 ? (
-                            <Button className="h-10 px-8 rounded-xl font-black uppercase text-[9px] tracking-widest gap-2 shadow-xl shadow-primary/20" onClick={() => setDetailStep(s => s + 1)}>
-                                {detailStep === 1 ? 'Lihat Nota' : 'Lihat Pengeluaran'} <ArrowRight className="size-3" />
+                            <Button className="h-11 px-8 rounded-xl font-black uppercase text-[10px] tracking-[0.2em] gap-2 shadow-xl shadow-primary/20" onClick={() => setDetailStep(s => s + 1)}>
+                                {detailStep === 1 ? 'Daftar Nota' : 'Daftar Biaya'} <ArrowRight className="size-4" />
                             </Button>
                         ) : (
-                            <div className="bg-emerald-500/10 px-4 py-2 rounded-lg border border-emerald-500/20"><span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-2"><CheckCircle2 className="size-3" /> Audit Selesai</span></div>
+                            <div className="bg-emerald-500/10 px-5 py-2.5 rounded-xl border border-emerald-500/20"><span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-2"><CheckCircle2 className="size-4" /> Audit Selesai</span></div>
                         )}
                     </DialogFooter>
                   </>
