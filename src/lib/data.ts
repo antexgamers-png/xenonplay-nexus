@@ -93,6 +93,14 @@ export async function createManualVoucher(db: Firestore, data: { durationMinutes
     return code;
 }
 
+export async function updateVoucher(db: Firestore, id: string, updates: Partial<CreditVoucher>) {
+  return await updateDoc(doc(db, 'vouchers', id), updates);
+}
+
+export async function deleteVoucher(db: Firestore, id: string) {
+  return await deleteDoc(doc(db, 'vouchers', id));
+}
+
 export async function convertSessionToCredit(db: Firestore, stationId: string, transactionId: string) {
     return await runTransaction(db, async (transaction) => {
         const sSnap = await transaction.get(doc(db, 'stations', stationId));
