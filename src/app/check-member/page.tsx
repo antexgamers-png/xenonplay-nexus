@@ -74,7 +74,8 @@ export default function CheckMemberPage() {
 
     const redeemQuery = useMemoFirebase(() => {
         if (!firestore || !member?.id) return null;
-        return query(collection(firestore, 'memberId', '==', member.id), limit(5));
+        // FIXED: Correct collection name and query syntax
+        return query(collection(firestore, 'redemptions'), where('memberId', '==', member.id), limit(5));
     }, [firestore, member?.id]);
 
     const { data: transactions } = useCollection<Transaction>(transQuery);
@@ -337,7 +338,7 @@ export default function CheckMemberPage() {
                                                     <div className="size-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 shadow-inner"><Gift className="size-5" /></div>
                                                     <div>
                                                         <p className="text-xs font-bold uppercase tracking-tight">{r.rewardLabel}</p>
-                                                        <p className="text-[9px] text-slate-500 font-mono">{format(r.timestamp, 'dd MMM yyyy')}</p>
+                                                        <p className="text-[9px] text-muted-foreground font-mono">{format(r.timestamp, 'dd MMM yyyy')}</p>
                                                     </div>
                                                 </div>
                                                 <Badge className="bg-red-500/10 text-red-500 border-none text-[9px] font-black">-{r.pointsRedeemed} Pts</Badge>
