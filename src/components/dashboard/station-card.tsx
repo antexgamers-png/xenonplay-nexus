@@ -27,7 +27,8 @@ import {
   Volume2,
   Volume1,
   ExternalLink,
-  AlertTriangle
+  AlertTriangle,
+  Sparkles
 } from 'lucide-react';
 import { StartSessionDialog } from './start-session-dialog';
 import { useState, useEffect } from 'react';
@@ -237,7 +238,6 @@ export function StationCard({
   }
 
   const handleCopyCode = () => {
-      if (!generatedVoucher) return;
       navigator.clipboard.writeText(generatedCode);
       setHasCopied(true);
       setTimeout(() => setHasCopied(false), 2000);
@@ -290,7 +290,7 @@ export function StationCard({
                   {isExecuting ? <Loader2 className="size-4 lg:size-3.5 animate-spin" /> : <Tv className="size-4 lg:size-3.5" />}
                 </button>
               </PopoverTrigger>
-              <PopoverContent className="w-32 p-2 border bg-slate-900 rounded-[1.5rem] shadow-2xl" align="end">
+              <PopoverContent className="w-36 p-2 border bg-slate-900 rounded-[1.5rem] shadow-2xl" align="end">
                 <div className="flex flex-col gap-2">
                   <p className="text-[7px] font-black uppercase tracking-[0.2em] text-white/30 text-center mb-1">Xenon Remote</p>
                   
@@ -338,6 +338,25 @@ export function StationCard({
                   <Button variant="ghost" size="sm" className="h-8 w-full rounded-xl bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-white text-[9px] font-black uppercase tracking-widest" onClick={() => handleRemoteAction('hdmi')}>
                       <Zap className="h-3 w-3 mr-1.5" /> PINDAH HDMI
                   </Button>
+
+                  <div className="grid grid-cols-2 gap-2 border-t border-white/5 pt-2 mt-1">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-9 w-full rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-white text-[7px] font-black uppercase flex flex-col items-center justify-center gap-0.5 leading-none" 
+                      onClick={() => handleRemoteAction('wake')}
+                    >
+                      <Sparkles className="size-2.5" /> WELCOME
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-9 w-full rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white text-[7px] font-black uppercase flex flex-col items-center justify-center gap-0.5 leading-none" 
+                      onClick={() => handleRemoteAction('stop')}
+                    >
+                      <Tv className="size-2.5" /> SELESAI
+                    </Button>
+                  </div>
                 </div>
               </PopoverContent>
             </Popover>
