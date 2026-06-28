@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -68,9 +67,8 @@ const RESPONSIVE_HYBRID_BRIDGE_V1_9_1 = `
  * ALUR SULTAN ANTI-HOME:
  * 1. START: Welcome Screen (intro.mp4) -> Jeda 3.5s -> HDMI Intent.
  * 2. STOP: Sleep (223) -> Jeda 1.5s -> Wake (224) -> TV Landing (ended.mp4).
- *    (Alur ini memastikan TV berganti mode tanpa pernah menunjukkan menu Home).
- * 3. WAKE: Wakeup (224) -> Welcome Screen (intro.mp4).
- * 4. SLEEP: Direct Sleep (223) -> TV mati total.
+ * 3. WELCOME (DIRECT): Langsung buka Welcome Page.
+ * 4. LANDING (DIRECT): Langsung buka Landing Page.
  */
 
 const admin = require('firebase-admin');
@@ -150,6 +148,14 @@ async function handleAdbWorkflow(ip, action, hdmi, name) {
             await new Promise(r => setTimeout(r, 1000)); 
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${welcomeIntent}"\`, execOptions); 
         } 
+        else if (action === 'welcome') {
+            log(\`[\${name}] Signal: SHOW WELCOME PAGE DIRECT\`);
+            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${welcomeIntent}"\`, execOptions); 
+        }
+        else if (action === 'landing') {
+            log(\`[\${name}] Signal: SHOW LANDING PAGE DIRECT\`);
+            await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${landingIntent}"\`, execOptions); 
+        }
         else if (action === 'hdmi') {
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${hdmiIntent}"\`, execOptions); 
         } 
@@ -165,13 +171,10 @@ async function handleAdbWorkflow(ip, action, hdmi, name) {
         }
         else if (action === 'stop' || action === 'pause') {
             log(\`[\${name}] Workflow: HARD RESET (Sleep -> Wake -> TV Landing)\`);
-            // Langkah 1: Tidurkan TV untuk mematikan tampilan HDMI
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 223"\`, execOptions); 
             await new Promise(r => setTimeout(r, 1500)); 
-            // Langkah 2: Bangunkan TV kembali
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "input keyevent 224"\`, execOptions); 
             await new Promise(r => setTimeout(r, 1000)); 
-            // Langkah 3: Langsung buka landing video (Sesi Habis)
             await execAsync(\`\${adbCmd} -s \${ip}:5555 shell "\${landingIntent}"\`, execOptions); 
         }
         else if (action === 'home') {
@@ -573,7 +576,7 @@ Filename: "wscript.exe"; Parameters: """{app}\\hide.vbs"""; WorkingDir: "{app}";
                     <Badge variant="outline" className="border-primary/50 text-primary bg-primary/5 px-4 h-6 font-black uppercase text-[10px] tracking-widest">Script v1.9.1 "Clean Transition"</Badge>
                     <h3 className="text-3xl font-black uppercase tracking-tighter text-white">Dapatkan Kode Bridge Terbaru</h3>
                     <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
-                        Pembaruan v1.9.1: Menggunakan teknik "Hard Reset Visual" saat sesi berakhir. TV dimatikan dan dinyalakan kembali dalam 1.5 detik untuk langsung memicu video standby tanpa menunjukkan UI sistem Android.
+                        Pembaruan v1.9.1: Mendukung perintah "Direct Intent" untuk membuka halaman Welcome/Finish secara instan tanpa mengganggu power hardware TV. Gunakan tombol ini untuk kebutuhan promosi cepat.
                     </p>
                 </div>
 

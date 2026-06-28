@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { Station, PricingRule, FnbItem, Transaction, Member } from '@/lib/types';
@@ -154,7 +153,7 @@ export function StationCard({
   currentTransaction, 
   shouldOpenDetail, 
   onDetailOpened 
-}: StationCardProps) {
+ }: StationCardProps) {
   const { id, name, type, is_active, is_paused, end_time, remaining_seconds, current_transaction_id, last_heartbeat } = station;
   const [isStartDialogOpen, setIsStartDialogOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -344,7 +343,7 @@ export function StationCard({
                       variant="ghost" 
                       size="sm" 
                       className="h-9 w-full rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-white text-[7px] font-black uppercase flex flex-col items-center justify-center gap-0.5 leading-none" 
-                      onClick={() => handleRemoteAction('wake')}
+                      onClick={() => handleRemoteAction('welcome')}
                     >
                       <Sparkles className="size-2.5" /> WELCOME
                     </Button>
@@ -352,7 +351,7 @@ export function StationCard({
                       variant="ghost" 
                       size="sm" 
                       className="h-9 w-full rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white text-[7px] font-black uppercase flex flex-col items-center justify-center gap-0.5 leading-none" 
-                      onClick={() => handleRemoteAction('stop')}
+                      onClick={() => handleRemoteAction('landing')}
                     >
                       <Tv className="size-2.5" /> SELESAI
                     </Button>

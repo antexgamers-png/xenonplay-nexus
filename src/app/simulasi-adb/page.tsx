@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -23,7 +22,9 @@ import {
     Volume2,
     Plus,
     Minus,
-    VolumeX
+    VolumeX,
+    Sparkles,
+    Tv
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -173,6 +174,11 @@ export default function AdbSimulatorPage() {
                                   <Button variant="outline" size="sm" className="h-10 flex flex-col gap-1" onClick={() => handleAction(station.id, 'hdmi')}><Zap className="size-3.5" /><span className="text-[8px] font-black">HDMI</span></Button>
                               </div>
 
+                              <div className="grid grid-cols-2 gap-2">
+                                  <Button variant="outline" size="sm" className="h-10 flex flex-col gap-1 text-primary border-primary/20" onClick={() => handleAction(station.id, 'welcome')}><Sparkles className="size-3.5" /><span className="text-[8px] font-black">WELCOME PAGE</span></Button>
+                                  <Button variant="outline" size="sm" className="h-10 flex flex-col gap-1 text-red-500 border-red-500/20" onClick={() => handleAction(station.id, 'landing')}><Tv className="size-3.5" /><span className="text-[8px] font-black">FINISH PAGE</span></Button>
+                              </div>
+
                               <div className="grid grid-cols-3 gap-2 bg-muted/30 p-2 rounded-xl border border-border/50">
                                   <Button variant="ghost" size="sm" className="h-9 gap-1.5 text-primary hover:bg-primary/10" onClick={() => handleAction(station.id, 'vol_up')}><Plus className="size-3" /><span className="text-[9px] font-black">VOL +</span></Button>
                                   <Button variant="ghost" size="sm" className="h-9 gap-1.5 text-primary hover:bg-primary/10" onClick={() => handleAction(station.id, 'vol_down')}><Minus className="size-3" /><span className="text-[9px] font-black">VOL -</span></Button>
@@ -238,8 +244,8 @@ export default function AdbSimulatorPage() {
                           <span>**Wake & Sleep**: Mengirim perintah power asli ke Smart TV via ADB.</span>
                       </li>
                       <li className="flex items-start gap-2">
-                          <Volume2 className="size-3 text-blue-500 shrink-0 mt-0.5" />
-                          <span>**Audio Control**: Mengatur suara TV (v1.4.2+) dari jarak jauh.</span>
+                          <Sparkles className="size-3 text-blue-500 shrink-0 mt-0.5" />
+                          <span>**Direct Pages**: Membuka halaman Welcome/Finish secara instan tanpa mengganggu power TV.</span>
                       </li>
                       <li className="flex items-start gap-2">
                           <Activity className="size-3 text-blue-500 shrink-0 mt-0.5" />
