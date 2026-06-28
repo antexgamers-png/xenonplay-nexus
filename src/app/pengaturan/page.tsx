@@ -648,7 +648,6 @@ export default function PengaturanPage() {
                 </CardHeader>
                 <CardContent className="space-y-6 pt-8">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {/* 1. Riwayat Transaksi */}
                         <div className="flex items-center justify-between p-4 rounded-2xl border border-red-500/10 bg-card shadow-sm">
                             <div className="flex gap-3">
                                 <ReceiptText className="h-5 w-5 text-slate-400 mt-1" />
@@ -657,10 +656,9 @@ export default function PengaturanPage() {
                                     <p className="text-[9px] text-muted-foreground uppercase">Sewa, Wi-Fi & FnB</p>
                                 </div>
                             </div>
-                            <ResetButton label="Nuclear" onConfirm={() => handleReset('transactions')} isLoading={isDeleting === 'transactions'} />
+                            <ResetButton label="Nuclear" confirmWord="TRANSAKSI" onConfirm={() => handleReset('transactions')} isLoading={isDeleting === 'transactions'} />
                         </div>
 
-                        {/* 2. Biaya Operasional */}
                         <div className="flex items-center justify-between p-4 rounded-2xl border border-red-500/10 bg-card shadow-sm">
                             <div className="flex gap-3">
                                 <Wallet className="h-5 w-5 text-slate-400 mt-1" />
@@ -669,10 +667,9 @@ export default function PengaturanPage() {
                                     <p className="text-[9px] text-muted-foreground uppercase">Riwayat Operasional</p>
                                 </div>
                             </div>
-                            <ResetButton label="Nuclear" onConfirm={() => handleReset('expenses')} isLoading={isDeleting === 'expenses'} />
+                            <ResetButton label="Nuclear" confirmWord="PENGELUARAN" onConfirm={() => handleReset('expenses')} isLoading={isDeleting === 'expenses'} />
                         </div>
 
-                        {/* 3. Laporan Shift */}
                         <div className="flex items-center justify-between p-4 rounded-2xl border border-red-500/10 bg-card shadow-sm">
                             <div className="flex gap-3">
                                 <History className="h-5 w-5 text-slate-400 mt-1" />
@@ -681,10 +678,9 @@ export default function PengaturanPage() {
                                     <p className="text-[9px] text-muted-foreground uppercase">Laporan Buka-Tutup</p>
                                 </div>
                             </div>
-                            <ResetButton label="Nuclear" onConfirm={() => handleReset('shifts')} isLoading={isDeleting === 'shifts'} />
+                            <ResetButton label="Nuclear" confirmWord="SHIFT" onConfirm={() => handleReset('shifts')} isLoading={isDeleting === 'shifts'} />
                         </div>
 
-                        {/* 4. Database Member */}
                         <div className="flex items-center justify-between p-4 rounded-2xl border border-red-500/10 bg-card shadow-sm">
                             <div className="flex gap-3">
                                 <Users className="h-5 w-5 text-slate-400 mt-1" />
@@ -693,10 +689,9 @@ export default function PengaturanPage() {
                                     <p className="text-[9px] text-muted-foreground uppercase">Data & Poin Member</p>
                                 </div>
                             </div>
-                            <ResetButton label="Nuclear" onConfirm={() => handleReset('members')} isLoading={isDeleting === 'members'} />
+                            <ResetButton label="Nuclear" confirmWord="DATABASE" onConfirm={() => handleReset('members')} isLoading={isDeleting === 'members'} />
                         </div>
 
-                        {/* 5. Voucher Kredit */}
                         <div className="flex items-center justify-between p-4 rounded-2xl border border-red-500/10 bg-card shadow-sm">
                             <div className="flex gap-3">
                                 <Ticket className="h-5 w-5 text-slate-400 mt-1" />
@@ -705,10 +700,9 @@ export default function PengaturanPage() {
                                     <p className="text-[9px] text-muted-foreground uppercase">Kode sisa waktu</p>
                                 </div>
                             </div>
-                            <ResetButton label="Nuclear" onConfirm={() => handleReset('vouchers')} isLoading={isDeleting === 'vouchers'} />
+                            <ResetButton label="Nuclear" confirmWord="KREDIT" onConfirm={() => handleReset('vouchers')} isLoading={isDeleting === 'vouchers'} />
                         </div>
 
-                        {/* 6. Reservasi / Booking */}
                         <div className="flex items-center justify-between p-4 rounded-2xl border border-red-500/10 bg-card shadow-sm">
                             <div className="flex gap-3">
                                 <CalendarCheck className="h-5 w-5 text-slate-400 mt-1" />
@@ -717,10 +711,9 @@ export default function PengaturanPage() {
                                     <p className="text-[9px] text-muted-foreground uppercase">Jadwal Reservasi</p>
                                 </div>
                             </div>
-                            <ResetButton label="Nuclear" onConfirm={() => handleReset('reservations')} isLoading={isDeleting === 'reservations'} />
+                            <ResetButton label="Nuclear" confirmWord="RESERVASI" onConfirm={() => handleReset('reservations')} isLoading={isDeleting === 'reservations'} />
                         </div>
 
-                        {/* 7. Riwayat Tukar Hadiah */}
                         <div className="flex items-center justify-between p-4 rounded-2xl border border-red-500/10 bg-card shadow-sm">
                             <div className="flex gap-3">
                                 <Gift className="h-5 w-5 text-slate-400 mt-1" />
@@ -729,10 +722,9 @@ export default function PengaturanPage() {
                                     <p className="text-[9px] text-muted-foreground uppercase">Log Redeem Member</p>
                                 </div>
                             </div>
-                            <ResetButton label="Nuclear" onConfirm={() => handleReset('redemptions')} isLoading={isDeleting === 'redemptions'} />
+                            <ResetButton label="Nuclear" confirmWord="HADIAH" onConfirm={() => handleReset('redemptions')} isLoading={isDeleting === 'redemptions'} />
                         </div>
 
-                        {/* 8. Antrean Member Baru */}
                         <div className="flex items-center justify-between p-4 rounded-2xl border border-red-500/10 bg-card shadow-sm">
                             <div className="flex gap-3">
                                 <UserPlus className="h-5 w-5 text-slate-400 mt-1" />
@@ -741,10 +733,9 @@ export default function PengaturanPage() {
                                     <p className="text-[9px] text-muted-foreground uppercase">Antrean Pendaftaran</p>
                                 </div>
                             </div>
-                            <ResetButton label="Nuclear" onConfirm={() => handleReset('memberRequests')} isLoading={isDeleting === 'memberRequests'} />
+                            <ResetButton label="Nuclear" confirmWord="ANTREAN" onConfirm={() => handleReset('memberRequests')} isLoading={isDeleting === 'memberRequests'} />
                         </div>
 
-                        {/* 9. Sisa Audit Logs (Cleanup) */}
                         <div className="flex items-center justify-between p-4 rounded-2xl border border-red-500/10 bg-card shadow-sm">
                             <div className="flex gap-3">
                                 <FileSearch className="h-5 w-5 text-slate-400 mt-1" />
@@ -753,7 +744,7 @@ export default function PengaturanPage() {
                                     <p className="text-[9px] text-muted-foreground uppercase">Hapus sisa log sistem</p>
                                 </div>
                             </div>
-                            <ResetButton label="Cleanup" onConfirm={() => handleReset('auditLogs')} isLoading={isDeleting === 'auditLogs'} />
+                            <ResetButton label="Cleanup" confirmWord="CLEANUP" onConfirm={() => handleReset('auditLogs')} isLoading={isDeleting === 'auditLogs'} />
                         </div>
                     </div>
                 </CardContent>
@@ -764,11 +755,56 @@ export default function PengaturanPage() {
   );
 }
 
-function ResetButton({ label, onConfirm, isLoading }: { label: string, onConfirm: () => void, isLoading: boolean }) {
+function ResetButton({ label, onConfirm, isLoading, confirmWord }: { label: string, onConfirm: () => void, isLoading: boolean, confirmWord: string }) {
+    const [inputValue, setInputValue] = useState('');
+    const [isOpen, setIsOpen] = useState(false);
+
     return (
-        <AlertDialog>
-            <AlertDialogTrigger asChild><Button variant="destructive" size="sm" className="h-9 px-4 font-black uppercase text-[9px] tracking-widest rounded-xl">{isLoading ? '...' : label}</Button></AlertDialogTrigger>
-            <AlertDialogContent className="rounded-3xl border-border bg-background"><AlertDialogHeader><AlertDialogTitle className="flex items-center gap-2 text-red-500 font-black uppercase tracking-tight"><AlertTriangle className="h-5 w-5" /> Konfirmasi Penghapusan</AlertDialogTitle><AlertDialogDescription className="text-sm font-medium">Tindakan ini akan menghapus seluruh data pada koleksi tersebut secara PERMANEN. Anda tidak dapat membatalkan aksi ini.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel className="font-bold uppercase text-[10px] rounded-xl border-border">Batal</AlertDialogCancel><AlertDialogAction onClick={onConfirm} className="bg-red-600 hover:bg-red-700 font-black uppercase text-[10px] tracking-widest rounded-xl" disabled={isLoading}>{isLoading ? 'Menghapus...' : 'Ya, Hapus Sekarang'}</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+        <AlertDialog open={isOpen} onOpenChange={(val) => { setIsOpen(val); if(!val) setInputValue(''); }}>
+            <AlertDialogTrigger asChild>
+                <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    className="h-9 px-4 font-black uppercase text-[9px] tracking-widest rounded-xl"
+                    onClick={() => setIsOpen(true)}
+                >
+                    {isLoading ? '...' : label}
+                </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="rounded-3xl border-border bg-background">
+                <AlertDialogHeader>
+                    <AlertDialogTitle className="flex items-center gap-2 text-red-500 font-black uppercase tracking-tight">
+                        <AlertTriangle className="h-5 w-5" /> Verifikasi Keamanan
+                    </AlertDialogTitle>
+                    <AlertDialogDescription className="text-sm font-medium leading-relaxed">
+                        Tindakan ini akan menghapus data selamanya. Ketik kata <span className="font-black text-red-600 underline">"{confirmWord}"</span> di bawah untuk memberikan akses penghapusan.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                
+                <div className="py-4">
+                    <Input 
+                        placeholder={`Ketik ${confirmWord} di sini...`}
+                        className="h-12 bg-muted border-red-500/20 text-center font-black text-lg tracking-[0.2em] rounded-xl uppercase"
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value.toUpperCase())}
+                        autoFocus
+                    />
+                </div>
+
+                <AlertDialogFooter className="gap-2">
+                    <AlertDialogCancel className="font-bold uppercase text-[10px] rounded-xl border-border" onClick={() => { setIsOpen(false); setInputValue(''); }}>Batal</AlertDialogCancel>
+                    <AlertDialogAction 
+                        onClick={() => { onConfirm(); setIsOpen(false); setInputValue(''); }} 
+                        className={cn(
+                            "font-black uppercase text-[10px] tracking-widest rounded-xl transition-all", 
+                            inputValue === confirmWord ? "bg-red-600 hover:bg-red-700" : "bg-muted text-muted-foreground pointer-events-none opacity-50"
+                        )}
+                        disabled={isLoading || inputValue !== confirmWord}
+                    >
+                        {isLoading ? 'Menghapus...' : 'Ya, Hapus Sekarang'}
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
         </AlertDialog>
     );
 }
