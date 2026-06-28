@@ -4,8 +4,8 @@ import { FnbPos } from '@/components/dashboard/fnb-pos';
 import { VoucherPos } from '@/components/dashboard/voucher-pos';
 import { WifiPos } from '@/components/dashboard/wifi-pos';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
-import type { Station, PricingRule, FnbItem } from '@/lib/types';
+import { collection, query, orderBy, limit } from 'firebase/firestore';
+import type { Station, PricingRule, FnbItem, Transaction } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/components/providers/auth-provider';
 import { Gamepad2, ShoppingCart, Ticket, Wifi } from 'lucide-react';
@@ -31,11 +31,18 @@ export default function DashboardPage() {
     return collection(firestore, 'fnbItems');
   }, [firestore, isRoleLoading]);
 
+  // Hemat Kuota: Dashboard hanya butuh transaksi terbaru untuk fungsionalitas tombol "Nota" (Limit 100)
+  const transactionsQuery = useMemoFirebase(() => {
+    if (isRoleLoading || !firestore) return null;
+    return query(collection(firestore, 'transactions'), orderBy('timestamp', 'desc'), limit(100));
+  }, [firestore, isRoleLoading]);
+
   const { data: stations, isLoading: isLoadingStations } = useCollection<Station>(stationsQuery);
   const { data: pricingRules, isLoading: isLoadingPricing } = useCollection<PricingRule>(pricingRulesQuery);
   const { data: fnbItems, isLoading: isLoadingFnb } = useCollection<FnbItem>(fnbItemsQuery);
+  const { data: transactions, isLoading: isLoadingTransactions } = useCollection<Transaction>(transactionsQuery);
   
-  const isLoading = isRoleLoading || isLoadingStations || isLoadingPricing || isLoadingFnb;
+  const isLoading = isRoleLoading || isLoadingStations || isLoadingPricing || isLoadingFnb || isLoadingTransactions;
 
   const wifiPackages = useMemo(() => (pricingRules || []).filter(r => r.type === 'Wifi'), [pricingRules]);
 
@@ -93,6 +100,7 @@ export default function DashboardPage() {
                   initialStations={stations} 
                   pricingRules={pricingRules}
                   fnbItems={fnbItems}
+                  externalTransactions={transactions || []}
               />
             )
           )}

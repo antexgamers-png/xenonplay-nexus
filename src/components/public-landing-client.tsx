@@ -1,7 +1,7 @@
 'use client';
 
 import { useCollection, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, doc, query, orderBy, limit } from 'firebase/firestore';
+import { collection, doc, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import type { Station, PricingRule, GeneralSettings, LandingSettings, Member, Transaction, Reservation } from '@/lib/types';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as LucideIcons from 'lucide-react';
@@ -108,34 +108,48 @@ export function PublicLandingClient() {
   const [isRegistering, setIsRegistering] = useState(false);
   const [regSuccess, setRegSuccess] = useState(false);
 
-  useEffect(() => { setYear(new Date().getFullYear()); }, []);
+  // One-time fetch data for Ticker (Hemat Kuota)
+  const [tickerData, setTickerData] = useState<{
+      members: Member[],
+      transactions: Transaction[],
+      reservations: Reservation[]
+  }>({ members: [], transactions: [], reservations: [] });
+
+  useEffect(() => {
+    setYear(new Date().getFullYear());
+    
+    // Optimasi Hemat Kuota: Ambil data hanya sekali saat mount (bukan real-time snapshot)
+    if (firestore) {
+        const fetchTickerData = async () => {
+            try {
+                const [mSnap, tSnap, rSnap] = await Promise.all([
+                    getDocs(query(collection(firestore, 'members'), orderBy('joinDate', 'desc'), limit(3))),
+                    getDocs(query(collection(firestore, 'transactions'), orderBy('timestamp', 'desc'), limit(3))),
+                    getDocs(query(collection(firestore, 'reservations'), orderBy('createdAt', 'desc'), limit(3)))
+                ]);
+                setTickerData({
+                    members: mSnap.docs.map(d => ({ ...d.data() as Member, id: d.id })),
+                    transactions: tSnap.docs.map(d => ({ ...d.data() as Transaction, id: d.id })),
+                    reservations: rSnap.docs.map(d => ({ ...d.data() as Reservation, id: d.id }))
+                });
+            } catch (e) {
+                console.error("Failed to fetch ticker data", e);
+            }
+        };
+        fetchTickerData();
+    }
+  }, [firestore]);
   
   const stationsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'stations') : null, [firestore]);
   const pricingQuery = useMemoFirebase(() => firestore ? collection(firestore, 'pricingRules') : null, [firestore]);
   const settingsRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'general') : null, [firestore]);
   const landingRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'landing') : null, [firestore]);
 
-  const recentMembersQuery = useMemoFirebase(() => 
-    firestore ? query(collection(firestore, 'members'), orderBy('joinDate', 'desc'), limit(3)) : null, 
-    [firestore]
-  );
-  const recentTransQuery = useMemoFirebase(() => 
-    firestore ? query(collection(firestore, 'transactions'), orderBy('timestamp', 'desc'), limit(3)) : null, 
-    [firestore]
-  );
-  const recentResQuery = useMemoFirebase(() => 
-    firestore ? query(collection(firestore, 'reservations'), orderBy('createdAt', 'desc'), limit(3)) : null, 
-    [firestore]
-  );
-
+  // Status stasiun tetap real-time agar pelanggan tahu unit ready/tidak
   const { data: stations } = useCollection<Station>(stationsQuery);
   const { data: pricingRules } = useCollection<PricingRule>(pricingQuery);
   const { data: generalSettings } = useDoc<GeneralSettings>(settingsRef);
   const { data: landingData, isLoading: isLandingLoading } = useDoc<LandingSettings>(landingRef);
-
-  const { data: recentMembers } = useCollection<Member>(recentMembersQuery);
-  const { data: recentTransactions } = useCollection<Transaction>(recentTransQuery);
-  const { data: recentReservations } = useCollection<Reservation>(recentResQuery);
 
   const defaultSettings: LandingSettings = {
     heroHeadline: 'Nongkrong Sultan, Harga Teman.',
@@ -310,9 +324,9 @@ export function PublicLandingClient() {
       </section>
 
       <ActivityTicker 
-        members={recentMembers} 
-        transactions={recentTransactions} 
-        reservations={recentReservations} 
+        members={tickerData.members} 
+        transactions={tickerData.transactions} 
+        reservations={tickerData.reservations} 
       />
 
       <section className="py-12 px-6 border-b border-border/50 bg-muted/10">

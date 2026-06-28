@@ -1,7 +1,7 @@
 'use client';
 
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection } from "firebase/firestore";
+import { collection, query, orderBy, limit } from "firebase/firestore";
 import type { Transaction, Station } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -11,9 +11,10 @@ export default function TransactionsPage() {
   const firestore = useFirestore();
   const { isRoleLoading } = useAuth();
   
+  // Hemat Kuota: Jangan baca ribuan transaksi sekaligus (Limit 500 terbaru)
   const transactionsQuery = useMemoFirebase(() => {
     if (!firestore || isRoleLoading) return null;
-    return collection(firestore, 'transactions');
+    return query(collection(firestore, 'transactions'), orderBy('timestamp', 'desc'), limit(500));
   }, [firestore, isRoleLoading]);
 
   const stationsQuery = useMemoFirebase(() => {

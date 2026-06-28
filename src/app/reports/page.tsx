@@ -1,10 +1,9 @@
-
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ReportsClient } from "@/components/reports/reports-client";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection } from "firebase/firestore";
+import { collection, query, orderBy, limit } from "firebase/firestore";
 import type { Transaction, FnbItem, Station, Expense } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -14,9 +13,10 @@ export default function ReportsPage() {
   const firestore = useFirestore();
   const { role, isRoleLoading: isAuthLoading } = useAuth();
 
+  // Optimasi Hemat Kuota: Batasi pembacaan data lama yang tidak perlu (Limit 500)
   const transactionsQuery = useMemoFirebase(() => {
     if (!firestore || isAuthLoading || role !== 'admin') return null;
-    return collection(firestore, 'transactions');
+    return query(collection(firestore, 'transactions'), orderBy('timestamp', 'desc'), limit(500));
   }, [firestore, isAuthLoading, role]);
 
   const fnbQuery = useMemoFirebase(() => {
@@ -31,7 +31,7 @@ export default function ReportsPage() {
 
   const expensesQuery = useMemoFirebase(() => {
     if (!firestore || isAuthLoading || role !== 'admin') return null;
-    return collection(firestore, 'expenses');
+    return query(collection(firestore, 'expenses'), orderBy('timestamp', 'desc'), limit(500));
   }, [firestore, isAuthLoading, role]);
 
   const { data: transactions, isLoading: isLoadingTransactions } = useCollection<Transaction>(transactionsQuery);

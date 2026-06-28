@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { Station, PricingRule, FnbItem, Transaction, Member, CreditVoucher } from '@/lib/types';
@@ -30,10 +29,12 @@ export function StationGrid({
   initialStations,
   pricingRules,
   fnbItems,
+  externalTransactions,
 }: {
   initialStations: Station[];
   pricingRules: PricingRule[];
   fnbItems: FnbItem[];
+  externalTransactions?: Transaction[];
 }) {
   const firestore = useFirestore();
   const { user } = useUser();
@@ -51,10 +52,8 @@ export function StationGrid({
   const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
 
   const stationsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'stations') : null, [firestore]);
-  const transactionsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'transactions') : null, [firestore]);
-
+  
   const { data: stations } = useCollection<Station>(stationsQuery);
-  const { data: transactions } = useCollection<Transaction>(transactionsQuery);
   const prevStationsRef = useRef<Station[]>(undefined);
   
   const sortedStations = useMemo(() => {
@@ -165,19 +164,6 @@ export function StationGrid({
         const now = Date.now();
         const stationRef = doc(firestore, 'stations', stationId);
         
-        if (user) {
-            const logRef = doc(collection(firestore, 'auditLogs'));
-            await setDoc(logRef, {
-                id: logRef.id,
-                userId: user.uid,
-                userName: user.displayName || user.email || 'Operator',
-                action: 'MANUAL_STOP',
-                target: stationId,
-                details: 'Operator menghentikan sesi secara manual.',
-                timestamp: now
-            });
-        }
-
         await updateDoc(stationRef, {
             is_active: false,
             is_paused: false,
@@ -364,7 +350,7 @@ export function StationGrid({
           "grid-cols-1 md:grid-cols-2 lg:grid-cols-4 lg:auto-rows-fr"
       )}>
         {sortedStations.map(station => {
-            const currentTransaction = transactions?.find(t => t.id === station.current_transaction_id);
+            const currentTransaction = externalTransactions?.find(t => t.id === station.current_transaction_id);
             return (
                 <StationCard
                     key={station.id}
@@ -376,7 +362,6 @@ export function StationGrid({
                     onStopSession={handleManualStop}
                     onTimerEnd={() => {}} 
                     onAddItems={handleAddItems}
-                    onAddItemsToTransaction={handleAddItems}
                     onAddTime={handleAddTime}
                     onMoveStation={handleMoveStation}
                     currentTransaction={currentTransaction}
