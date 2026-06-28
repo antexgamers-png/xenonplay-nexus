@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog';
-import { Plus, Wallet, Trash2, Receipt, Search, History, CalendarDays, Zap, Filter, FileSpreadsheet } from 'lucide-react';
+import { Plus, Wallet, Trash2, Receipt, Search, History, CalendarDays, Zap, Filter, FileSpreadsheet, User, Banknote } from 'lucide-react';
 import { addExpense, deleteExpense } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { format, startOfDay, endOfDay, subDays, startOfMonth, endOfMonth, subMonths } from 'date-fns';
@@ -56,6 +56,7 @@ export default function ExpensesPage() {
     amount: 0,
     description: '',
     category: 'other',
+    source: 'drawer',
     shiftId: null
   });
 
@@ -112,7 +113,6 @@ export default function ExpensesPage() {
 
   const expensesQuery = useMemoFirebase(() => {
     if (!firestore || isRoleLoading) return null;
-    // We fetch a decent limit and filter more precisely on the client side
     return query(collection(firestore, 'expenses'), orderBy('timestamp', 'desc'), limit(500));
   }, [firestore, isRoleLoading]);
 
@@ -154,7 +154,7 @@ export default function ExpensesPage() {
       });
       toast({ title: "Berhasil", description: "Pengeluaran telah dicatat.", variant: "success" });
       setIsAddOpen(false);
-      setFormData({ amount: 0, description: '', category: 'other', shiftId: null });
+      setFormData({ amount: 0, description: '', category: 'other', source: 'drawer', shiftId: null });
     } catch (err: any) {
       toast({ title: "Gagal", description: err.message, variant: "destructive" });
     } finally {
@@ -231,7 +231,6 @@ export default function ExpensesPage() {
                 </Select>
             </div>
 
-            {/* CUSTOM DATE PICKER */}
             {rangeType === 'custom' && (
                 <div className="space-y-1.5 animate-in fade-in slide-in-from-left-2 duration-300">
                     <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-1 flex items-center gap-1.5">
@@ -320,6 +319,7 @@ export default function ExpensesPage() {
                         <TableHead className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">Tgl & Jam</TableHead>
                         <TableHead className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">Kategori</TableHead>
                         <TableHead className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">Keterangan Biaya</TableHead>
+                        <TableHead className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">Sumber Dana</TableHead>
                         <TableHead className="text-[9px] font-black uppercase text-muted-foreground tracking-widest text-right">Nominal</TableHead>
                         <TableHead className="text-[9px] font-black uppercase text-muted-foreground tracking-widest text-center w-16">Aksi</TableHead>
                     </TableRow>
@@ -328,7 +328,7 @@ export default function ExpensesPage() {
                     {isLoading ? (
                         [1,2,3,4,5].map(i => (
                             <TableRow key={i}>
-                                <TableCell colSpan={5} className="py-4 px-4"><Skeleton className="h-10 w-full rounded-lg" /></TableCell>
+                                <TableCell colSpan={6} className="py-4 px-4"><Skeleton className="h-10 w-full rounded-lg" /></TableCell>
                             </TableRow>
                         ))
                     ) : (
@@ -343,7 +343,20 @@ export default function ExpensesPage() {
                                         {CATEGORIES.find(c => c.value === e.category)?.label || 'LAIN-LAIN'}
                                     </Badge>
                                 </TableCell>
-                                <TableCell className="text-xs font-bold uppercase tracking-tight py-2 max-w-[200px] truncate">{e.description}</TableCell>
+                                <TableCell className="text-xs font-bold uppercase tracking-tight py-2 max-w-[150px] truncate">{e.description}</TableCell>
+                                <TableCell className="py-2">
+                                    <div className="flex items-center gap-1.5">
+                                        {e.source === 'drawer' ? (
+                                            <Badge variant="outline" className="text-[8px] font-black uppercase border-blue-500/20 bg-blue-500/5 text-blue-600">
+                                                <Banknote className="size-2 mr-1" /> Kas Laci
+                                            </Badge>
+                                        ) : (
+                                            <Badge variant="outline" className="text-[8px] font-black uppercase border-amber-500/20 bg-amber-500/5 text-amber-600">
+                                                <User className="size-2 mr-1" /> Dana Pribadi
+                                            </Badge>
+                                        )}
+                                    </div>
+                                </TableCell>
                                 <TableCell className="text-right font-black font-mono text-red-500 py-2">
                                     {formatCurrency(e.amount)}
                                 </TableCell>
@@ -357,7 +370,7 @@ export default function ExpensesPage() {
                     )}
                     {!isLoading && filteredExpenses.length === 0 && (
                         <TableRow>
-                            <TableCell colSpan={5} className="h-40 text-center flex flex-col items-center justify-center gap-3 opacity-30">
+                            <TableCell colSpan={6} className="h-40 text-center flex flex-col items-center justify-center gap-3 opacity-30">
                                 <Receipt className="size-10 text-muted-foreground" />
                                 <p className="text-xs font-black uppercase tracking-[0.3em]">Catatan Kosong</p>
                             </TableCell>
@@ -377,23 +390,38 @@ export default function ExpensesPage() {
                       Input Pengeluaran
                   </DialogTitle>
                   <DialogDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    Catat pengeluaran tunai dari laci kasir
+                    Catat operasional harian atau belanja stok
                   </DialogDescription>
               </DialogHeader>
               
               <form onSubmit={handleAddExpense} className="space-y-4 p-6 pt-2">
-                  <div className="space-y-1.5">
-                      <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Kategori Biaya</Label>
-                      <Select value={formData.category as ExpenseCategory} onValueChange={(val: ExpenseCategory) => setFormData({...formData, category: val})}>
-                          <SelectTrigger className="h-11 bg-muted/40 border-transparent rounded-xl font-bold">
-                              <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                              {CATEGORIES.map(c => (
-                                  <SelectItem key={c.value} value={c.value} className="font-bold uppercase text-[10px]">{c.label}</SelectItem>
-                              ))}
-                          </SelectContent>
-                      </Select>
+                  <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                          <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Kategori Biaya</Label>
+                          <Select value={formData.category as ExpenseCategory} onValueChange={(val: ExpenseCategory) => setFormData({...formData, category: val})}>
+                              <SelectTrigger className="h-11 bg-muted/40 border-transparent rounded-xl font-bold">
+                                  <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                  {CATEGORIES.map(c => (
+                                      <SelectItem key={c.value} value={c.value} className="font-bold uppercase text-[10px]">{c.label}</SelectItem>
+                                  ))}
+                              </SelectContent>
+                          </Select>
+                      </div>
+
+                      <div className="space-y-1.5">
+                          <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Sumber Dana</Label>
+                          <Select value={formData.source} onValueChange={(val: 'drawer' | 'personal') => setFormData({...formData, source: val})}>
+                              <SelectTrigger className="h-11 bg-muted/40 border-transparent rounded-xl font-bold">
+                                  <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                  <SelectItem value="drawer" className="font-bold uppercase text-[10px]">💰 Kas Laci</SelectItem>
+                                  <SelectItem value="personal" className="font-bold uppercase text-[10px]">👤 Dana Pribadi</SelectItem>
+                              </SelectContent>
+                          </Select>
+                      </div>
                   </div>
 
                   <div className="space-y-1.5">
@@ -424,7 +452,9 @@ export default function ExpensesPage() {
                   <div className="p-3 rounded-xl bg-primary/5 border border-dashed border-primary/20 flex items-start gap-3 mt-4">
                       <Zap className="size-4 text-primary shrink-0 mt-0.5" />
                       <p className="text-[9px] text-primary/70 leading-relaxed font-bold uppercase">
-                        Data ini akan memotong saldo "Kas Laci" pada laporan shift kasir yang sedang aktif secara otomatis.
+                        {formData.source === 'drawer' 
+                            ? "Data ini akan MEMOTONG saldo 'Kas Laci' pada laporan shift secara otomatis." 
+                            : "Data ini HANYA dicatat sebagai biaya di laporan laba rugi, TANPA memotong saldo kas laci."}
                       </p>
                   </div>
 

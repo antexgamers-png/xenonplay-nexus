@@ -509,11 +509,27 @@ export async function updateReservationStatus(db: Firestore, id: string, status:
 
 export async function addExpense(db: Firestore, expense: any) {
     const docRef = doc(collection(db, 'expenses'));
-    await setDoc(docRef, { ...expense, id: docRef.id, timestamp: Date.now() });
+    return await runTransaction(db, async (txn) => {
+        txn.set(docRef, { ...expense, id: docRef.id, timestamp: Date.now() });
+        if (expense.shiftId && expense.source === 'drawer') {
+            const shiftRef = doc(db, 'shifts', expense.shiftId);
+            txn.update(shiftRef, { expectedBalance: increment(-expense.amount) });
+        }
+    });
 }
 
 export async function deleteExpense(db: Firestore, id: string) {
-    await deleteDoc(doc(db, 'expenses', id));
+    const eRef = doc(db, 'expenses', id);
+    return await runTransaction(db, async (txn) => {
+        const eSnap = await txn.get(eRef);
+        if (!eSnap.exists()) return;
+        const data = eSnap.data() as Expense;
+        if (data.shiftId && data.source === 'drawer') {
+            const shiftRef = doc(db, 'shifts', data.shiftId);
+            txn.update(shiftRef, { expectedBalance: increment(data.amount) });
+        }
+        txn.delete(eRef);
+    });
 }
 
 export async function updateUserRole(db: Firestore, userId: string, role: string) {
