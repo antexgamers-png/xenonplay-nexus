@@ -451,68 +451,68 @@ export default function ShiftsPage() {
 
       {/* DIALOG DETAIL AUDIT SHIFT */}
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-          <DialogContent className="max-w-4xl bg-[#020617] border-white/5 p-0 overflow-hidden rounded-[1.5rem] shadow-2xl">
+          <DialogContent className="max-w-3xl bg-[#020617] border-white/5 p-0 overflow-hidden rounded-[1.5rem] shadow-2xl">
               {selectedShift && (
                   <>
                     <div className={cn("h-1.5 w-full", selectedShift.difference === 0 ? "bg-emerald-500" : (selectedShift.difference || 0) < 0 ? "bg-red-500" : "bg-blue-500")} />
                     
-                    <DialogHeader className="p-6 md:p-8 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <DialogHeader className="p-4 md:p-6 pb-2 flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="space-y-1">
-                            <DialogTitle className="text-2xl font-black uppercase tracking-tight text-white flex items-center gap-3">
-                                <FileText className="size-6 text-primary" />
+                            <DialogTitle className="text-xl font-black uppercase tracking-tight text-white flex items-center gap-3">
+                                <FileText className="size-5 text-primary" />
                                 Laporan Rinci Sesi Kerja
                             </DialogTitle>
-                            <div className="flex flex-col text-[10px] font-bold uppercase tracking-widest text-white/40">
+                            <div className="flex flex-col text-[9px] font-bold uppercase tracking-widest text-white/40">
                                 <span>Audit ID: {selectedShift.id}</span>
-                                <span className="mt-1">Petugas: {selectedShift.openedByName}</span>
+                                <span className="mt-0.5">Petugas: {selectedShift.openedByName}</span>
                             </div>
                         </div>
-                        <Badge variant="outline" className="w-fit border-white/10 bg-white/5 text-white/80 font-black text-[10px] px-4 h-8 tracking-widest">
+                        <Badge variant="outline" className="w-fit border-white/10 bg-white/5 text-white/80 font-black text-[9px] px-3 h-7 tracking-widest">
                             STATUS: {selectedShift.status === 'open' ? 'SESI BERJALAN' : 'FINISH / CLOSED'}
                         </Badge>
                     </DialogHeader>
 
-                    <ScrollArea className="max-h-[75vh]">
-                        <div className="p-6 md:p-8 pt-2 grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    <ScrollArea className="max-h-[65vh]">
+                        <div className="p-4 md:p-6 pt-2 grid grid-cols-1 lg:grid-cols-12 gap-6">
                             {/* Summary Card */}
-                            <div className="lg:col-span-4 space-y-6">
-                                <Card className="bg-white/[0.03] border-white/5 p-6 rounded-[1.5rem] shadow-inner">
-                                    <h4 className="text-[10px] font-black uppercase text-white/30 tracking-[0.2em] mb-6 border-b border-white/5 pb-2">Rekap Keuangan</h4>
-                                    <div className="space-y-5">
+                            <div className="lg:col-span-4 space-y-4">
+                                <Card className="bg-white/[0.03] border-white/5 p-4 rounded-[1.2rem] shadow-inner">
+                                    <h4 className="text-[9px] font-black uppercase text-white/30 tracking-[0.2em] mb-4 border-b border-white/5 pb-2">Rekap Keuangan</h4>
+                                    <div className="space-y-4">
                                         <div className="flex justify-between items-center">
-                                            <span className="text-xs text-white/40 font-bold uppercase">Modal Awal</span>
-                                            <span className="text-sm font-black text-white/80 font-mono">{formatCurrency(selectedShift.initialBalance)}</span>
+                                            <span className="text-[10px] text-white/40 font-bold uppercase">Modal Awal</span>
+                                            <span className="text-xs font-black text-white/80 font-mono">{formatCurrency(selectedShift.initialBalance)}</span>
                                         </div>
                                         <div className="flex justify-between items-center">
-                                            <span className="text-xs text-white/40 font-bold uppercase">Total Penjualan</span>
-                                            <span className="text-sm font-black text-emerald-500 font-mono">+{formatCurrency(selectedShift.totalSales)}</span>
+                                            <span className="text-[10px] text-white/40 font-bold uppercase">Total Penjualan</span>
+                                            <span className="text-xs font-black text-emerald-500 font-mono">+{formatCurrency(selectedShift.totalSales)}</span>
                                         </div>
                                         
                                         <Separator className="bg-white/5" />
                                         
                                         <div className="flex justify-between items-end">
-                                            <span className="text-xs font-black text-primary uppercase">Target Laci</span>
-                                            <span className="text-xl font-black text-primary font-mono leading-none">
+                                            <span className="text-[10px] font-black text-primary uppercase">Target Laci</span>
+                                            <span className="text-lg font-black font-mono text-primary leading-none">
                                                 {formatCurrency(selectedShift.expectedBalance).replace(',00', '')}
                                             </span>
                                         </div>
                                         <div className="flex justify-between items-end">
-                                            <span className="text-xs font-black text-white/80 uppercase">Fisik Laci</span>
-                                            <span className="text-xl font-black text-white font-mono leading-none">
+                                            <span className="text-[10px] font-black text-white/80 uppercase">Fisik Laci</span>
+                                            <span className="text-lg font-black font-mono text-white leading-none">
                                                 {formatCurrency(selectedShift.actualBalance || 0).replace(',00', '')}
                                             </span>
                                         </div>
 
                                         <div className={cn(
-                                            "mt-4 p-4 rounded-2xl border flex justify-between items-center",
+                                            "mt-2 p-3 rounded-xl border flex justify-between items-center",
                                             (selectedShift.difference || 0) === 0 
                                                 ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" 
                                                 : (selectedShift.difference || 0) < 0 
                                                     ? "bg-red-500/10 border-red-500/20 text-red-500" 
                                                     : "bg-blue-500/10 border-blue-500/20 text-blue-500"
                                         )}>
-                                            <span className="font-black uppercase text-[10px] tracking-widest">Selisih</span>
-                                            <span className="font-black font-mono text-lg">
+                                            <span className="font-black uppercase text-[9px] tracking-widest">Selisih</span>
+                                            <span className="font-black font-mono text-base">
                                                 {(selectedShift.difference || 0) > 0 ? '+' : ''}
                                                 {formatCurrency(selectedShift.difference || 0).replace(',00', '')}
                                             </span>
@@ -521,50 +521,50 @@ export default function ShiftsPage() {
                                 </Card>
 
                                 {selectedShift.notes && (
-                                    <div className="p-6 rounded-[1.5rem] bg-amber-500/[0.03] border border-amber-500/10 relative overflow-hidden group">
-                                        <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none group-hover:scale-110 transition-transform">
-                                            <AlertTriangle className="size-16 text-amber-500" />
+                                    <div className="p-4 rounded-[1.2rem] bg-amber-500/[0.03] border border-amber-500/10 relative overflow-hidden group">
+                                        <div className="absolute top-0 right-0 p-3 opacity-5 pointer-events-none group-hover:scale-110 transition-transform">
+                                            <AlertTriangle className="size-12 text-amber-500" />
                                         </div>
-                                        <h4 className="text-[10px] font-black uppercase text-amber-500 tracking-[0.2em] mb-3 flex items-center gap-2">
-                                            <AlertTriangle className="size-3" /> Catatan Staff
+                                        <h4 className="text-[9px] font-black uppercase text-amber-500 tracking-[0.2em] mb-2 flex items-center gap-2">
+                                            <AlertTriangle className="size-2.5" /> Catatan Staff
                                         </h4>
-                                        <p className="text-[11px] text-amber-200/60 italic leading-relaxed font-medium">"{selectedShift.notes}"</p>
+                                        <p className="text-[10px] text-amber-200/60 italic leading-relaxed font-medium">"{selectedShift.notes}"</p>
                                     </div>
                                 )}
                             </div>
 
                             {/* Data Lists */}
-                            <div className="lg:col-span-8 space-y-8">
+                            <div className="lg:col-span-8 space-y-6">
                                 {/* Transactions */}
-                                <div className="space-y-4">
+                                <div className="space-y-3">
                                     <div className="flex items-center justify-between px-1">
-                                        <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-white/40 flex items-center gap-3">
-                                            <Receipt className="size-4 text-primary" /> Daftar Nota Terbit
+                                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 flex items-center gap-2">
+                                            <Receipt className="size-3 text-primary" /> Daftar Nota Terbit
                                         </h4>
-                                        <Badge className="bg-white/5 text-white/40 border-none text-[9px] font-bold h-5 px-3">
+                                        <Badge className="bg-white/5 text-white/40 border-none text-[8px] font-bold h-4 px-2">
                                             {detailTransactions?.length || 0} Transaksi
                                         </Badge>
                                     </div>
-                                    <div className="rounded-[1.2rem] border border-white/5 bg-white/[0.02] overflow-hidden">
+                                    <div className="rounded-[1rem] border border-white/5 bg-white/[0.02] overflow-hidden">
                                         <Table>
                                             <TableHeader className="bg-white/[0.03] hover:bg-transparent">
-                                                <TableRow className="border-white/5 h-11">
-                                                    <TableHead className="text-[9px] font-black text-white/30 uppercase tracking-widest px-6">Jam</TableHead>
-                                                    <TableHead className="text-[9px] font-black text-white/30 uppercase tracking-widest px-6 text-center">Unit/Pos</TableHead>
-                                                    <TableHead className="text-[9px] font-black text-white/30 uppercase tracking-widest px-6 text-right">Netto</TableHead>
+                                                <TableRow className="border-white/5 h-9">
+                                                    <TableHead className="text-[8px] font-black text-white/30 uppercase tracking-widest px-4">Jam</TableHead>
+                                                    <TableHead className="text-[8px] font-black text-white/30 uppercase tracking-widest px-4 text-center">Unit/Pos</TableHead>
+                                                    <TableHead className="text-[8px] font-black text-white/30 uppercase tracking-widest px-4 text-right">Netto</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
                                                 {detailTransactions?.length ? detailTransactions.sort((a,b) => a.timestamp - b.timestamp).map(t => (
-                                                    <TableRow key={t.id} className="border-white/5 h-14 hover:bg-white/[0.03] transition-colors">
-                                                        <TableCell className="font-mono text-[11px] text-white/40 px-6">{format(t.timestamp, 'HH:mm')}</TableCell>
-                                                        <TableCell className="font-black uppercase text-[11px] text-white/80 text-center px-6">{t.stationName}</TableCell>
-                                                        <TableCell className="text-right font-black font-mono text-white/90 text-sm px-6">
+                                                    <TableRow key={t.id} className="border-white/5 h-12 hover:bg-white/[0.03] transition-colors">
+                                                        <TableCell className="font-mono text-[10px] text-white/40 px-4">{format(t.timestamp, 'HH:mm')}</TableCell>
+                                                        <TableCell className="font-black uppercase text-[10px] text-white/80 text-center px-4">{t.stationName}</TableCell>
+                                                        <TableCell className="text-right font-black font-mono text-white/90 text-xs px-4">
                                                             {formatCurrency(t.paidAmount || 0).replace(',00', '')}
                                                         </TableCell>
                                                     </TableRow>
                                                 )) : (
-                                                    <TableRow><TableCell colSpan={3} className="h-32 text-center text-[11px] text-white/20 italic uppercase tracking-widest">Belum ada transaksi di shift ini</TableCell></TableRow>
+                                                    <TableRow><TableCell colSpan={3} className="h-24 text-center text-[10px] text-white/20 italic uppercase tracking-widest">Belum ada transaksi</TableCell></TableRow>
                                                 )}
                                             </TableBody>
                                         </Table>
@@ -572,35 +572,35 @@ export default function ShiftsPage() {
                                 </div>
 
                                 {/* Expenses */}
-                                <div className="space-y-4 pb-8">
+                                <div className="space-y-3 pb-4">
                                     <div className="flex items-center justify-between px-1">
-                                        <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-white/40 flex items-center gap-3">
-                                            <Wallet className="size-4 text-red-500" /> Dana Keluar (Laci)
+                                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 flex items-center gap-2">
+                                            <Wallet className="size-3 text-red-500" /> Dana Keluar (Laci)
                                         </h4>
-                                        <Badge className="bg-white/5 text-white/40 border-none text-[9px] font-bold h-5 px-3">
+                                        <Badge className="bg-white/5 text-white/40 border-none text-[8px] font-bold h-4 px-2">
                                             {detailExpenses?.length || 0} Pengeluaran
                                         </Badge>
                                     </div>
-                                    <div className="rounded-[1.2rem] border border-white/5 bg-white/[0.02] overflow-hidden">
+                                    <div className="rounded-[1rem] border border-white/5 bg-white/[0.02] overflow-hidden">
                                         <Table>
                                             <TableHeader className="bg-white/[0.03] hover:bg-transparent">
-                                                <TableRow className="border-white/5 h-11">
-                                                    <TableHead className="text-[9px] font-black text-white/30 uppercase tracking-widest px-6">Jam</TableHead>
-                                                    <TableHead className="text-[9px] font-black text-white/30 uppercase tracking-widest px-6">Keperluan</TableHead>
-                                                    <TableHead className="text-[9px] font-black text-white/30 uppercase tracking-widest px-6 text-right">Nominal</TableHead>
+                                                <TableRow className="border-white/5 h-9">
+                                                    <TableHead className="text-[8px] font-black text-white/30 uppercase tracking-widest px-4">Jam</TableHead>
+                                                    <TableHead className="text-[8px] font-black text-white/30 uppercase tracking-widest px-4">Keperluan</TableHead>
+                                                    <TableHead className="text-[8px] font-black text-white/30 uppercase tracking-widest px-4 text-right">Nominal</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
                                                 {detailExpenses?.length ? detailExpenses.map(e => (
-                                                    <TableRow key={e.id} className="border-white/5 h-14 hover:bg-white/[0.03] transition-colors">
-                                                        <TableCell className="font-mono text-[11px] text-white/40 px-6">{format(e.timestamp, 'HH:mm')}</TableCell>
-                                                        <TableCell className="font-black uppercase text-[11px] text-white/70 px-6 truncate max-w-[200px]">{e.description}</TableCell>
-                                                        <TableCell className="text-right font-black font-mono text-red-500 text-sm px-6">
+                                                    <TableRow key={e.id} className="border-white/5 h-12 hover:bg-white/[0.03] transition-colors">
+                                                        <TableCell className="font-mono text-[10px] text-white/40 px-4">{format(e.timestamp, 'HH:mm')}</TableCell>
+                                                        <TableCell className="font-black uppercase text-[10px] text-white/70 px-4 truncate max-w-[150px]">{e.description}</TableCell>
+                                                        <TableCell className="text-right font-black font-mono text-red-500 text-xs px-4">
                                                             {formatCurrency(e.amount).replace(',00', '')}
                                                         </TableCell>
                                                     </TableRow>
                                                 )) : (
-                                                    <TableRow><TableCell colSpan={3} className="h-32 text-center text-[11px] text-white/20 italic uppercase tracking-widest">Tidak ada dana keluar melalui laci</TableCell></TableRow>
+                                                    <TableRow><TableCell colSpan={3} className="h-24 text-center text-[10px] text-white/20 italic uppercase tracking-widest">Tidak ada pengeluaran</TableCell></TableRow>
                                                 )}
                                             </TableBody>
                                         </Table>
@@ -610,9 +610,9 @@ export default function ShiftsPage() {
                         </div>
                     </ScrollArea>
 
-                    <DialogFooter className="p-6 md:p-8 pt-4 border-t border-white/5 bg-white/[0.01]">
+                    <DialogFooter className="p-4 md:p-6 pt-2 border-t border-white/5 bg-white/[0.01]">
                         <DialogClose asChild>
-                            <Button variant="outline" className="w-full h-14 rounded-2xl border-white/10 bg-transparent text-white/80 font-black uppercase text-xs tracking-[0.2em] hover:bg-white/5 hover:text-white transition-all">
+                            <Button variant="outline" className="w-full h-11 rounded-xl border-white/10 bg-transparent text-white/80 font-black uppercase text-[10px] tracking-[0.2em] hover:bg-white/5 hover:text-white transition-all">
                                 Tutup Laporan
                             </Button>
                         </DialogClose>
