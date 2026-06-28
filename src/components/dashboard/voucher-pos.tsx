@@ -67,7 +67,7 @@ export function VoucherPos() {
 
     const vouchersQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        // Limit increased to 500 for better client-side pagination coverage
+        // Limit 500 untuk paginasi client-side yang optimal
         return query(collection(firestore, 'vouchers'), orderBy('createdAt', 'desc'), limit(500));
     }, [firestore]);
 
@@ -328,9 +328,9 @@ export function VoucherPos() {
                         </div>
                     </CardHeader>
                     <CardContent className="p-0 flex-1 overflow-hidden flex flex-col">
-                        <div className="rounded-none border-x-0 border-t-0">
+                        <ScrollArea className="flex-1 h-[480px]">
                             <Table>
-                                <TableHeader className="bg-muted/30">
+                                <TableHeader className="bg-muted/30 sticky top-0 z-10">
                                     {table.getHeaderGroups().map((headerGroup) => (
                                         <TableRow key={headerGroup.id} className="hover:bg-transparent border-border">
                                             {headerGroup.headers.map((header) => (
@@ -363,7 +363,7 @@ export function VoucherPos() {
                                     )}
                                 </TableBody>
                             </Table>
-                        </div>
+                        </ScrollArea>
                         
                         <div className="p-4 border-t bg-muted/20 flex flex-col sm:flex-row items-center justify-between gap-4 mt-auto">
                             <div className="flex items-center gap-2">
